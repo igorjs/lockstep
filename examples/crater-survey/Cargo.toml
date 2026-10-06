@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "crater-survey"
+description = "Non-game consumer scenario for lockstep-agents: survey rovers that hear landers through the wind, some leashed to their crater"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-agents = { path = "../../crates/lockstep-agents" }
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-spatial = { path = "../../crates/lockstep-spatial" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

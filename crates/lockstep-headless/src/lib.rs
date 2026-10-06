@@ -55,6 +55,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: cargo_bay::fixture_hash,
         },
         Fixture {
+            name: "crater-survey",
+            default_seed: crater_survey::DEFAULT_SEED,
+            default_steps: crater_survey::DEFAULT_STEPS,
+            run: crater_survey::fixture_hash,
+        },
+        Fixture {
             name: "sparring",
             default_seed: sparring::DEFAULT_SEED,
             default_steps: sparring::DEFAULT_STEPS,
