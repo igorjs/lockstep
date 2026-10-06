@@ -122,6 +122,17 @@ read.
 
 See decision 0021.
 
+## Benchmark
+
+`cargo bench -p lockstep-agents` (or `just bench`) times 1,000 agents on a 256 by 256 map of
+half-metre cells with 10 percent walls, each the best of five runs, against the committed
+`benches/baseline.txt`; a measurement more than 10 percent slower prints a warning and never fails
+the build. `just bench-baseline` writes a new baseline after an intended change. On the
+development MacBook: every agent looking for ten targets with no staggering, 625 microseconds;
+one 80 metre noise through a 10 metre a second wind, 438; one `think` with a sighting for every
+agent, 146; one `steer` step for every agent, 82; a game minute of weather, 2. With checks
+staggered one in ten, a step of 1,000 agents costs about 0.3 milliseconds.
+
 ## Tests
 
 - `tests/behaviour/sight.rs`: the cone's range and angle edges, the circle behind, a wall, and

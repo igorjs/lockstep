@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+perceive_1000_agents 625
+hear_1000_agents 438
+think_1000_agents 146
+steer_1000_agents 82
+weather_one_minute 2
