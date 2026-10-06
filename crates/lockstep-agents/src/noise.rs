@@ -42,7 +42,8 @@ pub struct Heard {
 /// carries 8.4 metres downwind, 3.6 upwind and 6 across. Never below zero.
 pub fn effective_range(loudness_metres: Fixed32, wind: Wind, toward_listener: Turn) -> Fixed32 {
     let cosine = cos(toward_listener.wrapping_sub(wind.direction)).raw() as i128;
-    let strength = wind.strength_metres_per_second.raw() as i128;
+    // A negative strength is still air, as in `hearing_threshold`.
+    let strength = wind.strength_metres_per_second.raw().max(0) as i128;
     // (100 + 4 × s × cos) / 100, with s and cos both raw.
     let numerator = 100 * ONE_SQUARED + 4 * strength * cosine;
     let range = divide_rounded(loudness_metres.raw() as i128 * numerator, 100 * ONE_SQUARED);
@@ -67,8 +68,9 @@ pub fn audible_metres(noise: &Noise, wind: Wind, toward_listener: Turn) -> Fixed
 }
 
 /// Every body with `Senses` that hears a noise, sorted by handle, never the source. A listener
-/// hears it within `audible_metres` toward it, halved when no line of sight joins them at ear
-/// height (a wall or a rise between muffles it), and within its own hearing range.
+/// hears it within `audible_metres` toward it, halved when it has no line of sight to the noise
+/// from its own eye height (a wall or a rise between muffles it), and within its own hearing
+/// range.
 pub fn hear<T: Topology>(
     map: &GridMap<T>,
     occupancy: &Occupancy,
@@ -87,10 +89,11 @@ pub fn hear<T: Topology>(
     } else {
         effective_range(noise.loudness_metres, wind, wind.direction)
     };
-    // Every cell a listener could hear from, in tenths of a cell as `within` counts, with two
-    // cells to spare where a topology's step distance runs short of the straight distance.
-    let cells = loudest.raw().max(0) as i64 / cell_metres.raw() as i64 + 2;
-    let radius = (cells * 10).min(u32::MAX as i64) as u32;
+    // Every cell a listener could hear from, in tenths of a cell as `within` counts. Off the
+    // axes a topology's step distance runs longer than the straight one, up to the square root
+    // of two on `Square4`, so the radius is half as long again, plus two cells.
+    let cells = loudest.raw().max(0) as i64 / cell_metres.raw() as i64 + 1;
+    let radius = (cells * 15 + 20).min(u32::MAX as i64) as u32;
     let mut nearby = Vec::new();
     occupancy.within(map, noise.at, radius, &mut nearby);
     let mut line = Vec::new();
@@ -103,7 +106,8 @@ pub fn hear<T: Topology>(
         };
         let distance = distance_metres(map, noise.at, cell, cell_metres);
         let mut reach = audible_metres(noise, wind, direction(map, noise.at, cell));
-        if !line_of_sight(map, noise.at, cell, 1, &mut line) {
+        // Muffled when the listener, at its own ear height, has no line to the noise.
+        if !line_of_sight(map, cell, noise.at, listener_senses.eye_height, &mut line) {
             reach = Fixed32::from_raw(reach.raw() / 2);
         }
         if distance <= reach && distance <= listener_senses.hearing_range_metres {

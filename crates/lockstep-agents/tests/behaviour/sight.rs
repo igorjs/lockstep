@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::common::{half_metre, metres, senses, Floor, EAST, WEST};
+use lockstep_agents::distance_metres;
 use lockstep_agents::{perceive, sees, Seen};
 
 #[cfg(target_arch = "wasm32")]
@@ -24,7 +25,7 @@ fn the_cone_sees_ahead_to_its_range_and_angle() {
     // 12 metres is 24 half-metre cells.
     assert!(sees_at(34, 15), "12 metres ahead");
     assert!(!sees_at(35, 15), "12.5 metres ahead");
-    // 45 degrees either side: (20, 25) is on the edge, (19, 25) just outside.
+    // 45 degrees either side: (20, 5) is on the edge, (19, 5) just outside.
     assert!(sees_at(20, 5));
     assert!(!sees_at(19, 5));
     // Behind, beyond the 4 metres all around: unseen. Within them: seen.
@@ -101,5 +102,13 @@ fn perceive_checks_only_the_agents_whose_turn_it_is() {
             at
         }]
     );
-    let _ = metres(0);
+}
+
+#[test]
+fn a_target_across_a_huge_map_is_far_not_near() {
+    // 4,000 cells of 10 metres: 40,000 metres, past what 16.16 holds. It saturates, never wraps.
+    let map: lockstep_spatial::GridMap<lockstep_spatial::Square8> =
+        lockstep_spatial::GridMap::new(4_001, 1);
+    let far = distance_metres(&map, map.index(0, 0), map.index(4_000, 0), metres(10));
+    assert!(far > metres(30_000));
 }

@@ -39,7 +39,10 @@ pub fn distance_metres<T: Topology>(
     to: Cell,
     cell_metres: Fixed32,
 ) -> Fixed32 {
-    map.centre(from).distance(map.centre(to)) * cell_metres
+    // Multiplied in 64 bits and saturated, so a far target never wraps round to a near one.
+    let cells = map.centre(from).distance(map.centre(to)).raw() as i64;
+    let raw = (cells * cell_metres.raw() as i64) >> 16;
+    Fixed32::from_raw(raw.clamp(i32::MIN as i64, i32::MAX as i64) as i32)
 }
 
 /// Whether an agent on `from` facing `facing` sees `target`: within the cone's range and angle,

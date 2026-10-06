@@ -12,7 +12,8 @@ Status: decided and implemented in milestone M8.
   listener hears a noise within the carried range less that threshold. A 14 metre a second gale
   leaves a 6 metre footstep 1.8 metres across the wind and nothing against it.
 - A psychic noise ignores the wind both ways. Walls still muffle it.
-- A wall or a rise between source and listener halves the reach.
+- A wall or a rise between source and listener halves the reach, traced from the listener at its
+  own eye height.
 - Agent n checks its senses on steps where `step % k == n % k`, n its handle's slot.
 
 ## Alternatives rejected
