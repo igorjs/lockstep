@@ -15,6 +15,8 @@ The grid-shaped consumer scenario: rovers on a plateau, on any topology.
   one a higher handle will vacate later; a rover that lands on an edge, rock or occupied cell is wrecked,
   holds no cell and never moves.
 - A program added in a step starts running in the next one.
+- The compass names: north is the first heading of every topology (north-east on hexagons), east points
+  along +x, and south and west are their opposites. A rock outside the plateau is ignored.
 
 The fixture hash in `fixtures/mars-rovers.hash` covers every scenario on every topology, and is checked by
 `lockstep-headless verify mars-rovers` and by a WebAssembly test.

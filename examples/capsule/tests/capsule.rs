@@ -376,3 +376,102 @@ fn a_snapshot_restores_to_an_identical_world() {
     assert_eq!(restored.world(), &snapshot);
     assert_eq!(world_hash(restored.world()), world_hash(&snapshot));
 }
+
+#[test]
+fn a_new_move_during_a_walk_paths_again_from_where_the_survivor_stands() {
+    let seed = seed_spawning_in(0..=3);
+    let mut walker = runner(seed);
+    let survivor = walker.simulation().survivor().unwrap();
+    walker.step_once(&[Intent::MoveTo {
+        entity: survivor,
+        cell: Cell { x: 14, y: 14 },
+        run: false,
+    }]);
+    for _ in 0..20 {
+        walker.step_once(&[]);
+    }
+    let midway = *walker.simulation().world().positions.get(survivor).unwrap();
+    let new_target = Cell { x: 0, y: 15 };
+    walker.step_once(&[Intent::MoveTo {
+        entity: survivor,
+        cell: new_target,
+        run: false,
+    }]);
+    let walk = walker
+        .simulation()
+        .world()
+        .walks
+        .get(survivor)
+        .unwrap()
+        .clone();
+    assert_eq!(walk.destination, new_target);
+    // The new path starts next to where the survivor stood, not from the spawn.
+    let room = build_room();
+    let first = room.coordinates(lockstep_spatial::Cell(walk.path[0]));
+    assert!((first.0 as i32 - midway.x).abs() <= 1 && (first.1 as i32 - midway.y).abs() <= 1);
+    let mut arrived = false;
+    for _ in 0..2_000 {
+        if walker
+            .step_once(&[])
+            .events
+            .iter()
+            .any(|event| matches!(event, Event::Arrived { .. }))
+        {
+            arrived = true;
+            break;
+        }
+    }
+    assert!(arrived);
+    assert_eq!(
+        walker.simulation().world().positions.get(survivor),
+        Some(&new_target)
+    );
+}
+
+#[test]
+fn a_stop_then_a_move_starts_a_fresh_walk() {
+    let seed = seed_spawning_in(0..=3);
+    let mut walker = runner(seed);
+    let survivor = walker.simulation().survivor().unwrap();
+    walker.step_once(&[Intent::MoveTo {
+        entity: survivor,
+        cell: Cell { x: 14, y: 14 },
+        run: false,
+    }]);
+    for _ in 0..13 {
+        walker.step_once(&[]);
+    }
+    walker.step_once(&[Intent::Stop { entity: survivor }]);
+    assert!(walker.simulation().world().walks.is_empty());
+    let stopped = *walker.simulation().world().positions.get(survivor).unwrap();
+    for _ in 0..30 {
+        walker.step_once(&[]);
+    }
+    assert_eq!(
+        walker.simulation().world().positions.get(survivor),
+        Some(&stopped),
+        "a stopped survivor stays put"
+    );
+    let target = Cell {
+        x: stopped.x,
+        y: (stopped.y + 2).min(15),
+    };
+    walker.step_once(&[Intent::MoveTo {
+        entity: survivor,
+        cell: target,
+        run: true,
+    }]);
+    let mut arrived = false;
+    for _ in 0..200 {
+        if walker
+            .step_once(&[])
+            .events
+            .iter()
+            .any(|event| matches!(event, Event::Arrived { .. }))
+        {
+            arrived = true;
+            break;
+        }
+    }
+    assert!(arrived);
+}

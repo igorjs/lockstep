@@ -243,12 +243,8 @@ impl<T: RoverTopology> MarsRovers<T> {
                             .move_to(rover, target)
                             .expect("the cell was free");
                         self.world.positions.set(rover, target);
-                        let (x, y) = self.world.map.coordinates(target);
-                        context.events.push(Event::Moved {
-                            rover,
-                            x: x - 1,
-                            y: y - 1,
-                        });
+                        let (x, y) = self.plateau_position(target);
+                        context.events.push(Event::Moved { rover, x, y });
                     }
                     Some(obstacle) => context.events.push(Event::Blocked { rover, obstacle }),
                 }
@@ -275,8 +271,11 @@ impl<T: RoverTopology> Simulation for MarsRovers<T> {
                 }
             }
         }
+        // A rock outside the plateau would sit on the wall ring or outside the map, so it is ignored.
         for (x, y) in &configuration.rocks {
-            map.set_passable(map.index(x + 1, configuration.height - y), false);
+            if *x < configuration.width && *y < configuration.height {
+                map.set_passable(map.index(x + 1, configuration.height - y), false);
+            }
         }
         Self::from_world(World {
             map,
@@ -352,29 +351,30 @@ pub fn runner<T: RoverTopology>(configuration: Configuration, seed: u64) -> Runn
 pub const DEFAULT_SEED: u64 = 20_260_925;
 pub const DEFAULT_STEPS: u64 = 120;
 
-/// The compass names for a square topology's headings, for readable scenarios and tests.
+/// Readable heading names. North is the first heading of every topology (north on squares, north-east
+/// on hexagons), east is the heading pointing along +x, and south and west are their opposites, so a
+/// rover facing west on any topology faces a rover facing east.
 pub mod compass {
+    use super::opposite;
+    use lockstep_spatial::Topology;
+
     pub const NORTH: u8 = 0;
-    pub fn east<T: lockstep_spatial::Topology>() -> u8 {
+
+    pub fn east<T: Topology>() -> u8 {
+        // Square8: N, NE, E. Square4: N, E. Hex: NE, E.
         if T::NEIGHBOURS == 8 {
             2
         } else {
             1
         }
     }
-    pub fn south<T: lockstep_spatial::Topology>() -> u8 {
-        if T::NEIGHBOURS == 8 {
-            4
-        } else {
-            2
-        }
+
+    pub fn south<T: Topology>() -> u8 {
+        opposite::<T>(NORTH)
     }
-    pub fn west<T: lockstep_spatial::Topology>() -> u8 {
-        if T::NEIGHBOURS == 8 {
-            6
-        } else {
-            3
-        }
+
+    pub fn west<T: Topology>() -> u8 {
+        opposite::<T>(east::<T>())
     }
 }
 
@@ -383,15 +383,16 @@ pub fn opposite<T: Topology>(heading: u8) -> u8 {
     (heading + T::NEIGHBOURS as u8 / 2) % T::NEIGHBOURS as u8
 }
 
-/// Lands rovers and runs a script of (rover index, instructions) programs to completion, then returns
-/// the runner for inspection. Rover indexes count landings in order.
+/// Lands rovers (one step), programs them (one step), runs `steps` more steps, and returns the runner
+/// for inspection. Rover indexes count landings in order.
 pub fn play<T: RoverTopology>(
     configuration: Configuration,
+    seed: u64,
     landings: &[(u32, u32, u8)],
     programs: &[(usize, &str)],
     steps: u64,
 ) -> Runner<MarsRovers<T>> {
-    let mut runner = runner::<T>(configuration, DEFAULT_SEED);
+    let mut runner = runner::<T>(configuration, seed);
     let lands: Vec<Intent> = landings
         .iter()
         .map(|(x, y, heading)| Intent::Land {
@@ -428,29 +429,7 @@ pub fn fixture_hash(seed: u64, steps: u64) -> u64 {
         let west = compass::west::<T>();
         let mut hashes = Vec::new();
         let mut run = |landings: &[(u32, u32, u8)], programs: &[(usize, &str)]| {
-            let mut runner = runner::<T>(plateau.clone(), seed);
-            let lands: Vec<Intent> = landings
-                .iter()
-                .map(|(x, y, heading)| Intent::Land {
-                    x: *x,
-                    y: *y,
-                    heading: *heading,
-                })
-                .collect();
-            runner.step_once(&lands);
-            let rovers = runner.simulation().rovers();
-            let program_intents: Vec<Intent> = programs
-                .iter()
-                .map(|(index, letters)| Intent::Program {
-                    rover: rovers[*index],
-                    instructions: instructions(letters),
-                })
-                .collect();
-            runner.step_once(&program_intents);
-            for _ in 0..steps {
-                runner.step_once(&[]);
-            }
-            hashes.push(runner.hash());
+            hashes.push(play::<T>(plateau.clone(), seed, landings, programs, steps).hash());
         };
         // The classic kata, then edge, rock, head-on, contested cell, following, and a wrecked landing.
         run(

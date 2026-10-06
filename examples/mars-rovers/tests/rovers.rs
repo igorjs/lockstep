@@ -431,6 +431,7 @@ fn the_same_seed_gives_the_same_hash_and_running_longer_changes_it() {
 fn play_runs_a_scripted_scenario() {
     let runner = play::<Square4>(
         plateau(6, 6, &[]),
+        DEFAULT_SEED,
         &[(1, 2, compass::NORTH)],
         &[(0, "LMLMLMLMM")],
         12,
@@ -438,5 +439,125 @@ fn play_runs_a_scripted_scenario() {
     assert_eq!(
         runner.simulation().position_of(rover(&runner, 0)),
         Some((1, 3))
+    );
+}
+
+#[test]
+fn a_moved_event_reports_the_plateau_position_the_rover_now_holds() {
+    let mut runner = ready::<Square4>(plateau(6, 6, &[]), &[(1, 2, compass::NORTH)], &[(0, "MRM")]);
+    let rover = rover(&runner, 0);
+    let first = runner.step_once(&[]).events;
+    assert_eq!(
+        first,
+        vec![Event::Moved { rover, x: 1, y: 3 }],
+        "north is y + 1 in kata numbers"
+    );
+    assert_eq!(runner.simulation().position_of(rover), Some((1, 3)));
+    runner.step_once(&[]);
+    let third = runner.step_once(&[]).events;
+    assert_eq!(third, vec![Event::Moved { rover, x: 2, y: 3 }]);
+    assert_eq!(runner.simulation().position_of(rover), Some((2, 3)));
+}
+
+#[test]
+fn a_restored_world_rebuilds_who_stands_where() {
+    // Two rovers side by side; save, restore, and ask the first to move into the second. Only a
+    // rebuilt occupancy can refuse it.
+    let runner = ready::<Square8>(
+        plateau(9, 9, &[]),
+        &[(2, 2, compass::east::<Square8>()), (3, 2, 0)],
+        &[],
+    );
+    let (first, second) = (rover(&runner, 0), rover(&runner, 1));
+    let world: World<Square8> =
+        bincode::deserialize(&bincode::serialize(&runner.snapshot()).unwrap()).unwrap();
+    let mut restored = <MarsRovers<Square8> as Simulation>::restore(world);
+    let clock = lockstep_core::Clock::new(mars_rovers_clock(), 1.0 / 30.0);
+    let mut randomness = lockstep_core::Streams::new(0);
+    let mut events = Vec::new();
+    let mut step =
+        |simulation: &mut MarsRovers<Square8>, intents: &[Intent], events: &mut Vec<Event>| {
+            let mut context = lockstep_core::Context {
+                clock: &clock,
+                elapsed_game_minutes: 0.0,
+                randomness: &mut randomness,
+                events,
+                step_number: 0,
+                step_seconds: 1.0 / 30.0,
+            };
+            simulation.step(&mut context, intents);
+        };
+    step(
+        &mut restored,
+        &[Intent::Program {
+            rover: first,
+            instructions: instructions("M"),
+        }],
+        &mut events,
+    );
+    step(&mut restored, &[], &mut events);
+    assert_eq!(
+        events,
+        vec![Event::Blocked {
+            rover: first,
+            obstacle: Obstacle::Rover
+        }]
+    );
+    assert_eq!(restored.position_of(second), Some((3, 2)));
+}
+
+fn mars_rovers_clock() -> lockstep_core::ClockConfiguration {
+    lockstep_core::ClockConfiguration {
+        day_length_real_minutes: 1440.0,
+        sunrise_minute: 0,
+        sunset_minute: 1440,
+        starting_minute: 0,
+        starting_day: 0,
+    }
+}
+
+#[test]
+fn a_heading_past_the_neighbour_count_wraps_around() {
+    let mut runner = ready::<Hex>(plateau(9, 9, &[]), &[(4, 4, 7)], &[(0, "M")]);
+    assert_eq!(
+        runner.simulation().heading_of(rover(&runner, 0)),
+        Some(1),
+        "seven of six wraps to one"
+    );
+    let events = runner.step_once(&[]).events;
+    assert!(
+        matches!(events[0], Event::Moved { .. }),
+        "and the rover moves, it does not panic"
+    );
+}
+
+#[test]
+fn a_rock_outside_the_plateau_is_ignored() {
+    let mut runner = ready::<Square4>(
+        plateau(4, 4, &[(9, 9), (4, 0), (0, 4)]),
+        &[(0, 3, compass::east::<Square4>())],
+        &[(0, "MMM")],
+    );
+    all_events(&mut runner, 3);
+    assert_eq!(
+        runner.simulation().position_of(rover(&runner, 0)),
+        Some((3, 3)),
+        "the rocks outside changed nothing"
+    );
+}
+
+#[test]
+fn west_faces_east_on_every_topology() {
+    fn check<T: RoverTopology>() {
+        assert_eq!(compass::west::<T>(), opposite::<T>(compass::east::<T>()));
+        assert_eq!(compass::south::<T>(), opposite::<T>(compass::NORTH));
+    }
+    check::<Square4>();
+    check::<Square8>();
+    check::<Hex>();
+    assert_eq!(
+        compass::west::<Hex>(),
+        4,
+        "west on a hexagon, not south-west"
     );
 }

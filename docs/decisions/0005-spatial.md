@@ -30,7 +30,7 @@ it was renamed to stay generic.
 ## Consumers
 
 - **Mars Rovers** (`examples/mars-rovers`) runs on all three topologies. The kata numbers its plateau with y growing northward while the grid's north is a smaller y, so positions are converted at the boundary and the classic answers (1 3 N and 5 1 E) are unchanged. A plateau is stored with a ring of wall cells, so the edge is a wall and every cell a rover stands on has a full neighbour list. Rovers act one instruction per step in handle order: a rover sees the moves of lower handles in the same step, a contested cell goes to the lower handle, and a program added in a step starts in the next one.
-- **The capsule** walks A* paths around a wall across its room. This changed its movement on purpose, so its fixture hash changed from `316b312aae0edd6a` to `5f834ccde46abfef` (rule: a move follows the cheapest path around the wall, and a spawn that lands on the wall is redrawn). The Mars Rovers fixture hash is `8fff3fd3da6c445d`.
+- **The capsule** walks A* paths around a wall across its room. This changed its movement on purpose, so its fixture hash changed from `316b312aae0edd6a` to `5f834ccde46abfef` (rule: a move follows the cheapest path around the wall, and a spawn that lands on the wall is redrawn). The Mars Rovers fixture hash is `df95ff68f0f75c69`.
 
 ## Open item: the pathfinding benchmark target
 
