@@ -29,11 +29,15 @@ impl Fixed32 {
         self.0
     }
 
-    /// numerator / denominator, rounded to nearest. Use instead of float literals.
+    /// numerator / denominator, rounded to nearest with ties away from zero, so the result for a
+    /// negative ratio is the mirror of the result for the same positive one. Use instead of float
+    /// literals. Panics when the denominator is zero.
     pub const fn from_ratio(numerator: i32, denominator: i32) -> Self {
-        Fixed32(
-            ((numerator as i64 * 65_536 + (denominator as i64) / 2) / denominator as i64) as i32,
-        )
+        let scaled = numerator as i64 * 65_536;
+        let divisor = (denominator as i64).abs();
+        let magnitude = (scaled.abs() + divisor / 2) / divisor;
+        let negative = (scaled < 0) != (denominator < 0);
+        Fixed32(if negative { -magnitude } else { magnitude } as i32)
     }
 
     pub const fn floor(self) -> i32 {

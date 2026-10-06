@@ -23,7 +23,33 @@ fn whole_numbers_and_ratios_convert_exactly() {
         "one third rounds to nearest"
     );
     assert_eq!(Fixed32::from_ratio(-1, 3).raw(), -21_845);
+    assert_eq!(
+        Fixed32::from_ratio(-1, 2),
+        -Fixed32::HALF,
+        "an exact negative half is exact"
+    );
+    assert_eq!(Fixed32::from_ratio(1, -2), -Fixed32::HALF);
+    assert_eq!(Fixed32::from_ratio(-1, -2), Fixed32::HALF);
+    assert_eq!(Fixed32::from_ratio(-3, 4).raw(), -49_152);
+    assert_eq!(Fixed32::from_ratio(-5, 1), fixed(-5));
     assert_eq!(Fixed32::ONE.raw(), 65_536);
+}
+
+#[test]
+fn a_negative_ratio_is_the_mirror_of_the_same_positive_one() {
+    for numerator in 1..200 {
+        for denominator in 1..40 {
+            assert_eq!(
+                Fixed32::from_ratio(-numerator, denominator),
+                -Fixed32::from_ratio(numerator, denominator),
+                "{numerator}/{denominator}"
+            );
+            assert_eq!(
+                Fixed32::from_ratio(numerator, -denominator),
+                Fixed32::from_ratio(-numerator, denominator)
+            );
+        }
+    }
 }
 
 #[test]
@@ -130,6 +156,27 @@ fn length_is_exact_for_a_three_four_five_triangle_and_for_huge_vectors() {
 }
 
 #[test]
+fn a_length_too_long_for_fixed_point_saturates_and_the_extreme_corner_does_not_panic() {
+    let long = Vector2::new(fixed(30_000), fixed(30_000));
+    assert_eq!(
+        long.length(),
+        Fixed32::from_raw(i32::MAX),
+        "about 42,426 units does not fit, so it saturates"
+    );
+    let corner = Vector2::new(Fixed32::from_raw(i32::MIN), Fixed32::from_raw(i32::MIN));
+    assert_eq!(corner.length(), Fixed32::from_raw(i32::MAX));
+    let direction = long.normalised();
+    assert!(
+        (direction.length().raw() - 65_536).abs() <= 2,
+        "a long vector still normalises, got {direction:?}"
+    );
+    assert!(
+        direction.x > Fixed32::ZERO && direction.y > Fixed32::ZERO,
+        "and keeps its direction"
+    );
+}
+
+#[test]
 fn normalising_gives_length_one_within_rounding_and_zero_stays_zero() {
     for (x, y) in [(3, 4), (-7, 1), (1, -1), (100, 3)] {
         let length = Vector2::new(fixed(x), fixed(y)).normalised().length().raw();
@@ -153,36 +200,95 @@ fn dot_and_vector_operators_behave() {
     assert_eq!(a.distance(b), Vector2::new(fixed(2), fixed(2)).length());
 }
 
-#[test]
-fn toward_never_overshoots_and_arrives_exactly() {
-    let mut streams = Streams::new(11);
-    for _ in 0..2_000 {
-        let start = Vector2::new(
-            Fixed32::from_raw(streams.range("toward", -500_000, 500_000)),
-            Fixed32::from_raw(streams.range("toward", -500_000, 500_000)),
+/// Walks from `start` to `target` and checks every property of every step.
+fn walk(start: Vector2, target: Vector2, step: Fixed32, limit: usize) {
+    let mut position = start;
+    let mut previous_distance = position.distance(target);
+    for _ in 0..limit {
+        let (next, arrived) = position.toward(target, step);
+        assert!(
+            position.distance(next) <= step,
+            "moved {:?}, farther than the step {step:?}",
+            position.distance(next)
         );
-        let target = Vector2::new(
-            Fixed32::from_raw(streams.range("toward", -500_000, 500_000)),
-            Fixed32::from_raw(streams.range("toward", -500_000, 500_000)),
+        let distance = next.distance(target);
+        assert!(
+            distance <= previous_distance,
+            "the distance grew from {previous_distance:?} to {distance:?}"
         );
-        let step = Fixed32::from_raw(streams.range("toward", 1, 200_000));
-        let mut position = start;
-        let mut previous_distance = position.distance(target);
-        for _ in 0..10_000 {
-            let (next, arrived) = position.toward(target, step);
-            let distance = next.distance(target);
-            assert!(
-                distance <= previous_distance,
-                "the distance grew from {previous_distance:?} to {distance:?}"
-            );
-            if arrived {
-                assert_eq!(next, target, "arrival is exact");
-                break;
-            }
-            position = next;
-            previous_distance = distance;
+        if arrived {
+            assert_eq!(next, target, "arrival is exact");
+            return;
         }
+        assert!(next != position, "a positive step makes progress");
+        position = next;
+        previous_distance = distance;
     }
+    panic!("never arrived from {start:?} to {target:?} with step {step:?}");
+}
+
+#[test]
+fn toward_never_overshoots_always_progresses_and_arrives_exactly() {
+    let mut streams = Streams::new(11);
+    for _ in 0..1_000 {
+        let mut point = || {
+            Vector2::new(
+                Fixed32::from_raw(streams.range("toward", -500_000, 500_000)),
+                Fixed32::from_raw(streams.range("toward", -500_000, 500_000)),
+            )
+        };
+        let (start, target) = (point(), point());
+        walk(
+            start,
+            target,
+            Fixed32::from_raw(streams.range("toward", 20_000, 200_000)),
+            1_000,
+        );
+    }
+}
+
+#[test]
+fn toward_arrives_even_with_a_one_raw_unit_step_along_a_diagonal() {
+    let target = Vector2::new(Fixed32::from_raw(100), Fixed32::from_raw(100));
+    walk(Vector2::ZERO, target, Fixed32::from_raw(1), 1_000);
+    walk(
+        target,
+        Vector2::new(Fixed32::from_raw(-60), Fixed32::from_raw(37)),
+        Fixed32::from_raw(1),
+        1_000,
+    );
+}
+
+#[test]
+fn toward_works_over_distances_longer_than_fixed_point_can_hold_as_a_length() {
+    let far = Vector2::new(fixed(30_000), fixed(30_000));
+    let (next, arrived) = Vector2::ZERO.toward(far, Fixed32::from_raw(1));
+    assert!(
+        !arrived,
+        "a step of one raw unit does not reach a target 42,000 units away"
+    );
+    assert!(next.length() <= Fixed32::from_raw(1));
+    let (next, arrived) = Vector2::ZERO.toward(far, fixed(100));
+    assert!(!arrived);
+    assert!(next.length() <= fixed(100) && next.length() >= fixed(99));
+}
+
+#[test]
+fn a_negative_or_zero_step_never_moves_and_never_panics() {
+    let target = Vector2::new(fixed(3), fixed(4));
+    assert_eq!(
+        Vector2::ZERO.toward(target, fixed(-2)),
+        (Vector2::ZERO, false)
+    );
+    assert_eq!(
+        Vector2::ZERO.toward(target, Fixed32::ZERO),
+        (Vector2::ZERO, false)
+    );
+    assert_eq!(
+        target.toward(target, fixed(-2)),
+        (target, true),
+        "already there"
+    );
 }
 
 #[test]

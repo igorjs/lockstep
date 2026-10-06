@@ -53,12 +53,12 @@ pub fn atan2(y: Fixed32, x: Fixed32) -> Turn {
     if x_raw == 0 && y_raw == 0 {
         return 0;
     }
-    let (abs_x, abs_y) = (x_raw.abs(), y_raw.abs());
-    let steep = abs_y > abs_x;
+    let (absolute_x, absolute_y) = (x_raw.abs(), y_raw.abs());
+    let steep = absolute_y > absolute_x;
     let (low, high) = if steep {
-        (abs_x, abs_y)
+        (absolute_x, absolute_y)
     } else {
-        (abs_y, abs_x)
+        (absolute_y, absolute_x)
     };
     // The tangent in 0..=1 with 20 fractional bits.
     let tangent = (low << 20) / high;
