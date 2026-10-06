@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "lockstep-inventory"
+description = "Deterministic inventory for lockstep: items as entities, containers, equipment, affixes and spoilage"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+lockstep-attributes = { path = "../lockstep-attributes" }
+lockstep-core = { path = "../lockstep-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+bincode = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }
