@@ -268,6 +268,7 @@ fn a_destination_walled_in_is_rejected_as_unreachable() {
     let mut context = lockstep_core::Context {
         clock: &clock,
         elapsed_game_minutes: 0.0,
+        elapsed_minutes: lockstep_core::math::Fixed32::ZERO,
         randomness: &mut randomness,
         events: &mut events,
         step_number: 0,

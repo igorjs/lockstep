@@ -13,6 +13,7 @@ mod clock_in_integer_ticks;
 mod fixed_endian_hash;
 mod fixed_point_math;
 mod fixed_step;
+mod game_minutes_add_up_exactly;
 mod integer_cordic_tables;
 mod movement_never_overshoots;
 mod named_streams;

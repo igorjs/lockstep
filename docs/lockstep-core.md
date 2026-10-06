@@ -10,7 +10,7 @@ and intents produce the same state and the same hash on every platform.
 | Item | Purpose |
 | --- | --- |
 | `Simulation` | The one trait a game or model implements: `create`, `step`, `snapshot`, `restore`. |
-| `Context` | Everything a simulation may touch during one step: clock, elapsed game minutes, streams, events. |
+| `Context` | Everything a simulation may touch during one step: clock, elapsed game minutes (as a float and as exact `Fixed32` in `elapsed_minutes`), streams, events. The fixed point minutes of any number of steps add up exactly, so state that runs on game minutes never drifts. |
 | `Runner` | Owns time. Fixed steps, an accumulator, the clock, the streams, and the intent queue. |
 | `StepConfiguration` | Step length (default one thirtieth of a second) and the cap on steps per advance (default eight). |
 | `Clock`, `ClockConfiguration`, `ClockEvent` | The game clock: a rate with a multiplier, sunrise, sunset, new day. Time of day is an exact integer position, so a day is an exact number of steps. |

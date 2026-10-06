@@ -103,10 +103,12 @@ impl<S: Simulation> Runner<S> {
     }
 
     fn run_one_step(&mut self, intents: &[S::Intent], events: &mut Vec<S::Event>) {
-        let elapsed_game_minutes = self.clock.advance(&mut self.clock_events);
+        let (elapsed_game_minutes, elapsed_minutes) =
+            self.clock.advance_exactly(&mut self.clock_events);
         let mut context = Context {
             clock: &self.clock,
             elapsed_game_minutes,
+            elapsed_minutes,
             randomness: &mut self.randomness,
             events,
             step_number: self.step_number,

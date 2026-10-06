@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+use crate::math::Fixed32;
 use serde::{Deserialize, Serialize};
 
 /// One step at multiplier 1.0 advances this many units. A multiplier is stored as a whole number
@@ -99,6 +100,22 @@ impl Clock {
 
     /// Advance one step. Returns elapsed game minutes and pushes any boundary crossed.
     pub fn advance(&mut self, events: &mut Vec<ClockEvent>) -> f32 {
+        self.advance_exactly(events).0
+    }
+
+    /// Game minutes since day zero began, in 16.16 raw units, rounded down. Differences of this
+    /// value never drift, however the minutes are split into steps.
+    fn minutes_raw(&self) -> i128 {
+        let total = self.day as u128 * self.units_per_day as u128 + self.position as u128;
+        (total * MINUTES_PER_DAY as u128 * 65_536 / self.units_per_day as u128) as i128
+    }
+
+    /// Advance one step. Returns the elapsed game minutes as a float and as exact 16.16 fixed
+    /// point, and pushes any boundary crossed. The fixed point minutes of many steps add up to
+    /// exactly the minutes between the first and last position, so effects that run on game
+    /// minutes never drift with the step count.
+    pub fn advance_exactly(&mut self, events: &mut Vec<ClockEvent>) -> (f32, Fixed32) {
+        let minutes_before = self.minutes_raw();
         let elapsed = self.game_minutes_per_step * self.multiplier();
         let before = self.position;
         let mut after = before + self.multiplier_units;
@@ -119,6 +136,7 @@ impl Clock {
             events.push(ClockEvent::Sunrise);
         }
         self.position = after;
-        elapsed
+        let exact = (self.minutes_raw() - minutes_before).clamp(0, i32::MAX as i128);
+        (elapsed, Fixed32::from_raw(exact as i32))
     }
 }
