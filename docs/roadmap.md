@@ -16,7 +16,7 @@ items in a milestone are out of scope here.
 | M3 Grid and math | Done, two open items | `lockstep-spatial`: topologies, map, occupancy, A*, path batch, flow field, line of sight; `Fixed32`, `Vector2`, angles; benchmark; mars-rovers, crowd | Tie-breaking holds; isotropy holds for squares, not for hexagons (gap G1); baseline committed |
 | M4 Attributes | Done | `Chance` and three rolls; `lockstep-attributes`: registry from JSON, modifiers, thresholds, derived curves, effects with four stacking rules; exact game minutes; capsule needs, bleeding and prayer as data; drone-fleet | Met: stacking, crossing, frame-rate independence tests green |
 | M5 Timeline, replay, derive | Done, three deferrals (D1 to D3) | `#[derive(Message)]` and `Indexable`; recorder, replay, bisect; timeline with compaction; ledger journal; headless `record`, `replay`, `bisect`, `stats` | Met: a planted rule change is found at the right checkpoint |
-| M6 Combat and movement | In progress | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges | Pending: projectiles, movement, consumers, duel fixture hash, 200-fighter spike |
+| M6 Combat and movement | In progress | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges, projectiles | Pending: movement, consumers, duel fixture hash, 200-fighter spike |
 | M7 Inventory | Not started | | |
 | M8 Agents | Not started | | |
 | M9 Knowledge | Not started | | |
@@ -61,4 +61,5 @@ items in a milestone are out of scope here.
 | P8 | A recording may keep snapshots, so `bisect` can show what differs | Decision 0011 |
 | P9 | `Defence` carries evasion and block; `Reach` stops at the first body and `Line` pierces | Decision 0013 |
 | P10 | Combat phases count whole steps; the counter window runs only while the fighter is free | Decision 0014 |
+| P14 | Projectiles fly at an absolute altitude instead of checking `can_step`, and a dodged projectile flies on | Decision 0015 |
 | P11 | The perfect window is 0.12 seconds; its cases are 3 steps (0.100 seconds, perfect) and 4 (0.133, not), the whole steps either side of the reference's 0.11 and 0.13 second cases at 30 a second | Decision 0014 |

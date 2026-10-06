@@ -239,6 +239,24 @@ pub enum CombatEvent {
     Expired {
         who: Handle,
     },
+    /// A projectile struck a body and stopped.
+    ProjectileHit {
+        by: Handle,
+        projectile: Handle,
+        hit: Hit,
+    },
+    /// A projectile stopped without hitting a body.
+    ProjectileStopped {
+        projectile: Handle,
+        at: lockstep_spatial::Cell,
+        reason: crate::projectile::Stopped,
+    },
+    /// Something loud passed this cell: heard within `loudness` steps.
+    Sounded {
+        by: Handle,
+        at: lockstep_spatial::Cell,
+        loudness: u8,
+    },
 }
 
 impl Indexable for CombatEvent {
@@ -254,6 +272,9 @@ impl Indexable for CombatEvent {
             CombatEvent::PerfectDodge { .. } => 7,
             CombatEvent::Refused { .. } => 8,
             CombatEvent::Expired { .. } => 9,
+            CombatEvent::ProjectileHit { .. } => 10,
+            CombatEvent::ProjectileStopped { .. } => 11,
+            CombatEvent::Sounded { .. } => 12,
         }
     }
 
@@ -272,6 +293,11 @@ impl Indexable for CombatEvent {
             | CombatEvent::DodgeStarted { who }
             | CombatEvent::Refused { who, .. }
             | CombatEvent::Expired { who } => out.push(*who),
+            // A projectile's own handle comes from a separate store and could equal an entity's,
+            // so only the entities it involves are indexed.
+            CombatEvent::ProjectileHit { by, hit, .. } => out.extend([*by, hit.target]),
+            CombatEvent::ProjectileStopped { .. } => {}
+            CombatEvent::Sounded { by, .. } => out.push(*by),
         }
     }
 }
@@ -562,93 +588,17 @@ fn strike<T: Topology>(
     streams: &mut Streams,
     events: &mut Vec<CombatEvent>,
 ) {
-    let definition = &moveset.actions[action.0 as usize];
-    let piercing = definition.damage.tags.contains(Tags::GRAB)
-        || definition.damage.tags.contains(Tags::UNAVOIDABLE);
-    let mut landed = Vec::new();
-    for (cell, target) in targets {
-        let mut no_fighter = None;
-        let fighter = match fighters.get_mut(target) {
-            Some(fighter) => fighter,
-            None => no_fighter.insert(Fighter::new(
-                MovesetId(0),
-                Fixed32::ZERO,
-                Defence::default(),
-            )),
-        };
-        let theirs = movesets.get(fighter.moveset.0 as usize);
-        if fighter.invulnerable() && !piercing {
-            let window = theirs.map(|set| set.dodge.perfect_window_seconds);
-            let perfect = matches!((fighter.since_dodge, window), (Some(since), Some(window)) if within(since, rate, window));
-            if perfect {
-                let dodge = &theirs.expect("a perfect window comes from a moveset").dodge;
-                // One refund per dodge: the window closes once used.
-                fighter.since_dodge = None;
-                fighter.stamina =
-                    (fighter.stamina + dodge.stamina_cost).min(fighter.maximum_stamina);
-                fighter.counter = steps_for(dodge.counter_seconds, rate);
-                events.push(CombatEvent::PerfectDodge {
-                    who: target,
-                    by: who,
-                });
-            } else {
-                events.push(CombatEvent::Dodged {
-                    who: target,
-                    by: who,
-                });
-            }
-            continue;
-        }
-        let result = resolve(
-            &definition.damage,
-            &fighter.defence,
-            &mut fighter.evasion_memory,
-            streams,
-        );
-        if result.staggered {
-            match fighter.phase {
-                Phase::Windup {
-                    action: their_action,
-                    ..
-                } if theirs.is_some_and(|set| {
-                    set.actions[their_action.0 as usize]
-                        .interruptible_by
-                        .contains(InterruptMask::STAGGER)
-                }) =>
-                {
-                    fighter.phase = Phase::Ready;
-                    events.push(CombatEvent::Interrupted {
-                        who: target,
-                        action: their_action,
-                        by: who,
-                    });
-                }
-                Phase::DodgeStartup { .. } => {
-                    fighter.phase = Phase::Ready;
-                    fighter.since_dodge = None;
-                    events.push(CombatEvent::DodgeBroken {
-                        who: target,
-                        by: who,
-                    });
-                }
-                _ => {}
-            }
-        }
-        let knocked = (result.knockback > 0 && !result.evaded).then(|| {
-            knock_back(
-                map,
-                occupancy,
-                target,
-                direction(map, from, cell),
-                result.knockback,
+    let packet = &moveset.actions[action.0 as usize].damage;
+    let landed: Vec<Hit> = targets
+        .into_iter()
+        .filter_map(|(cell, target)| {
+            let heading = direction(map, from, cell);
+            hit_target(
+                who, target, heading, packet, fighters, movesets, map, occupancy, rate, streams,
+                events,
             )
-        });
-        landed.push(Hit {
-            target,
-            result,
-            knocked,
-        });
-    }
+        })
+        .collect();
     events.push(if landed.is_empty() {
         CombatEvent::Whiffed { who, action }
     } else {
@@ -658,4 +608,99 @@ fn strike<T: Topology>(
             hits: landed,
         }
     });
+}
+
+/// One packet against one target, from `who`: an invulnerable fighter dodges it unless it grabs or
+/// cannot be avoided (emitting `Dodged` or `PerfectDodge` and returning `None`); otherwise it
+/// resolves against the target's defence (a default one for a body with no `Fighter`), a stagger
+/// interrupts a wind-up whose mask allows it or breaks a dodge in startup, and a knockback pushes
+/// the target along `heading`.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn hit_target<T: Topology>(
+    who: Handle,
+    target: Handle,
+    heading: Turn,
+    packet: &DamagePacket,
+    fighters: &mut Column<Fighter>,
+    movesets: &[Moveset],
+    map: &GridMap<T>,
+    occupancy: &mut Occupancy,
+    rate: u32,
+    streams: &mut Streams,
+    events: &mut Vec<CombatEvent>,
+) -> Option<Hit> {
+    let piercing = packet.tags.contains(Tags::GRAB) || packet.tags.contains(Tags::UNAVOIDABLE);
+    let mut no_fighter = None;
+    let fighter = match fighters.get_mut(target) {
+        Some(fighter) => fighter,
+        None => no_fighter.insert(Fighter::new(
+            MovesetId(0),
+            Fixed32::ZERO,
+            Defence::default(),
+        )),
+    };
+    let theirs = movesets.get(fighter.moveset.0 as usize);
+    if fighter.invulnerable() && !piercing {
+        let window = theirs.map(|set| set.dodge.perfect_window_seconds);
+        let perfect = matches!((fighter.since_dodge, window), (Some(since), Some(window)) if within(since, rate, window));
+        if perfect {
+            let dodge = &theirs.expect("a perfect window comes from a moveset").dodge;
+            // One refund per dodge: the window closes once used.
+            fighter.since_dodge = None;
+            fighter.stamina = (fighter.stamina + dodge.stamina_cost).min(fighter.maximum_stamina);
+            fighter.counter = steps_for(dodge.counter_seconds, rate);
+            events.push(CombatEvent::PerfectDodge {
+                who: target,
+                by: who,
+            });
+        } else {
+            events.push(CombatEvent::Dodged {
+                who: target,
+                by: who,
+            });
+        }
+        return None;
+    }
+    let result = resolve(
+        packet,
+        &fighter.defence,
+        &mut fighter.evasion_memory,
+        streams,
+    );
+    if result.staggered {
+        match fighter.phase {
+            Phase::Windup {
+                action: their_action,
+                ..
+            } if theirs.is_some_and(|set| {
+                set.actions[their_action.0 as usize]
+                    .interruptible_by
+                    .contains(InterruptMask::STAGGER)
+            }) =>
+            {
+                fighter.phase = Phase::Ready;
+                events.push(CombatEvent::Interrupted {
+                    who: target,
+                    action: their_action,
+                    by: who,
+                });
+            }
+            Phase::DodgeStartup { .. } => {
+                fighter.phase = Phase::Ready;
+                fighter.since_dodge = None;
+                events.push(CombatEvent::DodgeBroken {
+                    who: target,
+                    by: who,
+                });
+            }
+            _ => {}
+        }
+    }
+    let knocked = (result.knockback > 0 && !result.evaded)
+        .then(|| knock_back(map, occupancy, target, heading, result.knockback));
+    Some(Hit {
+        target,
+        result,
+        knocked,
+    })
 }
