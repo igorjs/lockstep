@@ -273,6 +273,127 @@ fn toward_works_over_distances_longer_than_fixed_point_can_hold_as_a_length() {
     assert!(next.length() <= fixed(100) && next.length() >= fixed(99));
 }
 
+/// The exact distance between two points in raw units, computed here in 64-bit floats so the test does
+/// not share the code under test.
+fn true_distance(a: Vector2, b: Vector2) -> f64 {
+    let dx = a.x.raw() as f64 - b.x.raw() as f64;
+    let dy = a.y.raw() as f64 - b.y.raw() as f64;
+    (dx * dx + dy * dy).sqrt()
+}
+
+#[test]
+fn a_walk_across_the_whole_range_heads_straight_for_the_target() {
+    // Twenty thousand units either side of zero: the difference of the two is 40,000, which does not
+    // fit in 16.16 and would wrap to the wrong side if it were subtracted in fixed point.
+    let start = Vector2::new(fixed(-20_000), fixed(0));
+    let target = Vector2::new(fixed(20_000), fixed(0));
+    let step = fixed(500);
+    let mut position = start;
+    let mut previous = true_distance(position, target);
+    for count in 1..=80 {
+        let (next, arrived) = position.toward(target, step);
+        assert!(
+            next.x > position.x,
+            "step {count} moved the wrong way: {position:?} to {next:?}"
+        );
+        assert_eq!(next.y, Fixed32::ZERO);
+        let now = true_distance(next, target);
+        assert!(
+            now < previous,
+            "step {count}: the true distance did not shrink"
+        );
+        assert!(
+            previous - now <= step.raw() as f64 + 1.0,
+            "step {count} moved farther than the step"
+        );
+        previous = now;
+        position = next;
+        if arrived {
+            assert_eq!(
+                (count, position),
+                (80, target),
+                "40,000 units at 500 a step is 80 steps"
+            );
+            return;
+        }
+    }
+    panic!("never arrived");
+}
+
+#[test]
+fn a_diagonal_walk_across_the_whole_range_arrives_and_never_gets_farther() {
+    let start = Vector2::new(fixed(-30_000), fixed(25_000));
+    let target = Vector2::new(fixed(30_000), fixed(-25_000));
+    let mut position = start;
+    let mut previous = true_distance(position, target);
+    for _ in 0..2_000 {
+        let (next, arrived) = position.toward(target, fixed(100));
+        let now = true_distance(next, target);
+        assert!(now <= previous, "the true distance grew");
+        (position, previous) = (next, now);
+        if arrived {
+            assert_eq!(position, target);
+            return;
+        }
+    }
+    panic!("never arrived");
+}
+
+#[test]
+fn distance_is_exact_across_the_whole_range_and_saturates_when_it_cannot_fit() {
+    let left = Vector2::new(fixed(-20_000), fixed(0));
+    let right = Vector2::new(fixed(20_000), fixed(0));
+    assert_eq!(
+        left.distance(right),
+        Fixed32::from_raw(i32::MAX),
+        "40,000 units does not fit, so it saturates"
+    );
+    let near = Vector2::new(fixed(-10_000), fixed(0));
+    assert_eq!(
+        near.distance(Vector2::new(fixed(10_000), fixed(0))),
+        fixed(20_000)
+    );
+    assert_eq!(left.distance(left), Fixed32::ZERO);
+}
+
+#[test]
+fn round_does_not_wrap_at_the_top_of_the_range() {
+    assert_eq!(Fixed32::from_raw(i32::MAX).round(), 32_768);
+    assert_eq!(
+        Fixed32::from_raw(i32::MAX - 32_768).round(),
+        32_767,
+        "just under the tie"
+    );
+    assert_eq!(
+        Fixed32::from_raw(i32::MAX - 32_767).round(),
+        32_768,
+        "exactly the tie rounds up"
+    );
+    assert_eq!(Fixed32::from_raw(i32::MIN).round(), -32_768);
+    assert_eq!(
+        Fixed32::from_raw(3 * 65_536 + 32_768).round(),
+        4,
+        "ties round up"
+    );
+    assert_eq!(
+        Fixed32::from_raw(-3 * 65_536 - 32_768).round(),
+        -3,
+        "ties round up, so minus three and a half is minus three"
+    );
+}
+
+#[test]
+fn division_and_ratios_that_do_not_fit_wrap_and_do_not_panic() {
+    assert_eq!(
+        fixed(1_000) / Fixed32::from_raw(1),
+        Fixed32::from_raw((1_000i64 << 32) as i32)
+    );
+    assert_eq!(
+        Fixed32::from_ratio(40_000, 1),
+        Fixed32::from_raw((40_000i64 << 16) as i32)
+    );
+}
+
 #[test]
 fn a_negative_or_zero_step_never_moves_and_never_panics() {
     let target = Vector2::new(fixed(3), fixed(4));

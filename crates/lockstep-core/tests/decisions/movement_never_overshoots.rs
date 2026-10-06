@@ -17,8 +17,8 @@ fn every_walk_arrives_and_never_moves_farther_than_its_step_or_away_from_the_tar
     for round in 0..2_000 {
         let mut point = || {
             Vector2::new(
-                Fixed32::from_raw(streams.range("walk", -300_000, 300_000)),
-                Fixed32::from_raw(streams.range("walk", -300_000, 300_000)),
+                Fixed32::from_raw(streams.range("walk", -2_000_000_000, 2_000_000_000)),
+                Fixed32::from_raw(streams.range("walk", -2_000_000_000, 2_000_000_000)),
             )
         };
         let (start, target) = (point(), point());
@@ -33,7 +33,7 @@ fn every_walk_arrives_and_never_moves_farther_than_its_step_or_away_from_the_tar
             (
                 start,
                 target,
-                Fixed32::from_raw(streams.range("walk", 20_000, 90_000)),
+                Fixed32::from_raw(streams.range("walk", 20_000_000, 200_000_000)),
             )
         };
         let (mut position, mut distance, mut arrived) = (start, start.distance(target), false);

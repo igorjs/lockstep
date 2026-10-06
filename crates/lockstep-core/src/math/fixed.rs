@@ -3,9 +3,10 @@ use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 /// Signed 16.16 fixed point: range about plus or minus 32,767, precision 1/65,536.
 ///
-/// Addition, subtraction and multiplication wrap on overflow, which is deterministic. Debug
-/// builds enable overflow checks on the arithmetic in the rest of the project, but not here:
-/// every operation on this type is explicitly wrapping, so debug and release always agree.
+/// Addition, subtraction, multiplication, division and `from_ratio` wrap on overflow: a result too
+/// large for the type keeps its low 32 bits, which is deterministic. Debug builds enable overflow
+/// checks on the arithmetic in the rest of the project, but not here: every operation on this type is
+/// explicitly wrapping, so debug and release always agree.
 /// Dividing by zero panics.
 #[derive(
     Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug, Serialize, Deserialize,
@@ -44,8 +45,11 @@ impl Fixed32 {
         self.0 >> 16
     }
 
+    /// Rounds to the nearest whole number, with ties rounding up (3.5 gives 4, -3.5 gives -3). It
+    /// is computed in 64 bits, so the values just under the top of the range round up to 32,768
+    /// instead of wrapping to -32,768.
     pub const fn round(self) -> i32 {
-        self.0.wrapping_add(1 << 15) >> 16
+        ((self.0 as i64 + (1 << 15)) >> 16) as i32
     }
 
     pub const fn abs(self) -> Self {

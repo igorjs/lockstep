@@ -46,7 +46,7 @@ pub fn unit(turn: Turn) -> Vector2 {
 }
 
 /// The angle of the point (x, y) as a whole-turn angle, 0 east, counter-clockwise. The origin
-/// gives 0. Octant fold plus a 1,024-entry table with interpolation: the error is under one turn
+/// gives 0. Octant fold plus a 1,025-entry table with interpolation: the error is within one turn
 /// unit, well inside 0.01 degrees.
 pub fn atan2(y: Fixed32, x: Fixed32) -> Turn {
     let (x_raw, y_raw) = (x.raw() as i64, y.raw() as i64);
