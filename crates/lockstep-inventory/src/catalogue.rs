@@ -115,6 +115,11 @@ impl Catalogue {
         &self.kinds[id.0 as usize]
     }
 
+    /// How many kinds there are: every `KindId` below this is valid.
+    pub fn kind_count(&self) -> usize {
+        self.kinds.len()
+    }
+
     pub fn kind_id(&self, name: &str) -> Option<KindId> {
         position(self.kinds.iter().map(|kind| kind.name.as_str()), name).map(KindId)
     }

@@ -14,6 +14,7 @@ capsule = { path = "../../examples/capsule" }
 crowd = { path = "../../examples/crowd" }
 drone-fleet = { path = "../../examples/drone-fleet" }
 sparring = { path = "../../examples/sparring" }
+cargo-bay = { path = "../../examples/cargo-bay" }
 ledger = { path = "../../examples/ledger" }
 mars-rovers = { path = "../../examples/mars-rovers" }
 

@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "cargo-bay"
+description = "Non-game consumer scenario for lockstep-inventory: a cargo bay with stores, a crew, suits and food that spoils"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-attributes = { path = "../../crates/lockstep-attributes" }
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-inventory = { path = "../../crates/lockstep-inventory" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

@@ -17,7 +17,7 @@ items in a milestone are out of scope here.
 | M4 Attributes | Done | `Chance` and three rolls; `lockstep-attributes`: registry from JSON, modifiers, thresholds, derived curves, effects with four stacking rules; exact game minutes; capsule needs, bleeding and prayer as data; drone-fleet | Met: stacking, crossing, frame-rate independence tests green |
 | M5 Timeline, replay, derive | Done, three deferrals (D1 to D3) | `#[derive(Message)]` and `Indexable`; recorder, replay, bisect; timeline with compaction; ledger journal; headless `record`, `replay`, `bisect`, `stats` | Met: a planted rule change is found at the right checkpoint |
 | M6 Combat and movement | Done | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges, projectiles, movement; sparring; rovers ram | Met: the duel fixture hash is equal natively and under WebAssembly; 200 partners spar for 10,000 steps without sharing a cell or going below zero health |
-| M7 Inventory | In progress | `lockstep-inventory`: catalogue from JSON, items as entities, containers, stacking, equipment with modifiers, binding affixes, spoilage by temperature | Pending: the cargo-bay consumer and its fixture hash |
+| M7 Inventory | Done | `lockstep-inventory`: catalogue from JSON, items as entities, containers, stacking, equipment with modifiers, binding affixes, spoilage by temperature; cargo-bay | Met: the same game minutes spoil on the same minute at 30 and 60 steps a second, natively and under WebAssembly |
 | M8 Agents | Not started | | |
 | M9 Knowledge | Not started | | |
 | M10 Progression | Not started | | |
@@ -64,3 +64,4 @@ items in a milestone are out of scope here.
 | P14 | Projectiles fly at an absolute altitude instead of checking `can_step`, and a dodged projectile flies on | Decision 0015 |
 | P11 | The perfect window is 0.12 seconds; its cases are 3 steps (0.100 seconds, perfect) and 4 (0.133, not), the whole steps either side of the reference's 0.11 and 0.13 second cases at 30 a second | Decision 0014 |
 | P15 | The reference's survivor-against-an-opponent consumer is the `sparring` example, two neutral partners, so the survivor example stays free of combat | `docs/sparring.md` |
+| P16 | The reference's inventory consumers (a can of food and a knife for the survivor, and a Mars cargo bay) are one non-game `cargo-bay` example | `docs/cargo-bay.md` |
