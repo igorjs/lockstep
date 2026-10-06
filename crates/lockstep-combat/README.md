@@ -9,6 +9,8 @@ integers.
   knockback).
 - `hits`: the bodies a shape hits (adjacent, reach, line, arc, around, one cell), on any topology.
 - `knock_back`: pushes a body through occupancy until a wall, the edge or another body.
+- `step_combat`: actions with wind-up, active and recovery windows, buffered orders, and dodges
+  with invulnerability, perfect timing and counters, for every `Fighter` in a step.
 
 ```rust
 use lockstep_combat::{resolve, DamageKind, DamagePacket, Defence, Tags};
