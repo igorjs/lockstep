@@ -481,6 +481,7 @@ fn a_restored_world_rebuilds_who_stands_where() {
             let mut context = lockstep_core::Context {
                 clock: &clock,
                 elapsed_game_minutes: 0.0,
+                elapsed_minutes: lockstep_core::math::Fixed32::ZERO,
                 randomness: &mut randomness,
                 events,
                 step_number: 0,
