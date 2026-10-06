@@ -34,7 +34,8 @@ fn a_timeline_changes_no_hash_and_rebuilds_from_inputs_alone() {
     }
     assert_eq!(with_timeline.runner().hash(), without.runner().hash());
     assert_eq!(with_timeline.recording(), without.recording());
-    let rebuilt = Timeline::rebuild_from::<Honest>(without.recording()).unwrap();
+    let (rebuilt, outcome) = Timeline::rebuild_from::<Honest>(without.recording()).unwrap();
+    assert_eq!(outcome, lockstep_core::ReplayOutcome::Identical);
     assert_eq!(rebuilt, timeline);
     assert!(timeline
         .entries()

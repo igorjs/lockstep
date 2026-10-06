@@ -79,11 +79,12 @@ See decision 0011. Saving mid-session arrives with saves and migrations.
 ## Timeline
 
 `Timeline<E>` is an append-only log of events for journals, achievements and inspectors. It is a
-projection: rebuilt from any recording with `Timeline::rebuild_from::<S>(&recording)`, and never
-part of the state hash. Each `Entry` has the step, the day, the whole minute of the day (an integer
+projection: rebuilt from any recording with `Timeline::rebuild_from::<S>(&recording)`, which also
+returns how the replay went (a `Diverged` rebuild stops at the first differing checkpoint), and
+never part of the state hash. Each `Entry` has the step, the day, the whole minute of the day (an integer
 from the clock's position, the same on every platform), a sequence number, and the event.
 
-- `append(step, clock, events)` adds one step's events, in order.
+- `append(step, clock, events)` adds one step's events; steps must not go backwards.
 - `for_entity(handle)` and `of_kind(kind)` use indexes built from `Indexable`, which
   `#[derive(Message)]` writes.
 - `between(from_step, to_step)` is a slice; `last(predicate)` finds the most recent match.

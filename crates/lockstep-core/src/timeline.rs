@@ -5,7 +5,7 @@
 
 use crate::clock::Clock;
 use crate::message::{Indexable, Message};
-use crate::replay::{replay_with, Recording, ReplayError};
+use crate::replay::{replay_with, Recording, ReplayError, ReplayOutcome};
 use crate::simulation::Simulation;
 use crate::store::Handle;
 use serde::{Deserialize, Serialize};
@@ -49,7 +49,8 @@ impl<E: Message + Indexable> Timeline<E> {
 
     /// Adds one step's events, in order. Call it once per step, with steps in order.
     pub fn append(&mut self, step: u64, clock: &Clock, events: &[E]) {
-        debug_assert!(
+        // `between` searches by step, so the order is checked in every build.
+        assert!(
             self.entries.last().is_none_or(|last| last.step <= step),
             "steps are appended in order"
         );
@@ -62,7 +63,12 @@ impl<E: Message + Indexable> Timeline<E> {
                 event: event.clone(),
             };
             self.next_sequence = self.next_sequence.wrapping_add(1);
-            self.index(&entry, self.entries.len() as u32);
+            index(
+                &mut self.by_entity,
+                &mut self.by_kind,
+                &entry.event,
+                self.entries.len() as u32,
+            );
             self.entries.push(entry);
         }
     }
@@ -106,46 +112,49 @@ impl<E: Message + Indexable> Timeline<E> {
 
     /// Rolls the detail before `before_step` into what `summariser` returns for it, for example
     /// one entry per account per day. The summary goes first, in the order returned, and keeps
-    /// the sequence numbers the summariser gives it.
+    /// the sequence numbers the summariser gives it. Panics if the summary is not in step order or
+    /// reaches past the first entry kept, because `between` searches by step.
     pub fn compact(&mut self, before_step: u64, summariser: impl Fn(&[Entry<E>]) -> Vec<Entry<E>>) {
         let cut = self
             .entries
             .partition_point(|entry| entry.step < before_step);
         let summary = summariser(&self.entries[..cut]);
         let rest = self.entries.split_off(cut);
+        assert!(
+            summary.windows(2).all(|pair| pair[0].step <= pair[1].step),
+            "a summary is in step order"
+        );
+        if let (Some(last), Some(first_kept)) = (summary.last(), rest.first()) {
+            assert!(
+                last.step <= first_kept.step,
+                "a summary does not reach past the entries it keeps"
+            );
+        }
         self.entries = summary;
         self.entries.extend(rest);
         self.by_entity.clear();
         self.by_kind.clear();
-        for position in 0..self.entries.len() {
-            let entry = self.entries[position].clone();
-            self.index(&entry, position as u32);
+        for (position, entry) in self.entries.iter().enumerate() {
+            index(
+                &mut self.by_entity,
+                &mut self.by_kind,
+                &entry.event,
+                position as u32,
+            );
         }
     }
 
-    /// The timeline of a recorded session, built by replaying it.
+    /// The timeline of a recorded session, built by replaying it, with how the replay went. A
+    /// `Diverged` outcome means this build no longer plays the session the same way, and the
+    /// timeline stops at the first checkpoint that differs.
     pub fn rebuild_from<S: Simulation<Event = E>>(
         recording: &Recording<S::Intent>,
-    ) -> Result<Self, ReplayError> {
+    ) -> Result<(Self, ReplayOutcome), ReplayError> {
         let mut timeline = Timeline::new();
-        replay_with::<S>(recording, &mut |runner, events| {
+        let (_, outcome) = replay_with::<S>(recording, &mut |runner, events| {
             timeline.append(runner.step_number() - 1, runner.clock(), events);
         })?;
-        Ok(timeline)
-    }
-
-    fn index(&mut self, entry: &Entry<E>, position: u32) {
-        let mut handles = Vec::new();
-        entry.event.handles(&mut handles);
-        handles.sort_unstable();
-        handles.dedup();
-        for handle in handles {
-            self.by_entity.entry(handle).or_default().push(position);
-        }
-        self.by_kind
-            .entry(entry.event.kind())
-            .or_default()
-            .push(position);
+        Ok((timeline, outcome))
     }
 
     fn positions<'a>(
@@ -157,4 +166,21 @@ impl<E: Message + Indexable> Timeline<E> {
             .flatten()
             .map(|position| &self.entries[*position as usize])
     }
+}
+
+/// Records an event's position under every entity it mentions (once each) and under its kind.
+fn index<E: Indexable>(
+    by_entity: &mut BTreeMap<Handle, Vec<u32>>,
+    by_kind: &mut BTreeMap<u16, Vec<u32>>,
+    event: &E,
+    position: u32,
+) {
+    let mut handles = Vec::new();
+    event.handles(&mut handles);
+    handles.sort_unstable();
+    handles.dedup();
+    for handle in handles {
+        by_entity.entry(handle).or_default().push(position);
+    }
+    by_kind.entry(event.kind()).or_default().push(position);
 }

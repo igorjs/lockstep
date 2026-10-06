@@ -172,6 +172,53 @@ fn a_timeline_rebuilt_from_a_recording_equals_the_live_one() {
         live.len() > 20,
         "the bonus roll fires about 3 percent of the time"
     );
-    let rebuilt = Timeline::rebuild_from::<Honest>(recorder.recording()).unwrap();
+    let (rebuilt, outcome) = Timeline::rebuild_from::<Honest>(recorder.recording()).unwrap();
+    assert_eq!(outcome, lockstep_core::ReplayOutcome::Identical);
     assert_eq!(rebuilt, live);
+}
+
+#[test]
+#[should_panic(expected = "steps are appended in order")]
+#[cfg(not(target_arch = "wasm32"))]
+fn steps_out_of_order_are_refused() {
+    let (mut timeline, [a, _, _]) = sample();
+    timeline.append(3, &clock(), &[Happened::Opened { account: a }]);
+}
+
+#[test]
+#[should_panic(expected = "a summary does not reach past the entries it keeps")]
+#[cfg(not(target_arch = "wasm32"))]
+fn a_summary_stamped_after_the_kept_entries_is_refused() {
+    let (mut timeline, [a, _, _]) = sample();
+    timeline.compact(20, |_| {
+        vec![Entry {
+            step: 25,
+            day: 0,
+            minute_of_day: 0,
+            sequence: 0,
+            event: Happened::Opened { account: a },
+        }]
+    });
+}
+
+#[test]
+fn a_rebuild_from_a_build_that_diverges_says_so() {
+    use crate::common::tally::Tally;
+    let mut recorder = Recorder::<Honest>::new(
+        "tally",
+        Start { total: 0 },
+        12,
+        step_configuration(),
+        clock_configuration(),
+        100,
+    );
+    for step in 0..1_000 {
+        recorder.step_once(&[Add(step)]);
+    }
+    let (timeline, outcome) = Timeline::rebuild_from::<Tally<500>>(recorder.recording()).unwrap();
+    assert!(matches!(
+        outcome,
+        lockstep_core::ReplayOutcome::Diverged { at_step: 600, .. }
+    ));
+    assert!(timeline.entries().iter().all(|entry| entry.step < 600));
 }

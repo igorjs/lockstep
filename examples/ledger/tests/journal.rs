@@ -35,7 +35,8 @@ fn the_journal_of_a_replay_matches_the_live_session_line_for_line() {
         let advanced = runner.step_once(&step.intents);
         live.append(runner.step_number() - 1, runner.clock(), &advanced.events);
     }
-    let rebuilt = Timeline::rebuild_from::<Ledger>(&recording).unwrap();
+    let (rebuilt, outcome) = Timeline::rebuild_from::<Ledger>(&recording).unwrap();
+    assert_eq!(outcome, ReplayOutcome::Identical);
     assert_eq!(rebuilt, live);
     let books = runner.simulation().books();
     let lines = journal(&rebuilt, books);
@@ -48,8 +49,11 @@ fn the_journal_of_a_replay_matches_the_live_session_line_for_line() {
     assert!(lines
         .iter()
         .any(|line| line.contains("rejected: InsufficientFunds")));
-    // A ledger day is 1,440 real minutes, so 2,000 steps stay within the first minute.
-    assert!(lines.iter().all(|line| line.starts_with("day 0 00:0")));
+    // A ledger game minute is a real minute, 1,800 steps, and an entry's time is read when its
+    // step ends: the 1,800th step (step 1,799) is the first at 00:01.
+    assert!(lines[1_798].starts_with("day 0 00:00"), "{}", lines[1_798]);
+    assert!(lines[1_799].starts_with("day 0 00:01"), "{}", lines[1_799]);
+    assert!(lines.last().unwrap().starts_with("day 0 00:01"));
 }
 
 #[test]
@@ -57,7 +61,7 @@ fn the_timeline_counts_agree_with_the_books() {
     let recording = record_fixture(DEFAULT_SEED, STEPS, 250);
     let (runner, _) = replay::<Ledger>(&recording).unwrap();
     let books = runner.simulation().books();
-    let timeline = Timeline::rebuild_from::<Ledger>(&recording).unwrap();
+    let (timeline, _) = Timeline::rebuild_from::<Ledger>(&recording).unwrap();
     let kind = |event: Event| event.kind();
     let rejected = timeline
         .of_kind(kind(Event::Rejected {
