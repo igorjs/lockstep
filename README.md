@@ -58,7 +58,7 @@ with Node.
 
 ```sh
 just test          # every test, including the hex and parallel features
-just check         # format, clippy, and the determinism lint
+just check         # format, clippy, the determinism lint, and the SPDX check
 just determinism   # verify every fixture hash, then run the tests under WebAssembly
 just ci            # all of the above
 just bench         # the spatial benchmark against benches/baseline.txt
@@ -69,7 +69,7 @@ Continuous integration runs `just ci` on Linux for pull requests and on Linux, m
 
 ## Documentation
 
-Each crate and example has a page in [`docs`](docs), and every design decision has a record in
+Each crate and example has a page in [`docs`](docs), and every behavioural decision has a record in
 [`docs/decisions`](docs/decisions) and a test in `tests/decisions` that fails if the decision stops
 holding.
 

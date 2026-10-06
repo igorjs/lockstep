@@ -12,7 +12,7 @@ lockstep-headless verify  <name> --expect <file> [--seed <number>] [--steps <num
 ```
 
 - `fixture` prints the hash as sixteen lowercase hexadecimal digits.
-- `verify` compares it with the first line of a committed file, prints `ok <name> <hash>` on a
+- `verify` compares it with a committed file (surrounding whitespace ignored), prints `ok <name> <hash>` on a
   match, and exits with status 1 on a mismatch.
 
 Fixtures: `capsule`, `ledger`, `mars-rovers` and `crowd`. With the `parallel` feature, the crowd
