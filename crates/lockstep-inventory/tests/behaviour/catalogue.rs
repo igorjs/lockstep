@@ -70,6 +70,10 @@ fn a_bad_catalogue_is_refused_with_its_reason() {
             CatalogueError::NegativeWeight("a".into()),
         ),
         (
+            format!(r#"{{ {band}, "kinds": [ {{ "name": "a", "weight": 1, "modifiers": [ {{ "attribute": "oxygen", "modifier": {{ "add": 1 }} }} ] }} ] }}"#),
+            CatalogueError::ModifiersWithoutSlot("a".into()),
+        ),
+        (
             r#"{ "spoilage": [ { "below": 5, "percent": 25 } ], "kinds": [] }"#.to_string(),
             CatalogueError::Bands,
         ),

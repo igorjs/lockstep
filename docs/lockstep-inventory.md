@@ -40,7 +40,8 @@ fractions, as in the attribute registry.
 - Spoilage bands: the first band whose `below` is above the temperature sets the percent; the last
   band has no `below`. Temperatures are whole degrees.
 - Refused with a reason: repeated names, an unknown slot or attribute, a stack of zero, a negative
-  weight, and bands that do not rise or do not end with an open band.
+  weight, modifiers on a kind with no slot (they would never apply), and bands that do not rise
+  or do not end with an open band.
 
 ## Tests
 

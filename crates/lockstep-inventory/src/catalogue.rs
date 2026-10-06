@@ -88,6 +88,8 @@ pub enum CatalogueError {
     /// A stack of zero units.
     EmptyStack(String),
     NegativeWeight(String),
+    /// Modifiers on a kind that cannot be worn would never apply.
+    ModifiersWithoutSlot(String),
     /// The bands must rise strictly by `below`, and only the last has no `below`.
     Bands,
 }
@@ -169,6 +171,9 @@ impl Catalogue {
             }
             if kind.weight < Fixed32::ZERO {
                 return Err(CatalogueError::NegativeWeight(kind.name.clone()));
+            }
+            if kind.slot.is_none() && !kind.modifiers.is_empty() {
+                return Err(CatalogueError::ModifiersWithoutSlot(kind.name.clone()));
             }
         }
         let open_ended = self
