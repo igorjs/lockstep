@@ -19,7 +19,7 @@ Games are the first use, but the same machine runs a ledger, a fleet of rovers, 
 | [`lockstep-core`](crates/lockstep-core) | The `Simulation` trait, the `Runner`, the game clock, entity storage, named random streams, chance rolls, hashing, and integer math. |
 | [`lockstep-spatial`](crates/lockstep-spatial) | Grids: topologies, maps with elevation, occupancy, A* paths, path batches on a thread pool, flow fields, line of sight. |
 | [`lockstep-combat`](crates/lockstep-combat) | Real-time combat in integers: damage in a fixed order, hit shapes on any topology, knockback, actions and dodges with commitment, projectiles, and movement with stamina and noise. |
-| [`lockstep-inventory`](crates/lockstep-inventory) | Items, containers, equipment, affixes and spoilage. So far the catalogue: kinds, slots, affixes and spoilage bands from JSON, checked against the attribute registry. |
+| [`lockstep-inventory`](crates/lockstep-inventory) | Items as entities, containers with slots and weight, stacking, equipment whose modifiers reach the wearer's attributes, binding affixes, and spoilage by temperature that ignores the step rate. |
 | [`lockstep-attributes`](crates/lockstep-attributes) | Stats as data: a registry read from JSON, modifiers, thresholds that fire once per crossing, derived values from curves, and timed effects with stacking rules. |
 | [`lockstep-macros`](crates/lockstep-macros) | `#[derive(Message)]`, re-exported by `lockstep-core`. |
 | [`lockstep-headless`](crates/lockstep-headless) | A command line runner that prints and verifies fixture hashes. |
