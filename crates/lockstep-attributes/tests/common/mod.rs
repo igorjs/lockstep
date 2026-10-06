@@ -59,3 +59,21 @@ pub fn crossings(events: &[AttributeEvent]) -> Vec<(String, bool)> {
         })
         .collect()
 }
+
+/// One entity's attributes in a column, ready for effects.
+pub fn column_with(registry: &Registry, who: Handle) -> lockstep_core::Column<Attributes> {
+    let mut column = lockstep_core::Column::new();
+    column.set(who, Attributes::from_registry(registry));
+    column
+}
+
+pub fn bleeding(registry: &Registry, minutes: Option<i32>) -> lockstep_attributes::Effect {
+    lockstep_attributes::Effect {
+        attribute: id(registry, "health"),
+        modifier: None,
+        per_minute: Some(whole(-2)),
+        remaining_minutes: minutes.map(whole),
+        tag: lockstep_attributes::EffectTag::new("bleeding"),
+        stacking: lockstep_attributes::Stacking::Independent,
+    }
+}

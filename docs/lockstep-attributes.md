@@ -81,13 +81,53 @@ new maximum always clamps a derived value, whatever its policy, because the curv
 A derived attribute that reads one declared after it sees that one's value from before the change
 and catches up on the next change (`tests/spikes`). Declare inputs first.
 
+## Effects
+
+An `Effect` is something an entity has for a while: bleeding, a blessing, a fever, a prayer. It
+names one attribute and may hold a `Modifier` on it while active, drain or restore it `per_minute`,
+and last `remaining_minutes` (or until removed). `Effects` holds every active effect of every
+entity, in the order they were applied.
+
+- `add(who, effect, context)` applies it, following its `Stacking` rule, and emits `Applied`.
+- `tick(elapsed_minutes, day, context)` advances every effect by game minutes, in the order they
+  were applied: drains change their attribute and finished effects emit `Expired`.
+- `remove(handle, context)` and `remove_by_tag(who, tag, context)` emit `Removed`; a bandage removes
+  every Bleeding. `remove_entity(who)` forgets a dead entity without events.
+- `on(who)` lists an entity's effects with the minutes each has left; `has(who, tag)` asks for one.
+
+`EffectContext` carries the `Column<Attributes>`, the registry and both event lists, so every call
+takes one argument for them.
+
+| Stacking | A second application with the same tag |
+|---|---|
+| `Independent` | is its own effect: two bleeds drain twice |
+| `RefreshDuration` | restarts the first one's timer; the modifier still applies once |
+| `Replace` | removes the first one, then applies |
+| `DailyBudget { cap_per_day }` | is its own effect, but the tag's total change on the entity is capped per game day |
+
+A drain depends only on the total minutes an effect has run: each tick applies the change in the
+running total `per_minute × minutes`. For an effect on its own, one minute in one tick and in 1,800
+ticks give the same values and the same events. Effects that meet at a clamp or share a budget are
+settled tick by tick, so for them the tick size can matter. A budget's day is the `day` passed to
+`tick`. It is spent by what lands after the attribute clamps, and a change past the cap is lost,
+not owed.
+
+A refresh restarts the timer with the new duration but keeps the attribute, modifier and rate; use
+`Replace` for a stronger version. Give an entity its attributes before its effects: an effect added
+earlier never gets its modifier.
+
+Needs decay is a set of effects with `per_minute` drains and no system code.
+
 ## Tests
 
-- `tests/behaviour`: registry reading and refusals, changes and events, modifier handles, curves, and
-  a saved set of attributes continuing exactly like the original.
+- `tests/behaviour`: registry reading and refusals, changes and events, modifier handles, curves,
+  every stacking rule, expiry, removal, and saved attributes and effects continuing exactly like the
+  originals.
 - `tests/decisions`: Add then Multiply then Override, scale versus clamp, thresholds once per crossing,
-  derived values following their inputs, and the ratchet. See decision 0008.
+  derived values following their inputs, and the ratchet (decision 0008); effects ticking by game
+  minutes, refresh not stacking, the daily budget, and determinism (decision 0009).
+- `fixtures/effects.hash`: twelve attributes, five effects and 1,000 ticks, asserted natively and
+  under WebAssembly.
 - `tests/spikes`: the one-change lag of a derived input declared later.
 - Every test also runs under WebAssembly in Node.
 
-Effects (timed modifiers and drains) and their stacking arrive in the next part of milestone M4.

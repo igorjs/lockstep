@@ -14,7 +14,9 @@ health, sanity, hunger, a rover's battery, a credit limit.
 - `Curve`: how a derived attribute turns its inputs into a value (linear, piecewise, threshold,
   product, sum, difference), saturating instead of wrapping.
 
-Timed effects with stacking rules are in progress in milestone M4.
+- `Effects`: timed effects that hold a modifier or drain per game minute, with four stacking rules
+  (independent, refresh, replace, and a daily budget). For an effect on its own, one minute in one
+  tick or in 1,800 ticks gives the same result.
 
 ## Example
 
