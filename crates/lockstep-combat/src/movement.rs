@@ -73,8 +73,10 @@ pub struct Mover {
     /// Progress toward the next cell, in sixty-five-thousand-five-hundred-thirty-sixths of a cell
     /// times the step rate, so whole steps add exactly.
     progress: u64,
-    /// Steps spent blocked by a body.
+    /// Steps spent blocked by a body since the last step taken.
     blocked: u32,
+    /// Once blocked long enough, paths treat other bodies as walls until it arrives or stops.
+    avoid_bodies: bool,
     /// Ran out of stamina: walks until it recovers.
     pub exhausted: bool,
 }
@@ -88,6 +90,7 @@ impl Default for Mover {
             path: Vec::new(),
             progress: 0,
             blocked: 0,
+            avoid_bodies: false,
             exhausted: false,
         }
     }
@@ -116,6 +119,11 @@ pub enum MovementEvent {
         noise_metres: Fixed32,
     },
     Arrived {
+        who: Handle,
+        at: Cell,
+    },
+    /// Stopped beside a target another body holds.
+    Halted {
         who: Handle,
         at: Cell,
     },
@@ -151,9 +159,11 @@ pub struct MovementWorld<'a, T: Topology> {
     pub walking_noise: &'a dyn Fn(Cell) -> Fixed32,
 }
 
-/// Runs one step of movement: orders first, then each mover in handle order spends or restores
-/// stamina (from its `Fighter`, when it has one) and moves as far as its speed allows, sliding
-/// around a body in the way or finding a new path once blocked long enough.
+/// Runs one step of movement: orders first, then each mover in handle order moves as far as its
+/// speed allows (sliding around a body in the way, or finding a new path around bodies once blocked
+/// long enough), then spends or restores stamina (from its `Fighter`, when it has one): running
+/// while advancing spends it, and anything else, including waiting behind a body, restores it.
+/// Movement moves single-cell bodies.
 pub fn step_movement<T: Topology>(
     movers: &mut Column<Mover>,
     fighters: &mut Column<Fighter>,
@@ -167,21 +177,18 @@ pub fn step_movement<T: Topology>(
             continue;
         };
         match order {
-            MoveOrder::Stop => {
-                mover.target = None;
-                mover.path.clear();
-                mover.progress = 0;
-            }
+            MoveOrder::Stop => stop(mover),
             MoveOrder::MoveTo { target, gait } => {
                 mover.gait = *gait;
-                if mover.target == Some(*target) {
+                // Held at the destination, or already heading there: nothing to plan.
+                if mover.target == Some(*target) || world.occupancy.cell_of(*who) == Some(*target) {
                     continue;
                 }
                 let was_idle = mover.target.is_none();
                 mover.target = Some(*target);
-                if !plan(*who, mover, world, false) {
+                if !plan(*who, mover, world) {
                     events.push(MovementEvent::Unreachable { who: *who });
-                    mover.target = None;
+                    stop(mover);
                     continue;
                 }
                 if was_idle {
@@ -194,17 +201,25 @@ pub fn step_movement<T: Topology>(
     }
     for who in movers.handles() {
         let mover = movers.get_mut(who).expect("listed");
-        let running = mover.moving() && mover.gait == Gait::Run && !mover.exhausted;
-        if let Some(fighter) = fighters.get_mut(who) {
-            spend_stamina(who, mover, fighter, world.rules, rate, running, events);
-        }
         let gait = if mover.gait == Gait::Run && mover.exhausted {
             Gait::Walk
         } else {
             mover.gait
         };
-        walk(who, mover, gait, world, rate, events);
+        let advancing = walk(who, mover, gait, world, rate, events);
+        if let Some(fighter) = fighters.get_mut(who) {
+            let ran = advancing && gait == Gait::Run;
+            spend_stamina(who, mover, fighter, world.rules, rate, ran, events);
+        }
     }
+}
+
+fn stop(mover: &mut Mover) {
+    mover.target = None;
+    mover.path.clear();
+    mover.progress = 0;
+    mover.blocked = 0;
+    mover.avoid_bodies = false;
 }
 
 /// What the first cell of a fresh path costs, in progress units.
@@ -215,9 +230,14 @@ fn first_cost<T: Topology>(
     rate: u64,
 ) -> u64 {
     match (world.occupancy.cell_of(who), mover.path.last()) {
-        (Some(from), Some(next)) => world.map.distance(from, *next) as u64 * 65_536 * rate / 10,
+        (Some(from), Some(next)) => cell_cost(world.map, from, *next, rate),
         _ => 0,
     }
+}
+
+/// A straight cell costs 65,536 units times the rate; a diagonal 1.4 times that.
+fn cell_cost<T: Topology>(map: &GridMap<T>, from: Cell, to: Cell, rate: u64) -> u64 {
+    map.distance(from, to) as u64 * 65_536 * rate / 10
 }
 
 fn spend_stamina(
@@ -226,15 +246,15 @@ fn spend_stamina(
     fighter: &mut Fighter,
     rules: &MovementRules,
     rate: u64,
-    running: bool,
+    ran: bool,
     events: &mut Vec<MovementEvent>,
 ) {
     let per_step =
         |per_second: Fixed32| Fixed32::from_raw((per_second.raw().max(0) as u64 / rate) as i32);
-    if running {
+    if ran {
         fighter.stamina =
             (fighter.stamina - per_step(rules.run_drain_per_second)).max(Fixed32::ZERO);
-        if fighter.stamina == Fixed32::ZERO {
+        if fighter.stamina == Fixed32::ZERO && !mover.exhausted {
             mover.exhausted = true;
             events.push(MovementEvent::Exhausted { who });
         }
@@ -248,19 +268,15 @@ fn spend_stamina(
     }
 }
 
-/// Finds a path from the body's cell to its target, treating other bodies as walls when asked.
-fn plan<T: Topology>(
-    who: Handle,
-    mover: &mut Mover,
-    world: &mut MovementWorld<'_, T>,
-    bodies_as_walls: bool,
-) -> bool {
+/// Finds a path from the body's cell to its target, around other bodies too once the mover has
+/// been blocked long enough.
+fn plan<T: Topology>(who: Handle, mover: &mut Mover, world: &mut MovementWorld<'_, T>) -> bool {
     let (Some(target), Some(from)) = (mover.target, world.occupancy.cell_of(who)) else {
         return false;
     };
     let mut path = Vec::new();
     let options = PathOptions {
-        treat_occupants_as_walls: bodies_as_walls,
+        treat_occupants_as_walls: mover.avoid_bodies,
         ..PathOptions::default()
     };
     let found = world
@@ -268,10 +284,11 @@ fn plan<T: Topology>(
         .find(world.map, world.occupancy, from, target, options, &mut path);
     path.reverse();
     mover.path = path;
-    mover.blocked = 0;
     matches!(found, PathResult::Found { .. })
 }
 
+/// Moves as far as the progress allows. Returns whether the body was advancing this step: moving
+/// toward its target and not held back by a body, whether or not it entered a new cell.
 fn walk<T: Topology>(
     who: Handle,
     mover: &mut Mover,
@@ -279,9 +296,9 @@ fn walk<T: Topology>(
     world: &mut MovementWorld<'_, T>,
     rate: u64,
     events: &mut Vec<MovementEvent>,
-) {
+) -> bool {
     let Some(target) = mover.target else {
-        return;
+        return false;
     };
     let speed = match gait {
         Gait::Walk => world.rules.walk_cells_per_second,
@@ -291,53 +308,73 @@ fn walk<T: Topology>(
     mover.progress = mover.progress.saturating_add(speed.raw().max(0) as u64);
     loop {
         let Some(from) = world.occupancy.cell_of(who) else {
-            return;
+            return false;
         };
-        if from == target || mover.path.is_empty() {
-            mover.target = None;
-            mover.path.clear();
-            mover.progress = 0;
-            events.push(if from == target {
-                MovementEvent::Arrived { who, at: from }
-            } else {
-                MovementEvent::Unreachable { who }
-            });
-            return;
+        if from == target {
+            stop(mover);
+            events.push(MovementEvent::Arrived { who, at: from });
+            return true;
         }
-        let next = *mover.path.last().expect("checked above");
-        // A straight cell costs 65,536 units times the rate; a diagonal 1.4 times that.
-        let cost = world.map.distance(from, next) as u64 * 65_536 * rate / 10;
-        if mover.progress < cost {
-            return;
+        let Some(next) = mover.path.last().copied() else {
+            stop(mover);
+            events.push(MovementEvent::Unreachable { who });
+            return false;
+        };
+        // The map may have changed since the path was planned: a closed door is planned around.
+        if !world.map.can_step(from, next) {
+            if !plan(who, mover, world) {
+                stop(mover);
+                events.push(MovementEvent::Unreachable { who });
+                return false;
+            }
+            continue;
         }
-        let step_to = if world.occupancy.at(next).is_some_and(|body| body != who) {
+        let taken = world.occupancy.at(next).is_some_and(|body| body != who);
+        if taken && next == target {
+            // The target itself is held: stop beside it.
+            stop(mover);
+            events.push(MovementEvent::Halted { who, at: from });
+            return false;
+        }
+        let to = if taken {
             slide(who, from, next, world)
         } else {
             Some(next)
         };
-        let Some(to) = step_to else {
-            mover.blocked += 1;
-            if mover.blocked as u64 * 65_536
-                >= world.rules.blocked_repath_seconds.raw().max(0) as u64 * rate
-            {
-                plan(who, mover, world, true);
-                events.push(MovementEvent::Repathed { who });
+        let Some(to) = to else {
+            if mover.progress >= cell_cost(world.map, from, next, rate) {
+                mover.blocked += 1;
+                if !mover.avoid_bodies
+                    && mover.blocked as u64 * 65_536
+                        >= world.rules.blocked_repath_seconds.raw().max(0) as u64 * rate
+                {
+                    mover.avoid_bodies = true;
+                    plan(who, mover, world);
+                    events.push(MovementEvent::Repathed { who });
+                }
             }
-            // Hold the progress for the step that frees the way.
-            mover.progress = mover.progress.min(cost);
-            return;
+            // Hold at most one cell of progress for the step that frees the way.
+            mover.progress = mover.progress.min(cell_cost(world.map, from, next, rate));
+            return false;
         };
+        // The cell actually entered sets the price: a sidestep on a diagonal costs a diagonal.
+        let cost = cell_cost(world.map, from, to, rate);
+        if mover.progress < cost {
+            return true;
+        }
         world
             .occupancy
             .move_to(who, to)
             .expect("the cell was checked free");
-        mover.progress -= cost.min(mover.progress);
+        mover.progress -= cost;
         mover.blocked = 0;
         mover.facing = quantise_facing(direction(world.map, from, to));
         if to == next {
             mover.path.pop();
-        } else {
-            plan(who, mover, world, false);
+        } else if !plan(who, mover, world) {
+            stop(mover);
+            events.push(MovementEvent::Unreachable { who });
+            return false;
         }
         let factor = match gait {
             Gait::Walk => Fixed32::ONE,

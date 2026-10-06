@@ -16,7 +16,10 @@ Status: decided and implemented in milestone M6.
 - Each step is heard at the cell's walking distance, times two when running and one half when
   sneaking, so running is heard at exactly twice the walking distance.
 - A blocked step tries the two neighbours beside the intended direction, then after half a second
-  paths again around bodies.
+  paths again around bodies, and keeps avoiding them until it arrives or stops. A target another
+  body holds is approached, and the walker halts beside it.
+- Running spends stamina while the body advances, whether or not it enters a new cell that step:
+  at 8.4 cells a second a runner enters a cell on fewer than a third of the steps.
 
 ## Alternatives rejected
 

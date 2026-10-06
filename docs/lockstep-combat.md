@@ -131,14 +131,21 @@ heard, in metres (6 on stone, 4 on grass, 9 on gravel in the reference).
   (0.9). Progress adds up exactly in integers, and a diagonal step costs 1.4 cells. Speeds are
   16.16 fixed point, so 8.4 is a hair under and a run can arrive a step late over ten seconds.
 - Stamina is the body's `Fighter` stamina, when it has one, so combat and movement share one pool.
-  Running spends 6 a second; walking and standing restore 4. Empty forces a walk until stamina is
+  Running while advancing spends 6 a second; walking, standing and waiting behind a body restore 4. Empty forces a walk until stamina is
   back to 15 (`Exhausted`, `Recovered`): 100 stamina runs out in about 17 seconds.
 - Each `Moved` event carries how far the step is heard: the cell's walking distance, doubled when
   running and halved when sneaking.
-- A body in the way: the two neighbours on either side of the intended direction are tried first;
-  blocked for half a second, the body paths again treating other bodies as walls (`Repathed`).
+- A body in the way: the two neighbours on either side of the intended direction are tried first
+  (a sidestep costs what its own cell costs); blocked for half a second, even with a held target
+  that keeps changing, the body paths again treating other bodies as walls (`Repathed`) until it
+  arrives or stops.
+- A target another body holds is approached and the walker stops beside it (`Halted`).
+- Each step checks the map again, so a wall raised on the path is walked around (or the target
+  becomes `Unreachable`).
 - The facing turns to the nearest of eight directions (`quantise_facing`).
-- An unreachable target is `Unreachable` and nothing moves; reaching it is `Arrived`.
+- An unreachable target is `Unreachable` and nothing moves; reaching it is `Arrived`, once, even
+  while the order is held.
+- Movement moves single-cell bodies.
 
 See decision 0016.
 

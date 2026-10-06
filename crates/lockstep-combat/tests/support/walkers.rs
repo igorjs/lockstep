@@ -58,7 +58,8 @@ impl Walkers {
 
     pub fn step(&mut self, orders: &[(Handle, MoveOrder)]) -> Vec<MovementEvent> {
         let mut events = Vec::new();
-        // Stone everywhere, heard at 6 metres; gravel (9) on row 0 at column 1 and beyond.
+        // Stone everywhere, heard at 6 metres, except gravel (9) on the first two cells of row 0
+        // after the corner.
         let noise = |cell: Cell| {
             if cell.0 >= 1 && cell.0 < 3 {
                 Fixed32::from_int(9)
