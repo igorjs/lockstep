@@ -3,8 +3,8 @@
 # lockstep-agents
 
 Local awareness: agents sense through cones and hearing, so a crowd converges only on what it
-saw or heard. Everything is integers. Perception, noise, memory, alert states, the director and
-steering are in place; utility decisions follow in the same milestone.
+saw or heard. Everything is integers: perception, noise, memory, alert states, the director,
+steering, and utility decisions with delegation.
 
 Distances are metres, turned into cells by the caller's cell size (`cell_metres`, half a metre in
 the reference). Angles are `Turn`s, counter-clockwise from east.
@@ -88,6 +88,22 @@ edge and can block the way in; put a crowd's goal where arrivals pack in from th
 
 See decision 0020.
 
+## Utility decisions and delegation
+
+A `Consideration<W>` scores an agent against the world `W` as a plain integer a designer can read;
+any `Fn(Handle, &W) -> i32` is one. A `Choice` sums its considerations in 64 bits, so totals
+never wrap, and `scores` lists each one for showing why. `choose(agent, choices, world)` returns
+the id of the highest total, the lowest id on a tie.
+
+Delegation is an intent an agent answers by score. A `Task` lists considerations, each with the
+`Reason` it stands for, and two thresholds. `evaluate_task(agent, task, world)` returns `Accept` at
+`accept_at` or above, `Delay { minutes }` at `delay_at` or above, and otherwise
+`Refuse { reason }`, naming the consideration that scored lowest (the first listed on a tie) so the
+host can show it. Relations and attributes feed the scores through the world the considerations
+read.
+
+See decision 0021.
+
 ## Tests
 
 - `tests/behaviour/sight.rs`: the cone's range and angle edges, the circle behind, a wall, and
@@ -104,4 +120,7 @@ See decision 0020.
   thousand agents (decision 0018); memory fading to Searching at 2 minutes and Idle at 10 at two
   step rates, the director's budget of eight among twenty, and the leash (decision 0019); 200
   agents through a one-cell doorway without sharing a cell, and a blocked mover past a body in two
-  steps (decision 0020).
+  steps (decision 0020); utility ties going to the lowest id, and a refused task naming its
+  weakest reason (decision 0021).
+- `tests/behaviour/utility.rs`: per-consideration scores, totals that never wrap, a consideration
+  as a type, and a task with none.
