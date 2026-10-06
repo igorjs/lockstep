@@ -31,6 +31,11 @@ impl Streams {
             .expect("the stream was inserted above")
     }
 
+    /// The next raw draw of the named stream.
+    pub(crate) fn next_u32(&mut self, name: &str) -> u32 {
+        self.stream(name).next_u32()
+    }
+
     /// Uniform in [0, 1).
     pub fn unit(&mut self, name: &str) -> f32 {
         (self.stream(name).next_u32() >> 8) as f32 * (1.0 / 16_777_216.0)
@@ -43,6 +48,7 @@ impl Streams {
         (low as i64 + (self.stream(name).next_u32() % width) as i64) as i32
     }
 
+    /// A float probability, kept for the M1 fixtures. New code rolls a `Chance` with `roll`.
     pub fn chance(&mut self, name: &str, probability: f32) -> bool {
         self.unit(name) < probability
     }

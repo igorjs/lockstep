@@ -3,6 +3,7 @@
 #[path = "../common/mod.rs"]
 mod common;
 
+mod chance;
 mod clock;
 mod math;
 mod queue;
