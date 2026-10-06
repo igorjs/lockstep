@@ -68,6 +68,16 @@ impl<S: Simulation> Runner<S> {
 
     /// Feed real time; runs zero or more fixed steps. Queued intents apply to the first step run.
     pub fn advance(&mut self, real_seconds: f32) -> Advanced<S> {
+        self.advance_observed(real_seconds, &mut |_, _| {})
+    }
+
+    /// `advance`, calling `observer` after every step it runs with the runner and the intents that
+    /// step used. The recorder uses it to write each step down.
+    pub(crate) fn advance_observed(
+        &mut self,
+        real_seconds: f32,
+        observer: &mut dyn FnMut(&Self, &[S::Intent]),
+    ) -> Advanced<S> {
         let mut events = Vec::new();
         let mut steps_run = 0;
         self.accumulator_seconds += real_seconds.max(0.0);
@@ -78,6 +88,7 @@ impl<S: Simulation> Runner<S> {
             self.run_one_step(&intents, &mut events);
             self.accumulator_seconds -= self.step_configuration.step_seconds;
             steps_run += 1;
+            observer(self, &intents);
         }
         // Drop excess time after a hitch rather than spiral.
         if steps_run == self.step_configuration.maximum_steps_per_advance {
@@ -116,6 +127,10 @@ impl<S: Simulation> Runner<S> {
         };
         self.simulation.step(&mut context, intents);
         self.step_number += 1;
+    }
+
+    pub fn step_configuration(&self) -> StepConfiguration {
+        self.step_configuration
     }
 
     pub fn set_clock_multiplier(&mut self, multiplier: f32) {

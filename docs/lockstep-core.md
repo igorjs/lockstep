@@ -54,6 +54,28 @@ The increment for every basis point is in `fixtures/smoothing.bin`, found once b
 (`cargo run --release -p lockstep-core --example generate_smoothing`). A decision test runs the search
 again and compares every entry. See decision 0007.
 
+## Record, replay and bisect
+
+A `Recorder` wraps a runner; the host uses it exactly as it would use the runner (`queue`,
+`advance`, `step_once`, `set_clock_multiplier`). It writes down a `Recording`: the simulation id,
+the configuration's bytes, the seed, the step and clock configuration, every step's intents with
+the clock multiplier the host had set, and the runner hash at step 0 and every `checkpoint_every`
+steps. Inputs are all a replay needs, so a long session stays small. `keep_snapshots()` also keeps
+the snapshot at each checkpoint, for `bisect`.
+
+- `replay::<S>(&recording)` runs it again and returns the runner and `Identical`, or
+  `Diverged { at_step, expected, actual }` at the first checkpoint whose hash differs.
+- `bisect::<S>(&recording)` names the last checkpoint that matched (`None` when even step 0
+  differs) and the first that differs, and, when the recording kept snapshots, lists the lines of
+  the two snapshots that differ, with their indentation. The change is
+  in the steps between the two checkpoints; record with `checkpoint_every` 1 to name the exact step.
+- `Recording::to_bytes` and `from_bytes` use the fixed-endian bytes `hash_of` hashes. Both refuse
+  anything over `DECODE_LIMIT` (256 MiB), and reading refuses trailing bytes. A checkpoint out of
+  order or past the last step is an error, not a pass. `encode` and `decode` are the
+  same functions for any value.
+
+See decision 0011. Saving mid-session arrives with saves and migrations.
+
 ## Rules the core obeys
 
 No hash maps or sets, no wall clocks, no threads, no transcendental float functions. The lint in
@@ -70,5 +92,5 @@ No hash maps or sets, no wall clocks, no threads, no transcendental float functi
 
 ## Not in milestone M1
 
-Money, grid, attributes, chance rolls (milestone M4), saves and migrations, record and replay, the
-timeline. See the roadmap.
+Money, grid, attributes, chance rolls (milestone M4), saves and migrations, record and replay
+(milestone M5), the timeline. See the roadmap.

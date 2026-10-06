@@ -7,6 +7,7 @@
 #[path = "../common/mod.rs"]
 mod common;
 
+mod bisect_finds_a_planted_divergence;
 mod chance_in_basis_points;
 mod clock_as_a_rate;
 mod clock_in_integer_ticks;

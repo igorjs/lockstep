@@ -9,6 +9,7 @@ mod clock;
 mod derive;
 mod math;
 mod queue;
+mod replay;
 mod runner;
 mod store;
 mod streams;

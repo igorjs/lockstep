@@ -6,6 +6,7 @@ mod clock;
 mod hashing;
 pub mod math;
 mod message;
+mod replay;
 mod runner;
 mod simulation;
 mod store;
@@ -16,7 +17,7 @@ pub use chance::{
     SMOOTHING_ENTRIES,
 };
 pub use clock::{Clock, ClockConfiguration, ClockEvent};
-pub use hashing::hash_of;
+pub use hashing::{decode, encode, hash_of, DECODE_LIMIT};
 pub use lockstep_macros::Message;
 
 /// Paths the derive macros use; not part of the public interface.
@@ -26,6 +27,9 @@ pub mod __private {
     pub use serde::Serialize;
 }
 pub use message::{Indexable, Message};
+pub use replay::{
+    bisect, replay, Bisection, RecordedStep, Recorder, Recording, ReplayError, ReplayOutcome,
+};
 pub use runner::{Advanced, Runner, StepConfiguration};
 pub use simulation::{Context, Simulation};
 pub use store::{Column, Handle, StableVector};

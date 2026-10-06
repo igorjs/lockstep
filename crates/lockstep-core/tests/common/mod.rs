@@ -100,3 +100,5 @@ pub fn probe_runner(seed: u64) -> Runner<Probe> {
         day_clock(),
     )
 }
+
+pub mod tally;
