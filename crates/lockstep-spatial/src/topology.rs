@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use crate::cell::Cell;
 
 /// How cells connect. Determinism depends on the fixed order of `neighbours`.

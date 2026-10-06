@@ -1,7 +1,5 @@
-//! Attributes for lockstep-core: every stat is the same machine. A base maximum, modifiers applied
-//! Add then Multiply then Override, a clamped current value, thresholds that fire once per
-//! crossing, and derived values computed by curves. Health, sanity, hunger, a rover's battery, a
-//! credit limit.
+// SPDX-License-Identifier: Apache-2.0
+#![doc = include_str!("../README.md")]
 
 mod curve;
 mod registry;

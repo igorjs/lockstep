@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # lockstep-attributes
 
 Every stat is the same machine: a base maximum, modifiers, a clamped current value, thresholds that

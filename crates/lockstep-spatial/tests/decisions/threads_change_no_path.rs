@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: pathfinding may run a batch of searches on a thread pool (the `parallel` feature). It is
 //! the one place threads are allowed in simulation code, because the answers cannot depend on them:
 //! each search is a pure function of the map, the bodies and the request, each thread has its own

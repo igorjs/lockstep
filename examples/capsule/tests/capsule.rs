@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use capsule::{
     build_room, default_seed, default_steps, fixture_hash, run_fixture, runner, world_hash,
     Capsule, Cell, Event, Intent, STEPS_PER_CELL_WALKING, WALL_COLUMN, WALL_FIRST_ROW,

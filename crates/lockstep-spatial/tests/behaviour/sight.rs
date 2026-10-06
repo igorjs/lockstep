@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use lockstep_spatial::{line_of_sight, line_of_sight_symmetric, Cell, GridMap, Square8};
 
 #[cfg(target_arch = "wasm32")]

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: an insert reuses the lowest vacant slot, and a store derives its vacant set from its
 //! slots when it is loaded.
 //! Alternative rejected: wrapping a slot map, whose reuse order depends on the order slots were

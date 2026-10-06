@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! A small simulation used by every core test: it sums its intents and draws from one stream.
 
 #![allow(dead_code)]

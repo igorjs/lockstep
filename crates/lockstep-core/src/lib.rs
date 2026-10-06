@@ -1,7 +1,5 @@
-//! Lockstep core: a deterministic state machine advanced in fixed steps from intents.
-//!
-//! The same configuration, seed, and intents produce the same state and the same hash on every
-//! platform. The core never renders, never reads input, and never knows what a game is.
+// SPDX-License-Identifier: Apache-2.0
+#![doc = include_str!("../README.md")]
 
 mod chance;
 mod clock;

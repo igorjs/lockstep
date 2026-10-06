@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # 0006 Threads for a batch of paths (decided)
 
 Status: decided and implemented. The owner approved bending the "no threads in simulation code" rule

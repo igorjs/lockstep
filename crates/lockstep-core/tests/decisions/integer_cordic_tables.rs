@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: the sine and arctangent tables are generated at compile time by integer CORDIC and
 //! committed as fixtures, and a test regenerates them and compares.
 //! Alternative rejected: filling the tables from the standard library's float sine, whose last

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Writes `fixtures/smoothing.bin`: the smoothed-roll increment for every basis point, as
 //! little-endian `u32`. Run with `cargo run --release -p lockstep-core --example generate_smoothing`.
 

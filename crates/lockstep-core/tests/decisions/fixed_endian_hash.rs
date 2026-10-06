@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: the state hash is xxh3 over fixed-width, little-endian bincode bytes.
 //! Alternative rejected: hashing the in-memory structs.
 //! Would change if: the committed value below differs on any platform (the number to beat is

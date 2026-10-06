@@ -1,5 +1,6 @@
-//! Decision: Silent Bells uses `Square8` on half-metre cells, with octile distance (10 per straight
-//! step, 14 per diagonal), because its streets and walls are rectangular.
+// SPDX-License-Identifier: Apache-2.0
+//! Decision: maps of rectangular streets and walls use `Square8` on half-metre cells, with octile
+//! distance (10 per straight step, 14 per diagonal).
 //! Alternative rejected: hexagons, which fit round shapes but not rectangular streets, and
 //! `Square4`, whose Manhattan distance is far too long along diagonals.
 //! Would change if: the octile distance is more than 8 percent away from the true distance

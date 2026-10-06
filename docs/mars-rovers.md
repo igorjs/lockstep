@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # mars-rovers (example)
 
 The grid-shaped consumer scenario: rovers on a plateau, on any topology.

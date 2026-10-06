@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use crate::common::whole;
 use lockstep_attributes::Curve;
 use lockstep_core::math::Fixed32;

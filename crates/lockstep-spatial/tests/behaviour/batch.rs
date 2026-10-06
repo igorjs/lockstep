@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use crate::common::{free_cell, random_map};
 use lockstep_core::Streams;
 use lockstep_spatial::{

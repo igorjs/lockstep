@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use lockstep_core::{hash_of, Handle, Runner, Simulation};
 use lockstep_spatial::{GridMap, Hex, Square4, Square8};
 use mars_rovers::{

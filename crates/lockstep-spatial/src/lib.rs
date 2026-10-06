@@ -1,11 +1,5 @@
-//! A deterministic spatial toolkit: cells as integer indices, a topology trait (square with eight
-//! or four neighbours, hexes behind the `hex` feature), dense maps with elevation, a packed
-//! occupancy set for bodies, a buffer-reusing A* pathfinder, flow fields for hordes, and integer
-//! line of sight.
-//!
-//! Collision is not detection: it is occupancy. The first caller to claim a cell gets it, so a
-//! simulation resolves contested cells in handle order by applying its moves in handle order.
-//! Everything takes the topology as a type parameter and only calls the four topology functions.
+// SPDX-License-Identifier: Apache-2.0
+#![doc = include_str!("../README.md")]
 
 mod batch;
 mod cell;

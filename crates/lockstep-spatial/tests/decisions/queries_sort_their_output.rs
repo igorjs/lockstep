@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: every occupancy query sorts its output by cell, so results never depend on the order
 //! bodies were placed, moved or removed.
 //! Alternative rejected: returning bodies in slot order, which changes whenever a removal swaps the

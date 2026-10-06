@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Angles are whole turns: `Turn = u16`, 65,536 per full turn, 0 east, 16,384 north. No radians.
 
 use super::cordic::{

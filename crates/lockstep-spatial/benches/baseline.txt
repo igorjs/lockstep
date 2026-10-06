@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 paths_500 610943
 paths_500_batch 87952
 within_1000_agents 2186

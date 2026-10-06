@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic math: 16.16 fixed point, vectors, and angles as whole turns.
 //!
 //! Everything here uses integers only. The lint in `scripts/lint-determinism.sh` points here for

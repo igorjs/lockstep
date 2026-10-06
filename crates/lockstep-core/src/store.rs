@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeSet;

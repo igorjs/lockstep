@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The capsule: a game-shaped consumer scenario.
 //!
 //! One survivor lives in a small room with a wall across the middle. The host clicks a cell and the

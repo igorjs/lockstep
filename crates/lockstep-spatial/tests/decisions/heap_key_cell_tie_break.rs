@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: the open set is ordered by `(f_cost, cell)`: the cell index breaks ties between equal
 //! costs, and neighbours are visited in a fixed order, so equal-cost paths are identical on every
 //! platform.

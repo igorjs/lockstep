@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use ledger::{
     fixture_hash, run_fixture, runner, Event, Intent, Reason, ACCOUNT_COUNT, DEFAULT_SEED,
     DEFAULT_STEPS, OPENING_BALANCE_MINOR,

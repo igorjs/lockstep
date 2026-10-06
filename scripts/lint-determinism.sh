@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 banned='HashMap|HashSet|SystemTime|Instant::now|thread::spawn|rayon|f32::sin|f32::cos|f32::tan|f32::exp|f32::powf|f32::ln|thread_rng'
 # The one exception: the path batch may use a thread pool, because each search is a pure function

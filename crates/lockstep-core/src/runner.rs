@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use crate::clock::{Clock, ClockConfiguration, ClockEvent};
 use crate::hashing::hash_of;
 use crate::simulation::{Context, Simulation};

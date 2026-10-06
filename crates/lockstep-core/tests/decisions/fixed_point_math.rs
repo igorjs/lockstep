@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: shared crates use 16.16 fixed point, with integer square roots and integer-only
 //! trigonometry from a committed table.
 //! Alternative rejected: 32-bit floats everywhere, which are identical across platforms only by

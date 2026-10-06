@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use lockstep_core::{hash_of, Column, Handle, StableVector, Streams};
 
 #[cfg(target_arch = "wasm32")]

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use capsule::script::{parse, run, Command};
 use capsule::{default_seed, default_steps, Cell, SCRIPT_TEXT};
 

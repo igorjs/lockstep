@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # capsule (example)
 
 The game shaped consumer scenario. One survivor lives in a sixteen by sixteen room.

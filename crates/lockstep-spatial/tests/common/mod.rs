@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared test helpers: seeded random maps.
 
 #![allow(dead_code)]

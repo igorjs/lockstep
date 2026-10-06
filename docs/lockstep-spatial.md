@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # lockstep-spatial
 
 A deterministic spatial toolkit: cells as integer indices, a topology trait, dense maps with elevation,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use super::fixed::Fixed32;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Mul, Neg, Sub};

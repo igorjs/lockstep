@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use lockstep_core::math::{
     atan2, cos, generate_atan_octant, generate_quarter_sine, isqrt, sin, unit, unit_circle_table,
     Fixed32, Vector2,

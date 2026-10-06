@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 set shell := ["bash", "-cu"]
 
 default:
@@ -14,6 +15,7 @@ check:
     cargo clippy -p lockstep-spatial --all-targets --features hex -- -D warnings
     cargo clippy -p lockstep-spatial --all-targets --features parallel -- -D warnings
     ./scripts/lint-determinism.sh
+    ./scripts/check-spdx.sh
 
 determinism:
     cargo run -p lockstep-headless -- verify capsule --expect examples/capsule/fixtures/capsule.hash

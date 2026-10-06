@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One test per design decision. Each file states the decision, the alternative that was
 //! rejected, and the number that would change the decision.
 //!

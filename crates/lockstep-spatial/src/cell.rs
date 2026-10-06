@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use serde::{Deserialize, Serialize};
 
 /// A cell as one integer: `y * width + x`. The width belongs to the map, not to the cell.

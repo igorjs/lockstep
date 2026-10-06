@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 name: determinism
 # Pull requests run on Linux, the cheapest runner. Every push to main runs all three platforms,
 # which is the cross-platform proof: the same committed hashes on Linux, macOS and Windows.

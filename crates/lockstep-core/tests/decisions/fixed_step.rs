@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: the simulation advances in fixed steps, 30 per real second.
 //! Alternative rejected: a variable step that follows the frame time.
 //! Would change if: the fixed step cannot keep the hash identical across frame rates, or a
