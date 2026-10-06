@@ -1,6 +1,10 @@
 name: determinism
 # Pull requests run on Linux, the cheapest runner. Every push to main runs all three platforms,
 # which is the cross-platform proof: the same committed hashes on Linux, macOS and Windows.
+# A newer push to a pull request cancels its older run; runs on main are never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 on:
   pull_request:
   push:
@@ -19,5 +23,8 @@ jobs:
           components: rustfmt, clippy
           targets: wasm32-unknown-unknown
       - uses: extractions/setup-just@v2
-      - run: cargo install wasm-pack
+      # A prebuilt, pinned wasm-pack instead of compiling it on every job.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
       - run: just ci
