@@ -6,6 +6,7 @@ mod common;
 
 mod chance;
 mod clock;
+mod derive;
 mod math;
 mod queue;
 mod runner;

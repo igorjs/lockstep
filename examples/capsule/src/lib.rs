@@ -134,16 +134,14 @@ pub struct Walk {
     pub path: Vec<u32>,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub struct Configuration {
     pub survivor_name: String,
 }
 
-impl Message for Configuration {
-    const VERSION: u32 = 1;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 2)]
 pub enum Intent {
     MoveTo {
         entity: Handle,
@@ -166,11 +164,8 @@ pub enum Intent {
     },
 }
 
-impl Message for Intent {
-    const VERSION: u32 = 2;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 2)]
 pub enum Event {
     Arrived {
         entity: Handle,
@@ -206,12 +201,9 @@ pub enum Event {
     },
 }
 
-impl Message for Event {
-    const VERSION: u32 = 2;
-}
-
 /// The whole world. It is also the snapshot, so a save is exactly this value.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 2)]
 pub struct World {
     /// The room: sixteen by sixteen cells with a wall across the middle.
     pub room: GridMap<Square8>,
@@ -220,10 +212,6 @@ pub struct World {
     pub walks: Column<Walk>,
     pub attributes: Column<Attributes>,
     pub effects: Effects,
-}
-
-impl Message for World {
-    const VERSION: u32 = 2;
 }
 
 impl World {
