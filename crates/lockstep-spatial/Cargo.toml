@@ -1,0 +1,21 @@
+[package]
+name = "lockstep-spatial"
+description = "Deterministic spatial toolkit for lockstep-core: topologies, maps, occupancy, pathfinding, line of sight"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+# Hexagonal cells: odd-row offset storage, cube distance, integer-rounded lines.
+hex = []
+
+[dependencies]
+lockstep-core = { path = "../lockstep-core" }
+serde = { workspace = true }
+
+[dev-dependencies]
+bincode = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

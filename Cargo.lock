@@ -148,6 +148,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-spatial"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "lockstep-core",
+ "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
