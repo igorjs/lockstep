@@ -84,20 +84,35 @@ fn the_eye_line_follows_the_elevations_of_both_ends() {
 
 #[test]
 fn symmetric_sight_needs_both_directions() {
-    let mut map: GridMap<Square8> = GridMap::new(7, 7);
-    map.set_passable(map.index(3, 3), false);
+    // The terrace scene: cells 0 to 3 at elevation 3, a wall of height 3 on the ground at cell 4,
+    // and eyes two steps up. Cell 3 sees cell 6, but cell 6 does not see cell 3.
+    let mut map: GridMap<Square8> = GridMap::new(7, 1);
+    for x in 0..4 {
+        map.set_elevation(map.index(x, 0), 3);
+    }
+    map.set_low_wall(map.index(4, 0), 3);
+    let (terrace, ground) = (map.index(3, 0), map.index(6, 0));
     let mut line = Vec::new();
+    assert!(
+        line_of_sight(&map, terrace, ground, 2, &mut line),
+        "the terrace sees down"
+    );
+    assert!(
+        !line_of_sight(&map, ground, terrace, 2, &mut line),
+        "the ground does not see up"
+    );
+    assert!(
+        !line_of_sight_symmetric(&map, terrace, ground, 2, &mut line),
+        "one way is not enough"
+    );
     assert!(!line_of_sight_symmetric(
-        &map,
-        map.index(0, 0),
-        map.index(6, 6),
-        1,
-        &mut line
+        &map, ground, terrace, 2, &mut line
     ));
+    let open: GridMap<Square8> = GridMap::new(7, 7);
     assert!(line_of_sight_symmetric(
-        &map,
-        map.index(0, 6),
-        map.index(0, 0),
+        &open,
+        open.index(0, 6),
+        open.index(5, 1),
         1,
         &mut line
     ));

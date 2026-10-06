@@ -37,8 +37,10 @@ pub fn line_of_sight<T: Topology>(
     true
 }
 
-/// Sight that must work both ways: `a` sees `b` and `b` sees `a`. A line drawn from each end can
-/// pass different cells, so this is the check for rules that must not depend on who looks.
+/// Sight that must work both ways: `a` sees `b` and `b` sees `a`. The line aims from the viewer's eye
+/// to the target's floor, so it can clear a wall one way and not the other (a terrace sees down over a
+/// garden wall the ground cannot see up over). This is the check for rules that must not depend on
+/// who looks.
 pub fn line_of_sight_symmetric<T: Topology>(
     map: &GridMap<T>,
     a: Cell,

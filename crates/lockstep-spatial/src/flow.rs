@@ -47,7 +47,7 @@ impl FlowField {
                 if !map.is_passable(before) || !map.can_step(before, cell) {
                     continue;
                 }
-                let candidate = distance + map.step_cost(before, cell);
+                let candidate = distance.saturating_add(map.step_cost(before, cell));
                 if candidate > maximum_distance {
                     continue;
                 }

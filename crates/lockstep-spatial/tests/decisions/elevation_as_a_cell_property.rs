@@ -15,7 +15,7 @@
 //! ```
 //!
 //! From the terrace edge (cell 3) the eye is five steps up and the line to the floor of cell 6 is
-//! four steps high at the wall, above its top of three. From the ground at cell 6 the line to the
+//! five times two thirds, about 3.3 steps, high at the wall, above its top of three. From the ground at cell 6 the line to the
 //! terrace floor is only 2.7 steps high at the wall, under its top.
 
 use lockstep_spatial::{line_of_sight, GridMap, Square8};

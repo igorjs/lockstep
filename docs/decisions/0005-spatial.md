@@ -1,4 +1,4 @@
-# 0005 The spatial crate (decided, with one open item)
+# 0005 The spatial crate (decided, with two open items)
 
 Status: decided and implemented for `lockstep-spatial`, with two open items (the hexagon figure and
 the pathfinding benchmark target). The reference calls this crate `lockstep-grid`;

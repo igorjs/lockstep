@@ -51,6 +51,8 @@ pub struct Pathfinder {
 }
 
 impl Pathfinder {
+    /// Buffers sized for this map. Use the pathfinder only with maps of the same size: a new map of
+    /// another size needs a new pathfinder.
     pub fn new<T: Topology>(map: &GridMap<T>) -> Self {
         let cells = map.cell_count();
         Self {
@@ -73,6 +75,9 @@ impl Pathfinder {
     /// Sets the generation counter, so a test can make it wrap on the next search.
     #[doc(hidden)]
     pub fn force_generation(&mut self, generation: u32) {
+        // Clear the stamps too, so a counter moved backwards cannot make old marks look current.
+        self.stamp.fill(0);
+        self.closed.fill(0);
         self.generation = generation;
     }
 
@@ -94,6 +99,11 @@ impl Pathfinder {
         options: PathOptions,
         out: &mut Vec<Cell>,
     ) -> PathResult {
+        assert_eq!(
+            self.stamp.len(),
+            map.cell_count(),
+            "this pathfinder was made for a map of another size"
+        );
         out.clear();
         self.expansions = 0;
         if from == to {
@@ -137,7 +147,9 @@ impl Pathfinder {
                 if options.treat_occupants_as_walls && next != to && occupancy.at(next).is_some() {
                     continue;
                 }
-                let tentative = current_cost + map.step_cost(current, next);
+                // Saturating, so a path long enough to pass four billion tenths stays the most
+                // expensive instead of wrapping to a cheap one.
+                let tentative = current_cost.saturating_add(map.step_cost(current, next));
                 let known = if self.stamp[next.0 as usize] == generation {
                     self.cost[next.0 as usize]
                 } else {
@@ -145,8 +157,8 @@ impl Pathfinder {
                 };
                 if tentative < known {
                     self.set(next, tentative, current);
-                    self.open
-                        .push(Reverse((tentative + map.straight_cost(next, to), next)));
+                    let estimate = tentative.saturating_add(map.straight_cost(next, to));
+                    self.open.push(Reverse((estimate, next)));
                 }
             }
             self.neighbours = neighbours;
