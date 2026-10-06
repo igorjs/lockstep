@@ -7,15 +7,15 @@
 //! - one 80 metre noise heard through a 10 metre a second wind,
 //! - one `think` with a sighting for every agent and a budget of eight,
 //! - one `steer` step of every agent down a flow field,
-//! - one game minute of weather.
+//! - one game day of weather, minute by minute.
 //!
 //! The baseline lives in `benches/baseline.txt` as `name microseconds` lines. The benchmark warns
 //! when a measurement is more than 10 percent slower than its baseline, and never fails the build.
 //! Run `just bench-baseline` after an intended change to write a new baseline.
 
 use lockstep_agents::{
-    hear, perceive, steer, think, Cone, Director, Mind, MindRules, Noise, Senses, Stimulus,
-    Surroundings, Weather, WeatherRules, Wind,
+    hear, perceive, steer, think, Cone, Director, Mind, MindRules, Noise, Senses, SteerEvent,
+    Stimulus, Surroundings, Weather, WeatherRules, Wind,
 };
 use lockstep_core::math::Fixed32;
 use lockstep_core::{Column, Handle, StableVector, Streams};
@@ -140,8 +140,10 @@ fn main() {
 
     let goal = occupancy.cell_of(targets[1]).unwrap();
     let field = FlowField::build(&map, &[goal], u32::MAX);
+    // Each run steps a fresh copy, made before the clock starts.
+    let mut copies: Vec<Occupancy> = (0..5).map(|_| occupancy.clone()).collect();
     let (steering, steer_check) = best_of_five(|| {
-        let mut moved = occupancy.clone();
+        let mut moved = copies.pop().expect("one copy a run");
         let mut events = Vec::new();
         steer(
             &map,
@@ -152,7 +154,10 @@ fn main() {
             half,
             &mut events,
         );
-        events.len() as u64
+        events
+            .iter()
+            .filter(|event| matches!(event, SteerEvent::Stepped { .. }))
+            .count() as u64
     });
 
     let weather_rules = WeatherRules {
@@ -162,13 +167,11 @@ fn main() {
     let (weathering, weather_check) = best_of_five(|| {
         let mut weather = Weather::new(0, Fixed32::from_int(4));
         let mut events = Vec::new();
-        weather.advance(
-            Fixed32::ONE,
-            &weather_rules,
-            &mut Streams::new(42),
-            &mut events,
-        );
-        weather.direction as u64
+        let mut streams = Streams::new(42);
+        for _ in 0..1_440 {
+            weather.advance(Fixed32::ONE, &weather_rules, &mut streams, &mut events);
+        }
+        weather.direction as u64 + events.len() as u64
     });
 
     let measurements = [
@@ -176,7 +179,7 @@ fn main() {
         ("hear_1000_agents", hearing),
         ("think_1000_agents", thinking),
         ("steer_1000_agents", steering),
-        ("weather_one_minute", weathering),
+        ("weather_one_day", weathering),
     ];
     println!(
         "checksums (must not change): seen {seen_check}, heard {heard_check}, think {think_check}, steer {steer_check}, weather {weather_check}"
@@ -187,24 +190,24 @@ fn main() {
             .chain(
                 measurements
                     .iter()
-                    .map(|(name, micros)| format!("{name} {micros}\n")),
+                    .map(|(name, microseconds)| format!("{name} {microseconds}\n")),
             )
             .collect();
         std::fs::write(BASELINE, text).expect("write the baseline");
         println!("baseline written to {BASELINE}");
     }
     let baseline = std::fs::read_to_string(BASELINE).unwrap_or_default();
-    for (name, micros) in measurements {
+    for (name, microseconds) in measurements {
         let reference = baseline
             .lines()
             .find_map(|line| line.strip_prefix(name)?.trim().parse::<u128>().ok());
         match reference {
-            Some(before) if micros * 100 > before * 110 => println!(
-                "WARNING {name}: {micros} microseconds, {}% slower than the baseline {before}",
-                (micros * 100 / before.max(1)) - 100
+            Some(before) if microseconds * 100 > before * 110 => println!(
+                "WARNING {name}: {microseconds} microseconds, {}% slower than the baseline {before}",
+                (microseconds * 100 / before.max(1)) - 100
             ),
-            Some(before) => println!("ok      {name}: {micros} microseconds (baseline {before})"),
-            None => println!("new     {name}: {micros} microseconds (no baseline yet)"),
+            Some(before) => println!("ok      {name}: {microseconds} microseconds (baseline {before})"),
+            None => println!("new     {name}: {microseconds} microseconds (no baseline yet)"),
         }
     }
 }

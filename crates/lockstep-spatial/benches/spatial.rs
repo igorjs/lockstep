@@ -154,26 +154,28 @@ fn main() {
             .chain(
                 measurements
                     .iter()
-                    .map(|(name, micros)| format!("{name} {micros}\n")),
+                    .map(|(name, microseconds)| format!("{name} {microseconds}\n")),
             )
             .collect();
         std::fs::write(BASELINE, text).expect("write the baseline");
         println!("baseline written to {BASELINE}");
     }
     let baseline = std::fs::read_to_string(BASELINE).unwrap_or_default();
-    for (name, micros) in measurements {
+    for (name, microseconds) in measurements {
         let reference = baseline
             .lines()
             .find_map(|line| line.strip_prefix(name)?.trim().parse::<u128>().ok());
         match reference {
-            Some(before) if micros * 100 > before * 110 => {
+            Some(before) if microseconds * 100 > before * 110 => {
                 println!(
-                    "WARNING {name}: {micros} microseconds, {}% slower than the baseline {before}",
-                    (micros * 100 / before.max(1)) - 100
+                    "WARNING {name}: {microseconds} microseconds, {}% slower than the baseline {before}",
+                    (microseconds * 100 / before.max(1)) - 100
                 )
             }
-            Some(before) => println!("ok      {name}: {micros} microseconds (baseline {before})"),
-            None => println!("new     {name}: {micros} microseconds (no baseline yet)"),
+            Some(before) => {
+                println!("ok      {name}: {microseconds} microseconds (baseline {before})")
+            }
+            None => println!("new     {name}: {microseconds} microseconds (no baseline yet)"),
         }
     }
     println!(

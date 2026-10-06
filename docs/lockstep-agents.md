@@ -128,10 +128,11 @@ See decision 0021.
 half-metre cells with 10 percent walls, each the best of five runs, against the committed
 `benches/baseline.txt`; a measurement more than 10 percent slower prints a warning and never fails
 the build. `just bench-baseline` writes a new baseline after an intended change. On the
-development MacBook: every agent looking for ten targets with no staggering, 625 microseconds;
-one 80 metre noise through a 10 metre a second wind, 438; one `think` with a sighting for every
-agent, 146; one `steer` step for every agent, 82; a game minute of weather, 2. With checks
-staggered one in ten, a step of 1,000 agents costs about 0.3 milliseconds.
+development MacBook: every agent looking for ten targets with no staggering, 647 microseconds;
+one 80 metre noise through a 10 metre a second wind, 444; one `think` with a sighting for every
+agent, 150; one `steer` step for every agent, 73; a game day of weather, minute by minute, 2,732.
+Not measured as one step, but summed: with checks staggered one in ten, perceiving, thinking and
+steering 1,000 agents comes to about 0.29 milliseconds a step, and each noise adds about 0.44.
 
 ## Tests
 
