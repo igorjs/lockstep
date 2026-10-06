@@ -15,6 +15,7 @@ and intents produce the same state and the same hash on every platform.
 | `StableVector`, `Column`, `Handle` | Entities as generational handles; components as columns keyed by those handles. Inserts reuse the lowest free slot, and a restored store continues exactly as the original. The handle `Handle::from_raw(0)` never refers to anything. |
 | `Streams` | Named random streams, each seeded from the master seed and its name. |
 | `hash_of` | xxh3 over fixed-width, little-endian bincode bytes. |
+| `math` | Deterministic math: `Fixed32` (16.16 fixed point), `isqrt`, `Vector2`, and angles as whole turns (`sin`, `cos`, `unit`, `atan2`). Integer only. See decision 0005. |
 | `Message` | Marker for anything that crosses the boundary or lands in a save. Written by hand in milestone M1. |
 
 ## Driving a simulation
@@ -46,5 +47,5 @@ No hash maps or sets, no wall clocks, no threads, no transcendental float functi
 
 ## Not in milestone M1
 
-Fixed point math, grid, attributes, chance rolls, saves and migrations, record and replay, the
+Money, grid, attributes, chance rolls, saves and migrations, record and replay, the
 timeline, the derive macro for `Message`. See the roadmap.
