@@ -1,7 +1,7 @@
-# 0005 The spatial crate (decided, with one open item)
+# 0005 The spatial crate (decided, with two open items)
 
-Status: decided and implemented for the first two parts of `lockstep-spatial` (topologies, the map,
-and occupancy), with one open item (the hexagon figure). The reference calls this crate `lockstep-grid`;
+Status: decided and implemented for `lockstep-spatial`, with two open items (the hexagon figure and
+the pathfinding benchmark target). The reference calls this crate `lockstep-grid`;
 it was renamed to stay generic.
 
 ## Decisions where the reference was silent or ambiguous
@@ -18,6 +18,25 @@ it was renamed to stay generic.
 - **Occupancy.** A body can hold several cells, with the first as its anchor, so `move_footprint` can move a two by two body atomically. Placing a body that is already placed moves it. `within` scans the window around the centre in row order, so its output is sorted by construction. The first caller to claim a cell gets it: occupancy does not order by handle, so a simulation that resolves contested cells in handle order applies its moves in handle order.
 - **Occupancy is state.** It saves as the bodies sorted by handle, so equal occupancies save, compare and hash the same whatever order they were built in, and a load refuses cells outside the grid, a cell held twice, a body saved twice, and empty footprints. The self-review of the pull request found it had no saved form at all.
 - **`hex` is a feature.** It is not enabled by default. `just test` and `just check` also run the crate with `--features hex`.
+
+## Pathfinder, flow field and line of sight
+
+- **A path excludes its start and includes its goal.** `from == to` is an empty path with cost zero.
+- **Terrain cost multiplies the step cost** (`step_cost(from, to)` is the topology cost times the cost byte of the cell stepped onto, with zero counting as one). The heuristic is the plain topology distance, which stays a lower bound.
+- **The flow field is Dijkstra**, because step costs differ. A body on a wall cell is not a starting point: the first version gave wall cells distances, and the tests that check every cell's next step caught it.
+- **Line of sight aims at the target's floor.** A line between two eyes is the same line in both directions, so a terrace could not see over a wall that the ground cannot see up over. Aiming from the viewer's eye to the floor of the target makes a wall near a raised eye easier to clear than a wall near a low target, which is what the reference's example describes. An eye height of zero lets flat ground block, so use at least one.
+- **Generation counter.** A search that wraps the counter clears the stamps, and a spike forces the wrap and checks the paths do not change.
+
+## Open item: the pathfinding benchmark target
+
+The reference gives 50 milliseconds as the target for 500 paths on a 512 by 512 map with 20 percent
+walls on the development MacBook. Measured on an Apple M1 Pro with the release profile: 611
+milliseconds, about twelve times the target. The search expands about 12,700 cells per path (the
+paths average 266 cells) at about 96 nanoseconds per expansion. A target of 50 milliseconds needs
+roughly twelve times fewer expansions, which exact A* with the octile heuristic on random walls does
+not give. The committed baseline is the honest number. Ways to close the gap, none built: hierarchical
+pathfinding, bidirectional search, or a cheaper step (precomputed neighbour tables). This needs the
+owner: relax the target, or choose a technique.
 
 ## Open item: the hexagon figure in the circle decision
 

@@ -25,4 +25,8 @@ determinism:
 bench:
     cargo bench -p lockstep-spatial
 
+# Measure again and replace the committed benchmark baseline. Run after an intended change.
+bench-baseline:
+    cargo bench -p lockstep-spatial --bench spatial -- --write-baseline
+
 ci: check test determinism

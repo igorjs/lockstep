@@ -1,0 +1,3 @@
+paths_500 610943
+within_1000_agents 2186
+flow_field 11940
