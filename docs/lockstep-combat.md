@@ -2,9 +2,8 @@
 
 # lockstep-combat
 
-Real-time combat on the grid, resolved in integers. This first part has damage, hit shapes and
-knockback; actions with their timing windows, dodges, projectiles and movement come next in
-milestone M6.
+Real-time combat on the grid, resolved in integers: damage, hit shapes, knockback, and actions and
+dodges with commitment. Projectiles and movement come next in milestone M6.
 
 ## Damage
 
@@ -57,10 +56,49 @@ larger body takes the same step, so it keeps its shape. It stops at the first wa
 moves through occupancy, and returns where the anchor ended, how far it moved, and the `Impact`
 (`Wall` or `Body`); the simulation decides the impact damage. A body not on the map is left alone.
 
+## Actions and dodges
+
+Each fighter is a state machine in a `Column<Fighter>`: its `MovesetId`, phase, facing, stamina
+(with a maximum) and `Defence`, plus a buffered order, a dodge cooldown, a counter window and its
+evasion memory. A `Moveset` holds a kind of fighter's `ActionDefinition`s and `DodgeDefinition`;
+`step_combat` takes every moveset, and each fighter names its own. Durations are seconds in
+`Fixed32`, turned once into whole steps at the simulation's steps per second (`steps_for`: nearest,
+ties up), so a 0.2 second wind-up is 6 steps at 30 a second and 12 at 60. Windows (the buffer, the
+perfect dodge) compare steps against seconds exactly, as integers.
+
+- An attack winds up (telegraphed, cancellable by a dodge or a stagger its mask allows), strikes on
+  its first active step only, then recovers (locked out). It costs stamina when it starts; too
+  little is `Refused { Tired }`.
+- A dodge is vulnerable in startup (a stagger breaks it), then moves its distance through
+  occupancy (a wall shortens the move, not the invulnerability) and is invulnerable, then recovers.
+  It has a cooldown from the press.
+- An order sent while busy waits up to 0.15 seconds and fires on the first free step; past that it
+  expires. A newer order replaces the waiting one.
+- A strike on an invulnerable target is `Dodged`, unless it grabs or cannot be avoided. A dodge
+  pressed at most `perfect_window_seconds` before the strike is a `PerfectDodge`: the stamina comes
+  back (once per dodge, never above the maximum) and, once the fighter is free, the next attack
+  within `counter_seconds` skips its wind-up.
+- A staggering strike interrupts a wind-up whose action allows it, never a recovery.
+
+`step_combat(fighters, movesets, map, occupancy, orders, steps_per_second, streams, events)` runs
+one step: orders replace the buffered ones, then each fighter in handle order advances and starts
+its buffered order if free, then every attack on its first active step reads its targets (all
+before any resolves, so two fighters trading blows on the same step both land), then the strikes
+resolve in handle order. A phase that lasts no step is skipped. A body
+with no `Fighter` is still hit, with a default defence. `CombatEvent` names who did what; `Landed`
+carries each target's `DamageResult` and knockback, and the simulation applies the damage.
+
+At 30 steps a second the wind-ups in the tests take 6 steps, actives 3 and recoveries 9. The
+perfect window of 0.12 seconds means a dodge 3 steps (0.100 seconds) before the strike is perfect
+and 4 steps (0.133 seconds) is not.
+
 ## Tests
 
 - `tests/behaviour`: every step of the damage order, smoothed evasion, every shape on `Square8` and
   `Square4`, and knockback that clears, stops at a body, and stops at the edge.
 - `tests/decisions`: armour before resistance, arc coverage per topology, knockback stopping at
-  walls. See decision 0013.
+  walls (decision 0013); stagger against wind-up and recovery, dodging and grabbing through a dodge,
+  the perfect window, and a dodge buffered through recovery (decision 0014).
+- `tests/behaviour/fighter.rs`: phase timing, whiffs, refusals, buffer expiry, the counter, dodge
+  movement and cooldown, knockback from a blow, and repeatable events.
 - The hexagon cases run with the `hex` feature, natively and under WebAssembly.

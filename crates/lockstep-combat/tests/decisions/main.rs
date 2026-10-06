@@ -4,9 +4,12 @@
 //!
 //! A failing decision test is a design question: stop and report, never edit the test to pass.
 
-#[path = "../common.rs"]
+#[path = "../support/common.rs"]
 mod common;
+#[path = "../support/duel.rs"]
+mod duel;
 
+mod actions_and_dodges;
 mod arc_cells_per_topology;
 mod armour_before_resistance;
 mod knockback_stops_at_walls;
