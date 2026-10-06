@@ -76,6 +76,23 @@ the snapshot at each checkpoint, for `bisect`.
 
 See decision 0011. Saving mid-session arrives with saves and migrations.
 
+## Timeline
+
+`Timeline<E>` is an append-only log of events for journals, achievements and inspectors. It is a
+projection: rebuilt from any recording with `Timeline::rebuild_from::<S>(&recording)`, which also
+returns how the replay went (a `Diverged` rebuild stops at the first differing checkpoint), and
+never part of the state hash. Each `Entry` has the step, the day, the whole minute of the day (an integer
+from the clock's position, the same on every platform), a sequence number, and the event.
+
+- `append(step, clock, events)` adds one step's events; steps must not go backwards.
+- `for_entity(handle)` and `of_kind(kind)` use indexes built from `Indexable`, which
+  `#[derive(Message)]` writes.
+- `between(from_step, to_step)` is a slice; `last(predicate)` finds the most recent match.
+- `compact(before_step, summariser)` rolls old detail into what the summariser returns, such as one
+  entry per account per day, and rebuilds the indexes.
+
+See decision 0012.
+
 ## Rules the core obeys
 
 No hash maps or sets, no wall clocks, no threads, no transcendental float functions. The lint in
@@ -92,5 +109,5 @@ No hash maps or sets, no wall clocks, no threads, no transcendental float functi
 
 ## Not in milestone M1
 
-Money, grid, attributes, chance rolls (milestone M4), saves and migrations, record and replay
-(milestone M5), the timeline. See the roadmap.
+Money, grid, attributes, chance rolls (milestone M4), saves and migrations, record and replay and
+the timeline (milestone M5). See the roadmap.

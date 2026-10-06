@@ -22,3 +22,4 @@ mod named_streams;
 mod smoothing_table_committed;
 mod stable_vector_over_slotmap_rows;
 mod store_reuses_the_lowest_free_slot;
+mod timeline_is_a_projection;

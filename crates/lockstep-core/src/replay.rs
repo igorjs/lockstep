@@ -238,6 +238,18 @@ pub enum ReplayOutcome {
 pub fn replay<S: Simulation>(
     recording: &Recording<S::Intent>,
 ) -> Result<(Runner<S>, ReplayOutcome), ReplayError> {
+    replay_with::<S>(recording, &mut |_, _| {})
+}
+
+/// Sees the runner and the step's events after every replayed step.
+pub(crate) type StepObserver<'a, S> = dyn FnMut(&Runner<S>, &[<S as Simulation>::Event]) + 'a;
+
+/// `replay`, calling `observer` after every step with the runner and the events that step
+/// produced. The timeline is rebuilt this way.
+pub(crate) fn replay_with<S: Simulation>(
+    recording: &Recording<S::Intent>,
+    observer: &mut StepObserver<'_, S>,
+) -> Result<(Runner<S>, ReplayOutcome), ReplayError> {
     let configuration: S::Configuration =
         decode(&recording.configuration).map_err(ReplayError::Configuration)?;
     let mut runner = Runner::new(
@@ -276,7 +288,8 @@ pub fn replay<S: Simulation>(
     }
     for step in &recording.steps {
         runner.set_clock_multiplier(step.clock_multiplier);
-        runner.step_once(&step.intents);
+        let advanced = runner.step_once(&step.intents);
+        observer(&runner, &advanced.events);
         if let Some(outcome) = check(&runner)? {
             return Ok((runner, outcome));
         }
