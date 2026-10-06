@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "lockstep-agents"
+description = "Deterministic local awareness for lockstep: sight cones, hearing with wind, memory, and decisions in integers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[features]
+# Hexagonal maps, passed through to lockstep-spatial.
+hex = ["lockstep-spatial/hex", "lockstep-combat/hex"]
+
+[dependencies]
+lockstep-combat = { path = "../lockstep-combat" }
+lockstep-core = { path = "../lockstep-core" }
+lockstep-spatial = { path = "../lockstep-spatial" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

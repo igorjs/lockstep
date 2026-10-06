@@ -18,7 +18,7 @@ items in a milestone are out of scope here.
 | M5 Timeline, replay, derive | Done, three deferrals (D1 to D3) | `#[derive(Message)]` and `Indexable`; recorder, replay, bisect; timeline with compaction; ledger journal; headless `record`, `replay`, `bisect`, `stats` | Met: a planted rule change is found at the right checkpoint |
 | M6 Combat and movement | Done | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges, projectiles, movement; sparring; rovers ram | Met: the duel fixture hash is equal natively and under WebAssembly; 200 partners spar for 10,000 steps without sharing a cell or going below zero health |
 | M7 Inventory | Done | `lockstep-inventory`: catalogue from JSON, items as entities, containers, stacking, equipment with modifiers, binding affixes, spoilage by temperature; cargo-bay | Met: the same game minutes spoil on the same minute at 30 and 60 steps a second, natively and under WebAssembly |
-| M8 Agents | Not started | | |
+| M8 Agents | In progress | `lockstep-agents`: sight cones with line of sight, staggered checks, noise carried by the wind, hearing thresholds, psychic noise | Pending: memory, alert states, the director, steering, utility and delegation, weather, the rover and horde consumers, the benchmark |
 | M9 Knowledge | Not started | | |
 | M10 Progression | Not started | | |
 | M11 Relations | Not started | | |
@@ -65,3 +65,4 @@ items in a milestone are out of scope here.
 | P11 | The perfect window is 0.12 seconds; its cases are 3 steps (0.100 seconds, perfect) and 4 (0.133, not), the whole steps either side of the reference's 0.11 and 0.13 second cases at 30 a second | Decision 0014 |
 | P15 | The reference's survivor-against-an-opponent consumer is the `sparring` example, two neutral partners, so the survivor example stays free of combat | `docs/sparring.md` |
 | P16 | The reference's inventory consumers (a can of food and a knife for the survivor, and a Mars cargo bay) are one non-game `cargo-bay` example | `docs/cargo-bay.md` |
+| P17 | "A gale masks walking" is read as a 14 metre a second gale cutting a 6 metre footstep to 1.8 metres across the wind and nothing against it; no single threshold silences footsteps from 4 to 9 metres | Decision 0018 |
