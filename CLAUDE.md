@@ -18,7 +18,8 @@ Core never renders, never does input or output, never knows what a game is.
 - No crate without a consumer scenario in the same milestone.
 - No abbreviations in identifiers, comments, or docs.
 - Licensed Apache-2.0 only. Every file starts with an SPDX-License-Identifier: Apache-2.0
-  comment (after the shebang in scripts); scripts/check-spdx.sh enforces it. Fixture data,
+  comment (after the shebang in scripts); scripts/check-spdx.sh enforces it. A JSON file,
+  which has no comments, carries the line in a `<file>.license` sidecar. Fixture data,
   LICENSE and Cargo.lock are exempt.
 - A failing decision test is a design question: stop and report.
 - A fixture hash changes only with a commit message naming the rule that changed.

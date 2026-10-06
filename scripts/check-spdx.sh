@@ -11,7 +11,8 @@ while IFS= read -r -d '' file; do
     LICENSE|Cargo.lock|*.bin|*.hash) continue ;;
     *.json)
       # JSON has no comments, so the line lives in a sidecar file (the REUSE convention).
-      if [ "$(head -n 1 "$file.license" 2>/dev/null)" = 'SPDX-License-Identifier: Apache-2.0' ]; then
+      # The sidecar's own line is checked when the loop reaches it.
+      if [ -f "$file.license" ]; then
         continue
       fi
       echo "missing SPDX sidecar: $file.license"

@@ -3,7 +3,7 @@
 //!
 //! ```text
 //! seed 20260925
-//! steps 9000
+//! steps 10000
 //! 10 move survivor 15 15 walk
 //! 200 wound survivor
 //! 800 multiplier 20

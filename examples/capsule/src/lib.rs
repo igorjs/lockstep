@@ -91,11 +91,12 @@ pub fn decay(ids: Ids) -> [Effect; 3] {
     ]
 }
 
-/// Health lost while hunger or thirst is empty, until the survivor dies.
+/// Health lost while hunger or thirst is empty, until the survivor dies: about eight game hours,
+/// long enough for both to run out.
 pub fn starvation(ids: Ids) -> Effect {
     Effect {
         stacking: Stacking::RefreshDuration,
-        ..drain(ids.health, "starvation", -1, 2)
+        ..drain(ids.health, "starvation", -1, 5)
     }
 }
 

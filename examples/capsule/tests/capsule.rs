@@ -310,6 +310,7 @@ fn a_move_outside_the_room_is_rejected_not_obeyed() {
 #[test]
 fn the_survivor_starves_in_order_and_leaves_no_orphaned_components() {
     // Thirst drains faster than hunger, so the survivor is starving before the hunger warning.
+    // Hunger runs out later too, while the survivor still lives: starvation starts only once.
     let mut resting = runner(default_seed());
     let survivor = resting.simulation().survivor().unwrap();
     resting.set_clock_multiplier(20.0);
@@ -327,6 +328,11 @@ fn the_survivor_starves_in_order_and_leaves_no_orphaned_components() {
     assert_eq!(kinds, vec!["starving", "hungry", "died"]);
     assert!(!resting.simulation().world().entities.contains(survivor));
     assert!(resting.simulation().world().orphans().is_empty());
+    assert_eq!(
+        resting.simulation().world().effects.on(survivor).count(),
+        0,
+        "the dead keep no effects"
+    );
 }
 
 #[test]
