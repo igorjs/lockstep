@@ -22,6 +22,7 @@ determinism:
     cargo run -p lockstep-headless -- verify crowd --expect examples/crowd/fixtures/crowd.hash
     cargo run -p lockstep-headless --features parallel -- verify crowd --expect examples/crowd/fixtures/crowd.hash
     wasm-pack test --node crates/lockstep-core
+    wasm-pack test --node crates/lockstep-attributes
     wasm-pack test --node crates/lockstep-spatial
     wasm-pack test --node crates/lockstep-spatial --features hex
     wasm-pack test --node examples/capsule

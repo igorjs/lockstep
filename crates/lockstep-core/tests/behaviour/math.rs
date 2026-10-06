@@ -608,3 +608,39 @@ fn regenerate_math_fixtures() {
     )
     .unwrap();
 }
+
+#[test]
+fn decimals_parse_exactly_and_round_ties_away_from_zero() {
+    use lockstep_core::math::ParseFixedError;
+    let parse = |text: &str| Fixed32::parse_decimal(text);
+    assert_eq!(parse("1.5"), Ok(Fixed32::from_ratio(3, 2)));
+    assert_eq!(parse("-12.375"), Ok(Fixed32::from_ratio(-99, 8)));
+    assert_eq!(parse("+7"), Ok(Fixed32::from_int(7)));
+    assert_eq!(parse(".25"), Ok(Fixed32::from_ratio(1, 4)));
+    assert_eq!(parse("3."), Ok(Fixed32::from_int(3)));
+    assert_eq!(
+        parse("0.0000152587890625"),
+        Ok(Fixed32::from_raw(1)),
+        "2^-16 exactly"
+    );
+    // Half a raw unit rounds away from zero, a hair less rounds toward it.
+    assert_eq!(parse("0.00000762939453125"), Ok(Fixed32::from_raw(1)));
+    assert_eq!(parse("-0.00000762939453125"), Ok(Fixed32::from_raw(-1)));
+    assert_eq!(parse("0.000007629394531"), Ok(Fixed32::ZERO));
+    // 0.1 is not exact in binary: the nearest raw unit is 6,554.
+    assert_eq!(parse("0.1"), Ok(Fixed32::from_raw(6_554)));
+    assert_eq!("2.25".parse::<Fixed32>(), Ok(Fixed32::from_ratio(9, 4)));
+    assert_eq!(parse("-32768"), Ok(Fixed32::from_raw(i32::MIN)));
+    assert_eq!(parse("32768"), Err(ParseFixedError::OutOfRange));
+    assert_eq!(
+        parse("99999999999999999999999"),
+        Err(ParseFixedError::OutOfRange)
+    );
+    for bad in ["", "-", ".", "1.2.3", "1e5", "0x10", " 1", "1,5", "--1"] {
+        assert_eq!(parse(bad), Err(ParseFixedError::NotADecimal), "{bad:?}");
+    }
+    assert_eq!(
+        parse("0.1234567890123456789"),
+        Err(ParseFixedError::TooManyDigits)
+    );
+}
