@@ -10,6 +10,7 @@ mod common;
 mod chance_in_basis_points;
 mod clock_as_a_rate;
 mod clock_in_integer_ticks;
+mod derived_messages;
 mod fixed_endian_hash;
 mod fixed_point_math;
 mod fixed_step;

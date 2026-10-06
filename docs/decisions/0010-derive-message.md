@@ -24,6 +24,11 @@ no fixture hash changed when the examples moved onto it.
 - Detecting handles by a field attribute: the field type already says it, and an attribute is one
   more thing to forget.
 
+Handles are found inside `Option`, `Vec`, `Box`, arrays, slices and tuples, nested to any depth.
+A type that keeps handles somewhere the derive cannot see, such as a map, writes
+`#[message(version = N, manual_indexable)]` and implements `Indexable` itself. A suffixed version
+(`3u8`) and `#[message]` on a variant or a field are compile errors.
+
 ## Deferred
 
 The spec also has the derive register the type for schema export. Nothing reads a schema yet, so

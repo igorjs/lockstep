@@ -25,26 +25,19 @@ use lockstep_core::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 struct Counter {
     total: i64,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 struct Add(i64);
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 struct Bonus;
-
-impl Message for Counter {
-    const VERSION: u32 = 1;
-}
-impl Message for Add {
-    const VERSION: u32 = 1;
-}
-impl Message for Bonus {
-    const VERSION: u32 = 1;
-}
 
 impl Simulation for Counter {
     type Intent = Add;

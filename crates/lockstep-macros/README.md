@@ -10,7 +10,9 @@ The derive macros for [Lockstep](https://github.com/igorjs/lockstep). Use them t
 - `Message`, with `VERSION = N`. The attribute is required: a shipped shape is never edited, so every
   change is a new version.
 - `Indexable`, for the timeline. `kind` is an enum's variant index (0 for a struct), and `handles`
-  pushes every field of type `Handle`, `Option<Handle>` or `Vec<Handle>`, in field order.
+  pushes every `Handle` a field holds, directly or inside `Option`, `Vec`, `Box`, an array, a slice
+  or a tuple, in field order. A type whose handles live elsewhere (a map) writes
+  `#[message(version = N, manual_indexable)]` and implements `Indexable` itself.
 
 ```rust
 use lockstep_core::{Handle, Indexable, Message};
