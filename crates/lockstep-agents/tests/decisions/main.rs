@@ -12,4 +12,5 @@ mod a_horde_crosses_a_doorway;
 mod director_never_exceeds_its_budget;
 mod memory_fades_to_searching_then_idle;
 mod staggered_checks;
+mod utility_ties_and_refusals;
 mod wind_ranges;
