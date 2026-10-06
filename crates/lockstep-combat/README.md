@@ -13,6 +13,8 @@ integers.
   with invulnerability, perfect timing and counters, for every `Fighter` in a step.
 - `step_projectiles`: projectiles that fly a line, hit the first body, fly over low walls, descend
   and land, or only make noise.
+- `step_movement`: walk, run and sneak with stamina, noise per step, sliding around bodies, and
+  eight facings.
 
 ```rust
 use lockstep_combat::{resolve, DamageKind, DamagePacket, Defence, Tags};

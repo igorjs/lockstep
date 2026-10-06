@@ -2,8 +2,8 @@
 
 # lockstep-combat
 
-Real-time combat on the grid, resolved in integers: damage, hit shapes, knockback, actions and
-dodges with commitment, and projectiles. Movement comes next in milestone M6.
+Real-time combat and movement on the grid, resolved in integers: damage, hit shapes, knockback,
+actions and dodges with commitment, projectiles, and movement with stamina and noise.
 
 ## Damage
 
@@ -117,6 +117,38 @@ Projectiles are not in occupancy, so they never block a body. Keep them in a `St
 timeline indexes a projectile's events under its owner and target, not under the projectile's own
 handle, which comes from a separate store. See decision 0015.
 
+## Movement
+
+Each moving body has a `Mover` in a `Column<Mover>`. `step_movement(movers, fighters, world,
+orders, events)` runs one step; `MovementWorld` carries the map, occupancy, a `Pathfinder`, the
+`MovementRules`, the steps per second, and a callback giving how far a walking step on a cell is
+heard, in metres (6 on stone, 4 on grass, 9 on gravel in the reference).
+
+- `MoveOrder::MoveTo { target, gait }` paths there (A*) and takes the first cell on the same step:
+  one step from order to motion. Sent again every step while held, a new target replaces the old
+  path from where the body stands without losing progress toward the next cell. `Stop` halts.
+- Speeds, on half-metre cells: walk 3.6 cells a second (1.8 metres), run 8.4 (4.2), sneak 1.8
+  (0.9). Progress adds up exactly in integers, and a diagonal step costs 1.4 cells. Speeds are
+  16.16 fixed point, so 8.4 is a hair under and a run can arrive a step late over ten seconds.
+- Stamina is the body's `Fighter` stamina, when it has one, so combat and movement share one pool.
+  Running while advancing spends 6 a second; walking, standing and waiting behind a body restore 4. Empty forces a walk until stamina is
+  back to 15 (`Exhausted`, `Recovered`): 100 stamina runs out in about 17 seconds.
+- Each `Moved` event carries how far the step is heard: the cell's walking distance, doubled when
+  running and halved when sneaking.
+- A body in the way: the two neighbours on either side of the intended direction are tried first
+  (a sidestep costs what its own cell costs); blocked for half a second, even with a held target
+  that keeps changing, the body paths again treating other bodies as walls (`Repathed`) until it
+  arrives or stops.
+- A target another body holds is approached and the walker stops beside it (`Halted`).
+- Each step checks the map again, so a wall raised on the path is walked around (or the target
+  becomes `Unreachable`).
+- The facing turns to the nearest of eight directions (`quantise_facing`).
+- An unreachable target is `Unreachable` and nothing moves; reaching it is `Arrived`, once, even
+  while the order is held.
+- Movement moves single-cell bodies.
+
+See decision 0016.
+
 ## Tests
 
 - `tests/behaviour`: every step of the damage order, smoothed evasion, every shape on `Square8` and
@@ -126,6 +158,8 @@ handle, which comes from a separate store. See decision 0015.
   the perfect window, and a dodge buffered through recovery (decision 0014).
 - `tests/behaviour/fighter.rs`: phase timing, whiffs, refusals, buffer expiry, the counter, dodge
   movement and cooldown, knockback from a blow, and repeatable events.
+- `tests/behaviour/movement.rs`: speeds by gait, diagonal cost, held orders, sliding, finding a new
+  path, exhaustion and recovery, facings, unreachable targets, stopping.
 - `tests/behaviour/projectiles.rs`: hitting the first body, walls, low walls, range and the map
   edge, landing, a scream that is heard but hurts nobody, and a dodge letting a projectile pass.
 - The hexagon cases run with the `hex` feature, natively and under WebAssembly.

@@ -5,6 +5,7 @@ mod damage;
 mod fighter;
 mod frame;
 mod knockback;
+mod movement;
 mod projectile;
 mod shape;
 
@@ -14,5 +15,9 @@ pub use fighter::{
     DodgeDefinition, Fighter, Hit, InterruptMask, Moveset, MovesetId, Order, Phase, Refusal,
 };
 pub use knockback::{knock_back, Impact, Knocked};
+pub use movement::{
+    quantise_facing, step_movement, Gait, MoveOrder, MovementEvent, MovementRules, MovementWorld,
+    Mover,
+};
 pub use projectile::{step_projectiles, Launch, Projectile, Stopped};
 pub use shape::{angle_between, direction, hits, HitShape};
