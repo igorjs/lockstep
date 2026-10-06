@@ -248,6 +248,16 @@ impl<T: Topology> GridMap<T> {
         T::neighbours(cell, self.width, self.height, out);
     }
 
+    /// Single steps between two cells on an empty map, whatever each costs.
+    pub fn steps(&self, a: Cell, b: Cell) -> u32 {
+        T::steps(a, b, self.width)
+    }
+
+    /// The cell's centre in cell widths, x east and y south.
+    pub fn centre(&self, cell: Cell) -> lockstep_core::math::Vector2 {
+        T::centre(cell, self.width)
+    }
+
     pub fn distance(&self, a: Cell, b: Cell) -> u32 {
         T::distance(a, b, self.width)
     }
