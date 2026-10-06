@@ -18,7 +18,8 @@ The grid-shaped consumer scenario: rovers on a plateau, on any topology.
   holds no cell and never moves.
 - `X` rams: it moves like `M`, except a rover in the way is first pushed one cell the way the rammer faces,
   through `knock_back` from `lockstep-combat`. A rock, the edge or a third rover beyond it stops the push,
-  and then nobody moves. Rams do not chain. The fixture never rams, so its hash did not change.
+  and then nobody moves; on `Square8` so does a rock on either side of a diagonal push, which a body
+  cannot cut past (a diagonal `M` only checks the cell it enters). Rams do not chain. The fixture never rams, so its hash did not change.
 - A program added in a step starts running in the next one.
 - The compass names: north is the first heading of every topology (north-east on hexagons), east points
   along +x, and south and west are their opposites. A rock outside the plateau is ignored.

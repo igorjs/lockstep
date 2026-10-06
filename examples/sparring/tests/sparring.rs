@@ -161,6 +161,30 @@ fn a_partner_winding_up_does_not_walk() {
 }
 
 #[test]
+fn a_move_sent_with_an_attack_waits_for_the_attack_to_finish() {
+    let mut runner = runner(pair([(2, 3), (9, 3)]), 3);
+    let (walker, _) = partners(&runner);
+    let start = runner.simulation().cell_of(walker);
+    runner.step_once(&[
+        Intent::Attack {
+            who: walker,
+            action: STICK,
+            facing: 0,
+        },
+        Intent::Move {
+            who: walker,
+            x: 8,
+            y: 3,
+            gait: Gait::Walk,
+        },
+    ]);
+    for _ in 0..30 {
+        assert_eq!(runner.simulation().cell_of(walker), start);
+        runner.step_once(&[]);
+    }
+}
+
+#[test]
 fn a_throw_needs_a_ready_thrower() {
     let mut runner = runner(pair([(2, 3), (9, 3)]), 3);
     let (thrower, other) = partners(&runner);

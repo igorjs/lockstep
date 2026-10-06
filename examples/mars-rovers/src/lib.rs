@@ -19,7 +19,8 @@
 //!   does not hold a cell.
 //! - A ram (`X`) moves like `M`, except a rover in the way is first pushed one cell the way the
 //!   rammer faces, through `lockstep_combat::knock_back`. A rock, the edge, or a third rover beyond
-//!   it stops the push and the rammer stays put. Rams do not chain.
+//!   it stops the push and the rammer stays put, and so does a rock on either side of a diagonal
+//!   push on `Square8`, which a body cannot cut past. Rams do not chain.
 
 use lockstep_core::{
     ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,

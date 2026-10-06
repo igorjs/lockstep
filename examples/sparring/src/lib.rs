@@ -374,13 +374,9 @@ impl Simulation for Sparring {
         );
 
         // A partner that is attacking, dodging or staggered stands still.
+        // The stop comes after any move order of this step, so it wins.
         for (who, fighter) in self.world.fighters.iter() {
-            let walking = self
-                .world
-                .movers
-                .get(who)
-                .is_some_and(|mover| mover.target.is_some());
-            if fighter.phase != Phase::Ready && walking {
+            if fighter.phase != Phase::Ready {
                 move_orders.push((who, MoveOrder::Stop));
             }
         }
