@@ -1,7 +1,9 @@
 # lockstep-spatial
 
 A deterministic spatial toolkit: cells as integer indices, a topology trait, and dense maps with
-elevation. Occupancy, pathfinding, flow fields and line of sight follow in the next parts of
+elevation, and a packed occupancy set for bodies. Collision is not detection: it is occupancy.
+The first caller to claim a cell gets it, so a simulation resolves contested cells in handle order by
+applying its moves in handle order. Pathfinding, flow fields and line of sight follow in the next part of
 milestone M3.
 
 ## Cells and topologies
@@ -30,9 +32,20 @@ and `take_dirty_chunks()` returns and clears them in ascending order, for hosts 
 marks are not state: saves, hashes and equality ignore them. Loading a map checks it as `new` does,
 and a loaded map reports every chunk as changed.
 
+## Occupancy
+
+A packed sparse set: cell to slot, a dense list of bodies, and a sorted handle index. `at` is constant
+time, `cell_of` is logarithmic, and moving a placed body is constant time plus its footprint; placing a
+new body and `vacate` shift the sorted index, so they are linear in the number of bodies. It saves as
+the bodies sorted by handle, so equal occupancies save, compare and hash the same whatever their history,
+and a load checks every cell is inside the grid and held once. A body may hold several cells (a
+footprint): `move_footprint` is atomic, so a blocked move changes nothing. `within(map, centre,
+radius, out)` returns occupied cells inside a radius (in tenths), sorted by cell, whatever order the
+bodies were placed and moved in.
+
 ## Tests
 
-- `tests/behaviour`: topologies and the map.
-- `tests/decisions`: the circle measure for topologies.
+- `tests/behaviour`: topologies, the map, occupancy against a plain model over random histories.
+- `tests/decisions`: the circle measure for topologies, sorted queries, atomic footprints.
 - Every test also runs under WebAssembly, with and without the `hex` feature.
 - The `hex` tests run with `cargo test -p lockstep-spatial --features hex`, which `just test` does.
