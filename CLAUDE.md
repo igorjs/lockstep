@@ -23,6 +23,8 @@ Core never renders, never does input or output, never knows what a game is.
   LICENSE and Cargo.lock are exempt.
 - A failing decision test is a design question: stop and report.
 - A fixture hash changes only with a commit message naming the rule that changed.
+- Keep docs/roadmap.md current: every pull request that changes a milestone's status or
+  adds, closes or changes a gap, deferral or departure updates it.
 
 ## Loop
 - just test · just check · just determinism · just ci before every commit
