@@ -414,6 +414,19 @@ pub fn sidestep<T: Topology>(
     from: Cell,
     blocked: Cell,
 ) -> Option<Cell> {
+    sidestep_where(map, occupancy, who, from, blocked, |_| true)
+}
+
+/// `sidestep`, taking only cells `accept` allows, such as cells inside a leash: the other side is
+/// still tried when the nearer one is not allowed.
+pub fn sidestep_where<T: Topology>(
+    map: &GridMap<T>,
+    occupancy: &Occupancy,
+    who: Handle,
+    from: Cell,
+    blocked: Cell,
+    accept: impl Fn(Cell) -> bool,
+) -> Option<Cell> {
     let intended = direction(map, from, blocked);
     let mut neighbours = Vec::new();
     map.neighbours(from, &mut neighbours);
@@ -427,7 +440,9 @@ pub fn sidestep<T: Topology>(
         .into_iter()
         .take(2)
         .find(|(_, cell)| {
-            map.can_step(from, *cell) && occupancy.at(*cell).is_none_or(|body| body == who)
+            map.can_step(from, *cell)
+                && occupancy.at(*cell).is_none_or(|body| body == who)
+                && accept(*cell)
         })
         .map(|(_, cell)| cell)
 }

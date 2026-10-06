@@ -12,7 +12,9 @@ Status: decided and implemented in milestone M8.
 - When the field's next cell is held, the agent tries the two neighbours either side of its way,
   nearest the intended direction first, before waiting. Agents and fighters share the one
   function, `lockstep_combat::sidestep`.
-- A cell outside an agent's leash is never taken.
+- A cell outside an agent's leash is never taken, except one no farther from home than the
+  agent's own, so an agent knocked outside finds its way back. The sidestep filters by the leash
+  while it chooses, so the other side is still tried.
 
 ## Alternatives rejected
 

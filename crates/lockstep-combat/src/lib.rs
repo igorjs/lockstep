@@ -16,8 +16,8 @@ pub use fighter::{
 };
 pub use knockback::{knock_back, Impact, Knocked};
 pub use movement::{
-    quantise_facing, sidestep, step_movement, Gait, MoveOrder, MovementEvent, MovementRules,
-    MovementWorld, Mover,
+    quantise_facing, sidestep, sidestep_where, step_movement, Gait, MoveOrder, MovementEvent,
+    MovementRules, MovementWorld, Mover,
 };
 pub use projectile::{step_projectiles, Launch, Projectile, Stopped};
 pub use shape::{angle_between, direction, hits, HitShape};

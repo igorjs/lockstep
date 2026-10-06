@@ -73,10 +73,12 @@ See decision 0019.
 ## Steering
 
 `steer(map, occupancy, field, agents, leashes, cell_metres, events)` moves each agent one cell
-down a `FlowField`, in handle order. An agent takes the field's next cell, or, when another body
-holds it, `lockstep_combat::sidestep`: the two neighbours either side of the way, nearest the
-intended direction first. Fighters use the same function. A cell outside the agent's leash is
-never taken. Moving through occupancy reserves the cell at once, so no later agent in the same
+down a `FlowField`, in handle order. An agent takes the field's next cell when the map still lets
+it step there and no other body holds it; otherwise `lockstep_combat::sidestep_where`: the two
+neighbours either side of the way, nearest the intended direction first, among the cells it may
+take. Fighters use the same sidestep. Within a leash any cell inside it may be taken; an agent
+outside its leash, knocked or placed there, may take any cell no farther from home than its own,
+so it finds its way back. A wall raised after the field was built is stepped around. Moving through occupancy reserves the cell at once, so no later agent in the same
 step takes it and no two bodies ever share a cell. An agent that cannot move gets `Waited`; one at
 the field's goal, or out of its reach, stays put without an event.
 
@@ -93,8 +95,9 @@ See decision 0020.
 - `tests/behaviour/hearing.rs`: listeners at the edge of a noise, the source left out, the wind
   less its threshold, a wall halving the reach, a listener off the axes on `Square4` and
   `Square8`, a tall listener over a low wall, a negative wind, and the hearing range.
-- `tests/behaviour/steering.rs`: a leashed agent stopping at its leash, and a boxed-in agent
-  waiting while one at the goal stays quiet.
+- `tests/behaviour/steering.rs`: a leashed agent stopping at its leash, a boxed-in agent
+  waiting while one at the goal stays quiet, a door closed after the field was built, an agent
+  walking back into its leash, and a sidestep that gives way to the other side inside the leash.
 - `tests/behaviour/minds.rs`: a noise making an agent Curious, confidence fading, sighting again,
   Alert ignoring noise, and a stronger memory kept.
 - `tests/decisions`: the exact wind ranges, the gale, psychic noise, and staggered checks for a

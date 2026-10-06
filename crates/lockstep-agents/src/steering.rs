@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::mind::Leash;
-use lockstep_combat::sidestep;
+use crate::perception::distance_metres;
+use lockstep_combat::sidestep_where;
 use lockstep_core::math::Fixed32;
 use lockstep_core::{Column, Handle, Message};
 use lockstep_spatial::{Cell, FlowField, GridMap, Occupancy, Topology};
@@ -21,10 +22,12 @@ pub enum SteerEvent {
 }
 
 /// Moves each agent one cell down a flow field, in handle order. Each agent takes the field's
-/// next cell, or when another body holds it the shared `sidestep`; a cell outside the agent's
-/// leash is never taken. Moving through occupancy reserves the cell at once, so a later agent
-/// in the same step never takes it, and two bodies never share a cell. An agent at the field's
-/// goal or out of its reach stays put without an event.
+/// next cell when the map still lets it step there and no other body holds it; otherwise the
+/// shared `sidestep`. Within a leash every cell inside it is allowed; an agent outside its leash
+/// (knocked or placed there) may take any cell no farther from home than its own, so it can find
+/// its way back. Moving through occupancy reserves the cell at once, so a later agent in the same
+/// step never takes it. An agent at the field's goal or out of its reach stays put without an
+/// event.
 pub fn steer<T: Topology>(
     map: &GridMap<T>,
     occupancy: &mut Occupancy,
@@ -44,18 +47,25 @@ pub fn steer<T: Topology>(
         let Some(next) = field.step_from(from) else {
             continue;
         };
-        let allowed = |cell: Cell| {
-            leashes
-                .get(who)
-                .is_none_or(|leash| leash.allows(map, cell, cell_metres))
+        let leash = leashes.get(who).copied();
+        let allowed = |cell: Cell| match leash {
+            None => true,
+            Some(leash) => {
+                leash.allows(map, cell, cell_metres)
+                    || distance_metres(map, leash.home, cell, cell_metres)
+                        <= distance_metres(map, leash.home, from, cell_metres)
+            }
         };
-        let free = occupancy.at(next).is_none_or(|body| body == who);
-        let to = if free {
+        // The map may have changed since the field was built: a closed door is stepped around.
+        let open = map.can_step(from, next)
+            && occupancy.at(next).is_none_or(|body| body == who)
+            && allowed(next);
+        let to = if open {
             Some(next)
         } else {
-            sidestep(map, occupancy, who, from, next)
+            sidestep_where(map, occupancy, who, from, next, allowed)
         };
-        match to.filter(|cell| allowed(*cell)) {
+        match to {
             Some(to) => {
                 occupancy
                     .move_to(who, to)

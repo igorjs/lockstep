@@ -78,3 +78,93 @@ fn a_boxed_in_agent_waits_and_one_at_the_goal_stays_quiet() {
         "the agent at the goal makes no events"
     );
 }
+
+#[test]
+fn a_door_closed_after_the_field_was_built_is_stepped_around() {
+    let mut map: GridMap<Square8> = GridMap::new(20, 5);
+    let mut occupancy = Occupancy::new(&map);
+    let mut store = StableVector::new();
+    let agent = store.insert(());
+    occupancy.place(map.index(2, 2), agent).unwrap();
+    let field = FlowField::build(&map, &[map.index(19, 2)], u32::MAX);
+    let door = map.index(3, 2);
+    map.set_passable(door, false);
+    let leashes = Column::new();
+    let mut events = Vec::new();
+    steer(
+        &map,
+        &mut occupancy,
+        &field,
+        &[agent],
+        &leashes,
+        Fixed32::HALF,
+        &mut events,
+    );
+    let at = occupancy.cell_of(agent).unwrap();
+    assert_ne!(at, door, "never into the wall");
+    assert!(map.is_passable(at));
+}
+
+#[test]
+fn an_agent_outside_its_leash_walks_back_toward_home() {
+    // Home at (5, 2) with a 2 metre leash; the agent starts 5 metres out, and the field leads home.
+    let map: GridMap<Square8> = GridMap::new(30, 5);
+    let mut occupancy = Occupancy::new(&map);
+    let mut store = StableVector::new();
+    let agent = store.insert(());
+    occupancy.place(map.index(15, 2), agent).unwrap();
+    let mut leashes = Column::new();
+    leashes.set(
+        agent,
+        Leash {
+            home: map.index(5, 2),
+            radius_metres: metres(2),
+        },
+    );
+    let field = FlowField::build(&map, &[map.index(5, 2)], u32::MAX);
+    let mut events = Vec::new();
+    for _ in 0..10 {
+        steer(
+            &map,
+            &mut occupancy,
+            &field,
+            &[agent],
+            &leashes,
+            Fixed32::HALF,
+            &mut events,
+        );
+    }
+    assert_eq!(map.coordinates(occupancy.cell_of(agent).unwrap()), (5, 2));
+}
+
+#[test]
+fn a_sidestep_outside_the_leash_gives_way_to_the_other_side() {
+    // Heading east with a body ahead at (6, 2). The leash, centred below, allows the south-east
+    // diagonal (6, 3) but not the north-east one (6, 1), which the sidestep tries first.
+    let map: GridMap<Square8> = GridMap::new(20, 7);
+    let mut occupancy = Occupancy::new(&map);
+    let mut store = StableVector::new();
+    let (agent, standing) = (store.insert(()), store.insert(()));
+    occupancy.place(map.index(5, 2), agent).unwrap();
+    occupancy.place(map.index(6, 2), standing).unwrap();
+    let mut leashes = Column::new();
+    leashes.set(
+        agent,
+        Leash {
+            home: map.index(5, 4),
+            radius_metres: Fixed32::from_ratio(12, 10),
+        },
+    );
+    let field = FlowField::build(&map, &[map.index(19, 2)], u32::MAX);
+    let mut events = Vec::new();
+    steer(
+        &map,
+        &mut occupancy,
+        &field,
+        &[agent],
+        &leashes,
+        Fixed32::HALF,
+        &mut events,
+    );
+    assert_eq!(map.coordinates(occupancy.cell_of(agent).unwrap()), (6, 3));
+}

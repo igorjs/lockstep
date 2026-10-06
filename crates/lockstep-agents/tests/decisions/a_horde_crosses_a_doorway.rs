@@ -4,8 +4,10 @@
 //! and no later agent in the step can take it.
 //! Alternative rejected: computing every agent's move first and applying them together, which
 //! needs a separate conflict pass and lets two agents pick the same cell.
-//! Would change if: 200 agents crossing a one-cell doorway ever share a cell, or fewer than all
-//! 200 are through in 2,000 steps.
+//! Would change if: fewer than all 200 agents crossing a one-cell doorway are through in 2,000
+//! steps (without the sidestep they jam: this is the check that pins it). Occupancy refuses a
+//! held cell outright, so the per-step check that no two agents share a cell guards the
+//! invariant rather than the decision.
 
 use lockstep_agents::steer;
 use lockstep_core::math::Fixed32;

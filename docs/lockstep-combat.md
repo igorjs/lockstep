@@ -135,7 +135,7 @@ heard, in metres (6 on stone, 4 on grass, 9 on gravel in the reference).
   back to 15 (`Exhausted`, `Recovered`): 100 stamina runs out in about 17 seconds.
 - Each `Moved` event carries how far the step is heard: the cell's walking distance, doubled when
   running and halved when sneaking.
-- A body in the way: `sidestep`, shared with agents' steering, tries the two neighbours on either
+- A body in the way: `sidestep` (and `sidestep_where`, with a filter), shared with agents' steering, tries the two neighbours on either
   side of the intended direction first
   (a sidestep costs what its own cell costs); blocked for half a second, even with a held target
   that keeps changing, the body paths again treating other bodies as walls (`Repathed`) until it
