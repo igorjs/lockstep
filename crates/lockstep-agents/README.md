@@ -12,6 +12,9 @@ hear through the air, all in integers. Nothing knows where anything is unless it
 - `Noise` and `Wind`: a noise carries `loudness × (1 + 0.04 × strength × cos θ)` metres, exactly,
   and the wind raises every listener's threshold by 0.3 metres per metre a second. `hear` lists
   the listeners in range, muffled by walls. Psychic noise ignores the wind.
+- `think`: each agent's `Mind` hunts a memory that fades in exact game minutes, moving between
+  Idle, Curious, Alert and Searching; a `Director` lets at most its budget be Alert on one target,
+  and a `Leash` keeps an agent from reacting to anything far from home.
 
 ## Example
 
