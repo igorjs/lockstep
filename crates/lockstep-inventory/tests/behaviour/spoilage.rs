@@ -60,10 +60,8 @@ fn a_warmer_container_spoils_faster_from_the_moment_it_warms() {
         bay.inventory.freshness(cold, &bay.catalogue),
         Some(down(5, 6))
     );
-    // The cold store loses power and warms to the rack's temperature: the rest goes at 100 percent.
-    bay.inventory
-        .move_between(cold, bay.rack, &bay.catalogue)
-        .unwrap();
+    // The cold store loses power and warms to 18 degrees: the rest goes at 100 percent.
+    bay.inventory.set_temperature(bay.cold, 18).unwrap();
     bay.inventory
         .spoil(whole(1_200), 35, &bay.catalogue, &mut events);
     assert_eq!(events, vec![InventoryEvent::Spoiled { item: cold }]);

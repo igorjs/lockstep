@@ -10,6 +10,8 @@ Status: decided and implemented in milestone M7.
   the temperature. An item spoils when the total reaches its minutes at 100 percent. The same game
   minutes spoil the same at any step rate.
 - Units merged into one stack share the higher exposure: a stack spoils as its stalest unit.
+  Spoiled and fresh units never share a stack, so a stack never turns spoiled without its own
+  `Spoiled` event.
 - A put merges an item into a stack only when every unit fits, and otherwise gives it a slot of
   its own or refuses. A put never splits an item, so one put changes at most one item.
 - A binding affix keeps an item on its wearer. The affix can be removed while the item is worn,

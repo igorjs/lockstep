@@ -47,12 +47,13 @@ fractions, as in the attribute registry.
 `Inventory` keeps items in their own `StableVector`, and each item's `Place`: loose, in a
 container, or worn in a slot. Containers and wearers are keyed by the simulation's own handles,
 so a crate, a locker or a person holds items. A `Container` has a number of slots, an optional
-weight limit and a temperature.
+weight limit and a temperature, which `set_temperature` changes (a cold store losing power).
 
 - `create` makes a loose item of some units. `put` puts a loose item into a container; `take`
   makes it loose again; `move_between` moves it from one container to another, all or nothing.
-- A put merges the item into the first stack of the same kind and affixes that has room for every
-  unit; the merged item is gone, and the stack spoils as the staler of the two. Otherwise the item
+- A put merges the item into the first stack of the same kind and affixes, spoiled or not alike,
+  that has room for every unit; the merged item is gone, and the stack spoils as the staler of the
+  two. Spoiled and fresh units never share a stack. Otherwise the item
   takes a slot of its own. A put never splits an item: `split` first (decision 0017).
 - `split` takes units off into a new loose item with the same affixes and spoilage. `consume`
   uses units up, and the item is gone at none. `destroy` removes an item.

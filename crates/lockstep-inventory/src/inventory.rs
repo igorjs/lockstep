@@ -111,6 +111,8 @@ pub enum Refusal {
     Worn,
     /// Already in that container.
     AlreadyThere,
+    /// The item is in no container to move from.
+    NotContained,
     /// No free slot, and no stack it fits into whole.
     Full,
     TooHeavy,
@@ -201,6 +203,17 @@ impl Inventory {
         Ok(())
     }
 
+    /// Changes a container's temperature, such as a cold store losing power. Spoilage reads it
+    /// from the next `spoil` on.
+    pub fn set_temperature(&mut self, owner: Handle, degrees: i32) -> Result<(), Refusal> {
+        let container = self
+            .containers
+            .get_mut(owner)
+            .ok_or(Refusal::UnknownContainer)?;
+        container.temperature = degrees;
+        Ok(())
+    }
+
     /// Gives an entity every equipment slot in the catalogue, all empty.
     pub fn add_wearer(&mut self, owner: Handle, catalogue: &Catalogue) {
         if !self.equipment.has(owner) {
@@ -232,7 +245,7 @@ impl Inventory {
     }
 
     /// Whether a container takes this item, and the stack it merges into when there is one: the
-    /// first stack of the same kind and affixes with room for every unit. A put never splits an
+    /// first stack of the same kind and affixes, spoiled or not alike, with room for every unit. A put never splits an
     /// item; split it first.
     fn fits(
         &self,
@@ -257,6 +270,7 @@ impl Inventory {
             self.items.get(*other).is_some_and(|other| {
                 other.kind == held.kind
                     && other.affixes == held.affixes
+                    && other.spoiled == held.spoiled
                     && other.count as u32 + held.count as u32 <= stack as u32
             })
         });
@@ -286,7 +300,6 @@ impl Inventory {
                 let into = self.items.get_mut(stack).expect("listed");
                 into.count += merged.count;
                 into.exposure = into.exposure.max(merged.exposure);
-                into.spoiled |= merged.spoiled;
                 Ok(stack)
             }
             None => {
@@ -332,7 +345,7 @@ impl Inventory {
         let from = match self.places.get(item).copied() {
             None => return Err(Refusal::UnknownItem),
             Some(Place::Worn { .. }) => return Err(Refusal::Worn),
-            Some(Place::Loose) => return Err(Refusal::UnknownContainer),
+            Some(Place::Loose) => return Err(Refusal::NotContained),
             Some(Place::In(from)) => from,
         };
         if from == to {
@@ -345,6 +358,9 @@ impl Inventory {
 
     /// Splits `count` units off into a new loose item with the same affixes and spoilage.
     pub fn split(&mut self, item: Handle, count: u16) -> Result<Handle, Refusal> {
+        if matches!(self.places.get(item), Some(Place::Worn { .. })) {
+            return Err(Refusal::Worn);
+        }
         let held = self.items.get_mut(item).ok_or(Refusal::UnknownItem)?;
         if count == 0 || count >= held.count {
             return Err(Refusal::Count);

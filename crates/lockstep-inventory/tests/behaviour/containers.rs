@@ -87,6 +87,11 @@ fn move_between_is_all_or_nothing() {
         bay.inventory.move_between(suit, bay.rack, &bay.catalogue),
         Err(Refusal::AlreadyThere)
     );
+    let loose = bay.make("water", 1);
+    assert_eq!(
+        bay.inventory.move_between(loose, bay.rack, &bay.catalogue),
+        Err(Refusal::NotContained)
+    );
     let water = bay.inventory.container(bay.cold).unwrap().items()[0];
     assert_eq!(
         bay.inventory.move_between(water, bay.rack, &bay.catalogue),
@@ -95,6 +100,22 @@ fn move_between_is_all_or_nothing() {
     assert_eq!(
         bay.inventory.container(bay.rack).unwrap().items(),
         &[suit, water]
+    );
+}
+
+#[test]
+fn spoiled_and_fresh_units_never_share_a_stack() {
+    let mut bay = Bay::new();
+    let old = bay.make("ration", 1);
+    bay.inventory
+        .spoil(whole(1_440), 18, &bay.catalogue, &mut Vec::new());
+    assert!(bay.inventory.item(old).unwrap().spoiled);
+    let fresh = bay.stock("ration", 2, bay.rack);
+    assert_eq!(bay.inventory.put(old, bay.rack, &bay.catalogue), Ok(old));
+    assert!(!bay.inventory.item(fresh).unwrap().spoiled);
+    assert_eq!(
+        bay.inventory.container(bay.rack).unwrap().items(),
+        &[fresh, old]
     );
 }
 

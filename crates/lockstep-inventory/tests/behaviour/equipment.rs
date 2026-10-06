@@ -63,6 +63,7 @@ fn a_worn_item_cannot_be_put_moved_split_consumed_or_destroyed() {
         Err(Refusal::Worn)
     );
     assert_eq!(bay.inventory.take(suit), Err(Refusal::Worn));
+    assert_eq!(bay.inventory.split(suit, 1), Err(Refusal::Worn));
     assert_eq!(bay.inventory.consume(suit, 1), Err(Refusal::Worn));
     assert_eq!(bay.inventory.destroy(suit), Err(Refusal::Worn));
 }
