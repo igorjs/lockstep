@@ -23,6 +23,15 @@ cargo run -p lockstep-headless -- verify crowd --expect examples/crowd/fixtures/
 cargo run -p lockstep-headless --features parallel -- verify crowd --expect examples/crowd/fixtures/crowd.hash
 ```
 
+It also records and replays sessions:
+
+```sh
+cargo run -p lockstep-headless -- record ledger --out ledger.lkrec --steps 3000
+cargo run -p lockstep-headless -- replay ledger.lkrec
+cargo run -p lockstep-headless -- bisect ledger.lkrec
+cargo run -p lockstep-headless -- stats ledger.lkrec
+```
+
 See the [full documentation](https://github.com/igorjs/lockstep/blob/main/docs/lockstep-headless.md).
 
 ## License

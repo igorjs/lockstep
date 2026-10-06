@@ -5,7 +5,14 @@
 //! - `fixture <name> [--seed <number>] [--steps <number>]` runs a fixture and prints its hash.
 //! - `verify <name> --expect <file> [--seed <number>] [--steps <number>]` compares the hash with
 //!   a committed hash file and fails when they differ.
+//! - `record <name> --out <file> [--seed] [--steps] [--every]` writes a recording of the fixture.
+//! - `replay <file> [--until <step>]` runs a recording again and fails when it diverges.
+//! - `bisect <file>` names the checkpoints around the first divergence and what differs.
+//! - `stats <file>` prints the session's length, intents per minute and multiplier use.
 
+pub mod recordings;
+
+use recordings::replayables;
 use std::fs;
 
 pub struct Fixture {
@@ -64,6 +71,10 @@ pub enum CommandError {
         expected: String,
         actual: String,
     },
+    /// A recording that cannot be read or run.
+    Recording(String),
+    /// A replay that no longer matches its recording.
+    Diverged(String),
 }
 
 impl std::fmt::Display for CommandError {
@@ -87,16 +98,30 @@ impl std::fmt::Display for CommandError {
                 formatter,
                 "fixture '{name}' diverged: expected {expected}, got {actual}"
             ),
+            CommandError::Recording(message) | CommandError::Diverged(message) => {
+                write!(formatter, "{message}")
+            }
         }
     }
 }
 
-const USAGE: &str = "usage: lockstep-headless fixture <name> [--seed <number>] [--steps <number>]\n       lockstep-headless verify <name> --expect <file> [--seed <number>] [--steps <number>]";
+const USAGE: &str = "usage: lockstep-headless fixture <name> [--seed <number>] [--steps <number>]
+       lockstep-headless verify <name> --expect <file> [--seed <number>] [--steps <number>]
+       lockstep-headless record <name> --out <file> [--seed <number>] [--steps <number>] [--every <number>]
+       lockstep-headless replay <recording> [--until <step>]
+       lockstep-headless bisect <recording>
+       lockstep-headless stats <recording>";
+
+/// Checkpoint spacing for `record` when `--every` is not given.
+const DEFAULT_CHECKPOINT_EVERY: u64 = 100;
 
 struct Options {
     seed: Option<u64>,
     steps: Option<u64>,
     expect: Option<String>,
+    out: Option<String>,
+    every: Option<u64>,
+    until: Option<u64>,
 }
 
 fn parse_options(arguments: &[String]) -> Result<Options, CommandError> {
@@ -104,6 +129,9 @@ fn parse_options(arguments: &[String]) -> Result<Options, CommandError> {
         seed: None,
         steps: None,
         expect: None,
+        out: None,
+        every: None,
+        until: None,
     };
     let mut index = 0;
     while index < arguments.len() {
@@ -115,6 +143,9 @@ fn parse_options(arguments: &[String]) -> Result<Options, CommandError> {
             "--seed" => options.seed = Some(parse_number(flag, value)?),
             "--steps" => options.steps = Some(parse_number(flag, value)?),
             "--expect" => options.expect = Some(value.clone()),
+            "--out" => options.out = Some(value.clone()),
+            "--every" => options.every = Some(parse_number(flag, value)?.max(1)),
+            "--until" => options.until = Some(parse_number(flag, value)?),
             other => {
                 return Err(CommandError::Usage(format!(
                     "unknown option {other}\n{USAGE}"
@@ -170,6 +201,56 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
                     expected,
                     actual,
                 })
+            }
+        }
+        "record" => {
+            let fixture = fixtures()
+                .into_iter()
+                .find(|fixture| fixture.name == name)
+                .ok_or_else(|| CommandError::UnknownFixture(name.to_string()))?;
+            let replayable = replayables()
+                .into_iter()
+                .find(|replayable| replayable.id == name)
+                .ok_or_else(|| {
+                    CommandError::Recording(format!("fixture '{name}' cannot be recorded yet"))
+                })?;
+            let out = options.out.clone().ok_or_else(|| {
+                CommandError::Usage(format!("record needs --out <file>\n{USAGE}"))
+            })?;
+            let bytes = (replayable.record)(
+                options.seed.unwrap_or(fixture.default_seed),
+                options.steps.unwrap_or(fixture.default_steps),
+                options.every.unwrap_or(DEFAULT_CHECKPOINT_EVERY),
+            )
+            .map_err(CommandError::Recording)?;
+            fs::write(&out, &bytes).map_err(|error| {
+                CommandError::Unreadable(format!("cannot write {out}: {error}"))
+            })?;
+            Ok(format!("recorded {name} to {out} ({} bytes)", bytes.len()))
+        }
+        "replay" | "bisect" | "stats" => {
+            let bytes = fs::read(name).map_err(|error| {
+                CommandError::Unreadable(format!("cannot read {name}: {error}"))
+            })?;
+            let id = recordings::simulation_id(&bytes).map_err(CommandError::Recording)?;
+            let replayable = replayables()
+                .into_iter()
+                .find(|replayable| replayable.id == id)
+                .ok_or_else(|| {
+                    CommandError::Recording(format!("no simulation called '{id}' can be replayed"))
+                })?;
+            match command.as_str() {
+                "replay" => {
+                    let replayed = (replayable.replay)(&bytes, options.until)
+                        .map_err(CommandError::Recording)?;
+                    if replayed.identical {
+                        Ok(replayed.report)
+                    } else {
+                        Err(CommandError::Diverged(replayed.report))
+                    }
+                }
+                "bisect" => (replayable.bisect)(&bytes).map_err(CommandError::Recording),
+                _ => (replayable.stats)(&bytes).map_err(CommandError::Recording),
             }
         }
         other => Err(CommandError::Usage(format!(

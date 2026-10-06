@@ -9,6 +9,7 @@ repository.workspace = true
 readme = "README.md"
 
 [dependencies]
+lockstep-core = { path = "../lockstep-core" }
 capsule = { path = "../../examples/capsule" }
 crowd = { path = "../../examples/crowd" }
 drone-fleet = { path = "../../examples/drone-fleet" }

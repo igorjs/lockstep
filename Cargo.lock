@@ -214,6 +214,7 @@ dependencies = [
  "crowd",
  "drone-fleet",
  "ledger",
+ "lockstep-core",
  "mars-rovers",
 ]
 
