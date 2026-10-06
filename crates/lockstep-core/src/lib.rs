@@ -3,6 +3,7 @@
 //! The same configuration, seed, and intents produce the same state and the same hash on every
 //! platform. The core never renders, never reads input, and never knows what a game is.
 
+mod chance;
 mod clock;
 mod hashing;
 pub mod math;
@@ -12,6 +13,10 @@ mod simulation;
 mod store;
 mod streams;
 
+pub use chance::{
+    search_smoothing_increment, smoothed_rate, smoothing_increment, Chance, SmoothedState, CERTAIN,
+    SMOOTHING_ENTRIES,
+};
 pub use clock::{Clock, ClockConfiguration, ClockEvent};
 pub use hashing::hash_of;
 pub use message::Message;
