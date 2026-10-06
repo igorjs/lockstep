@@ -34,6 +34,8 @@ pub const FLIGHT_DRAIN: i32 = 2;
 pub const DOCK_CHARGE: i32 = 4;
 /// The lowest charge a drone may launch with.
 pub const LAUNCH_FLOOR: i32 = 25;
+/// The wear at which a drone is retired: it never launches again.
+pub const RETIRE_WEAR: i32 = 75;
 
 pub fn registry() -> Registry {
     Registry::from_json(ATTRIBUTES_JSON).expect("the committed battery data is valid")
@@ -96,6 +98,8 @@ impl Message for Intent {
 pub enum Refusal {
     NotDocked,
     TooLow,
+    /// Wear reached the `retire` mark.
+    Retired,
     NotFlying,
     UnknownDrone,
 }
@@ -261,6 +265,11 @@ impl Fleet {
         };
         let refusal = match intent {
             Intent::Launch { .. } if status != Status::Docked => Some(Refusal::NotDocked),
+            Intent::Launch { .. }
+                if self.value(drone, self.ids.wear) >= Some(Fixed32::from_int(RETIRE_WEAR)) =>
+            {
+                Some(Refusal::Retired)
+            }
             Intent::Launch { .. }
                 if self.value(drone, self.ids.charge) < Some(Fixed32::from_int(LAUNCH_FLOOR)) =>
             {

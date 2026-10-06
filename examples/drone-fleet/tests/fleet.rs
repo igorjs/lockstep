@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use drone_fleet::{
     fixture_hash, run_fixture, runner, Event, Fleet, Intent, Refusal, Status, DEFAULT_SEED,
-    DEFAULT_STEPS, FLIGHT_DRAIN, LAUNCH_FLOOR, RECOVERY_WEAR, SERVICE_REPAIR,
+    DEFAULT_STEPS, FLIGHT_DRAIN, LAUNCH_FLOOR, RECOVERY_WEAR, RETIRE_WEAR, SERVICE_REPAIR,
 };
 use lockstep_core::math::Fixed32;
 use lockstep_core::{hash_of, Handle, Runner, Simulation};
@@ -64,7 +64,6 @@ fn a_drone_that_runs_dry_is_stranded_until_recovered_and_recovery_wears_it() {
         fleet.simulation().ids().wear,
         fleet.simulation().ids().charge,
     );
-    let wear_before = fleet.simulation().value(drone, wear).unwrap();
     let events = minutes(&mut fleet, &[Intent::Launch { drone, minutes: 69 }], 60);
     let order: Vec<_> = events
         .iter()
@@ -86,10 +85,11 @@ fn a_drone_that_runs_dry_is_stranded_until_recovered_and_recovery_wears_it() {
         drone,
         reason: Refusal::NotDocked
     }));
+    let wear_before = fleet.simulation().value(drone, wear).unwrap();
     let docked = minutes(&mut fleet, &[Intent::Dock { drone }], 1);
     assert!(docked.contains(&Event::Docked { drone }));
     let wear_after = fleet.simulation().value(drone, wear).unwrap();
-    assert!(wear_after >= wear_before + whole(RECOVERY_WEAR));
+    assert_eq!(wear_after, wear_before + whole(RECOVERY_WEAR));
 }
 
 #[test]
@@ -120,7 +120,10 @@ fn service_repairs_wear_but_never_below_the_last_mark_passed() {
     let drone = first_drone(&fleet);
     let wear = fleet.simulation().ids().wear;
     let mut marks = Vec::new();
-    while fleet.simulation().value(drone, wear).unwrap() < whole(25) {
+    for _ in 0..5 {
+        if fleet.simulation().value(drone, wear).unwrap() >= whole(25) {
+            break;
+        }
         minutes(&mut fleet, &[Intent::Launch { drone, minutes: 69 }], 60);
         for event in minutes(&mut fleet, &[Intent::Dock { drone }], 40) {
             if let Event::Wear { mark, .. } = event {
@@ -128,6 +131,10 @@ fn service_repairs_wear_but_never_below_the_last_mark_passed() {
             }
         }
     }
+    assert!(
+        fleet.simulation().value(drone, wear).unwrap() >= whole(25),
+        "five rounds reach the mark"
+    );
     assert_eq!(marks.first().map(String::as_str), Some("worn"));
     let before = fleet.simulation().value(drone, wear).unwrap();
     let events = minutes(&mut fleet, &[Intent::Service { drone }], 1);
@@ -199,11 +206,66 @@ fn faults_happen_on_about_five_percent_of_launches() {
 }
 
 #[test]
-fn a_saved_fleet_restores_to_the_same_world() {
+fn a_saved_fleet_continues_exactly_like_the_one_in_memory() {
     let session = run_fixture(DEFAULT_SEED, 20_000);
     let snapshot = session.snapshot();
     let saved = bincode::deserialize(&bincode::serialize(&snapshot).unwrap()).unwrap();
-    let restored = Fleet::restore(saved);
-    assert_eq!(restored.world(), &snapshot);
-    assert_eq!(hash_of(restored.world()), hash_of(&snapshot));
+    let mut kept = Fleet::restore(snapshot);
+    let mut loaded = Fleet::restore(saved);
+    // Step both the same way, with orders that touch every drone's capacity limit and effects.
+    let drones = kept.world().drones.handles();
+    let mut clock = session.clock().clone();
+    let (mut first, mut second) = (
+        lockstep_core::Streams::new(9),
+        lockstep_core::Streams::new(9),
+    );
+    for step in 0..6_000u64 {
+        let drone = drones[(step / 7) as usize % drones.len()];
+        let intents = match step % 500 {
+            0 => vec![Intent::Service { drone }],
+            100 => vec![Intent::Launch { drone, minutes: 30 }],
+            300 => vec![Intent::Dock { drone }],
+            _ => vec![],
+        };
+        let (minutes, exact) = clock.advance_exactly(&mut Vec::new());
+        let mut outcomes = Vec::new();
+        for (fleet, randomness) in [(&mut kept, &mut first), (&mut loaded, &mut second)] {
+            let mut events = Vec::new();
+            let mut context = lockstep_core::Context {
+                clock: &clock,
+                elapsed_game_minutes: minutes,
+                elapsed_minutes: exact,
+                randomness,
+                events: &mut events,
+                step_number: step,
+                step_seconds: 1.0 / 30.0,
+            };
+            fleet.step(&mut context, &intents);
+            outcomes.push(events);
+        }
+        assert_eq!(outcomes[0], outcomes[1], "step {step}");
+    }
+    assert_eq!(hash_of(loaded.world()), hash_of(kept.world()));
+}
+
+#[test]
+fn a_retired_drone_never_launches_again() {
+    let mut fleet = runner(6);
+    let drone = first_drone(&fleet);
+    let wear = fleet.simulation().ids().wear;
+    for _ in 0..12 {
+        if fleet.simulation().value(drone, wear).unwrap() >= whole(RETIRE_WEAR) {
+            break;
+        }
+        minutes(&mut fleet, &[Intent::Launch { drone, minutes: 69 }], 60);
+        minutes(&mut fleet, &[Intent::Dock { drone }], 40);
+    }
+    assert!(fleet.simulation().value(drone, wear).unwrap() >= whole(RETIRE_WEAR));
+    // Service cannot bring it back under the mark, and a full battery does not help.
+    minutes(&mut fleet, &[Intent::Service { drone }], 60);
+    let events = minutes(&mut fleet, &[Intent::Launch { drone, minutes: 5 }], 1);
+    assert!(events.contains(&Event::Refused {
+        drone,
+        reason: Refusal::Retired
+    }));
 }
