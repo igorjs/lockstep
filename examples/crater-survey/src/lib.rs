@@ -40,6 +40,8 @@ pub const INVESTIGATE: u16 = 1;
 /// Why a survey request is refused.
 pub const LOW_BATTERY: Reason = Reason(1);
 pub const TOO_FAR: Reason = Reason(2);
+/// The spot is a ridge, off the rover's leash, or cut off: the rover could never reach it.
+pub const OUT_OF_REACH: Reason = Reason(3);
 
 fn mind_rules() -> MindRules {
     MindRules {
@@ -122,6 +124,11 @@ pub enum Event {
         rover: Handle,
         at: Cell,
     },
+    Moved {
+        rover: Handle,
+        from: Cell,
+        to: Cell,
+    },
     Mind(MindEvent),
 }
 
@@ -147,6 +154,8 @@ pub struct World {
     pub orders: Column<Cell>,
     pub weather: Weather,
     pub weather_rules: WeatherRules,
+    /// Landers in the order they landed, the earliest first.
+    pub arrivals: Vec<Handle>,
 }
 
 pub struct Survey {
@@ -214,6 +223,7 @@ impl Survey {
         }
         let lander = world.entities.insert(Entity::Lander);
         world.occupancy.place(at, lander).expect("checked free");
+        world.arrivals.push(lander);
         events.push(Event::Landed { lander, at });
         let noise = Noise {
             at,
@@ -247,11 +257,30 @@ impl Survey {
     }
 
     fn request(&mut self, rover: Handle, x: u32, y: u32, events: &mut Vec<Event>) {
+        if self.world.entities.get(rover) != Some(&Entity::Rover) {
+            return;
+        }
         let world = &self.world;
         let (Some(from), true) = (world.occupancy.cell_of(rover), world.map.contains(x, y)) else {
             return;
         };
         let to = world.map.index(x, y);
+        let in_leash = world
+            .leashes
+            .get(rover)
+            .is_none_or(|leash| leash.allows(&world.map, to, cell_metres()));
+        let reachable = world.map.is_passable(to)
+            && in_leash
+            && FlowField::build(&world.map, &[to], u32::MAX)
+                .distance(from)
+                .is_some();
+        if !reachable {
+            let response = TaskResponse::Refuse {
+                reason: Some(OUT_OF_REACH),
+            };
+            events.push(Event::Answered { rover, response });
+            return;
+        }
         let task = Task::<(u32, Fixed32)> {
             id: 1,
             considerations: vec![
@@ -304,7 +333,13 @@ impl Survey {
                 id: HOLD,
                 considerations: vec![Box::new(|_: Handle, _: &(Fixed32, u32)| 40)],
             };
+            // Within one cell of what it remembers, a rover has arrived and parks.
+            let near = world
+                .occupancy
+                .cell_of(rover)
+                .is_some_and(|at| world.map.steps(at, memory.position) <= 1);
             if mind.alertness != Alertness::Idle
+                && !near
                 && choose(rover, &[hold, investigate], &(memory.confidence, battery))
                     == Some(INVESTIGATE)
             {
@@ -345,6 +380,11 @@ impl Survey {
                     world.facings.set(who, heading(&world.map, from, to));
                     let battery = world.battery.get(who).copied().unwrap_or(0);
                     world.battery.set(who, battery.saturating_sub(1));
+                    events.push(Event::Moved {
+                        rover: who,
+                        from,
+                        to,
+                    });
                 }
             }
             for rover in rovers {
@@ -386,8 +426,9 @@ impl Simulation for Survey {
             facings: Column::new(),
             battery: Column::new(),
             orders: Column::new(),
-            weather: Weather::new(0, Fixed32::from_int(4)),
+            weather: Weather::new(0, configuration.weather.mean_strength),
             weather_rules: configuration.weather,
+            arrivals: Vec::new(),
         };
         for start in &configuration.rovers {
             let rover = world.entities.insert(Entity::Rover);
@@ -423,6 +464,7 @@ impl Simulation for Survey {
                     if self.world.entities.get(*lander) == Some(&Entity::Lander) {
                         self.world.occupancy.vacate(*lander);
                         self.world.entities.remove(*lander);
+                        self.world.arrivals.retain(|arrived| arrived != lander);
                         events.push(Event::Departed { lander: *lander });
                     }
                 }
@@ -548,8 +590,9 @@ pub fn runner(configuration: Configuration, seed: u64) -> Runner<Survey> {
     )
 }
 
-/// The scripted session the fixture hash covers: a lander every 30 seconds at a random spot,
-/// leaving 40 seconds later, and now and then a survey request to a random rover.
+/// The scripted session the fixture hash covers: a lander every 30 seconds at a random spot, the
+/// earliest still down leaving 15 seconds later whenever another is down, and a survey request to
+/// a random rover every 40 seconds.
 pub fn script(survey: &Survey, script: &mut Streams, step: u64) -> Vec<Intent> {
     let world = survey.world();
     let mut intents = Vec::new();
@@ -561,10 +604,11 @@ pub fn script(survey: &Survey, script: &mut Streams, step: u64) -> Vec<Intent> {
     }
     if step.is_multiple_of(900) {
         // The oldest lander leaves, so landers come and go.
-        if let Some(lander) = survey.landers().first().copied() {
-            if survey.landers().len() > 1 {
-                intents.push(Intent::Depart { lander });
-            }
+        let arrivals = &survey.world().arrivals;
+        if arrivals.len() > 1 {
+            intents.push(Intent::Depart {
+                lander: arrivals[0],
+            });
         }
     }
     if step % 1_200 == 600 {

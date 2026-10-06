@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 use crater_survey::{
     fixture_hash, plateau, runner, script, Configuration, Event, Intent, RoverStart, Survey,
-    ALERT_BUDGET, DEFAULT_SEED, DEFAULT_STEPS, LOW_BATTERY,
+    ALERT_BUDGET, DEFAULT_SEED, DEFAULT_STEPS, LOW_BATTERY, OUT_OF_REACH,
 };
-use lockstep_agents::{Alertness, TaskResponse, Weather, WeatherRules};
+use lockstep_agents::{Alertness, MindEvent, TaskResponse, Weather, WeatherRules};
 use lockstep_core::math::Fixed32;
 use lockstep_core::{hash_of, Clock, Context, Handle, Simulation, Streams};
 
@@ -75,15 +75,16 @@ fn the_fixture_hash_matches_the_committed_value_natively_and_under_webassembly()
 fn leashes_hold_and_the_budget_is_never_exceeded() {
     let mut runner = runner(plateau(), DEFAULT_SEED);
     let mut streams = Streams::new(DEFAULT_SEED ^ 0x0063_7261_7465);
-    let mut heard = 0;
+    let (mut heard, mut held) = (0, 0);
     for number in 0..DEFAULT_STEPS {
         let intents = script(runner.simulation(), &mut streams, number);
-        heard += runner
-            .step_once(&intents)
-            .events
-            .iter()
-            .filter(|event| matches!(event, Event::Heard { .. }))
-            .count();
+        for event in runner.step_once(&intents).events {
+            match event {
+                Event::Heard { .. } => heard += 1,
+                Event::Mind(MindEvent::Held { .. }) => held += 1,
+                _ => {}
+            }
+        }
         let survey = runner.simulation();
         let world = survey.world();
         for rover in survey.rovers() {
@@ -112,6 +113,7 @@ fn leashes_hold_and_the_budget_is_never_exceeded() {
         }
     }
     assert!(heard > 0, "landings were heard");
+    assert!(held > 0, "the director held rovers back");
 }
 
 #[test]
@@ -246,4 +248,87 @@ fn a_restored_snapshot_continues_exactly_like_the_one_that_kept_running() {
         assert_eq!(a, b, "step {number}");
     }
     assert_eq!(hash_of(loaded.world()), hash_of(kept.world()));
+}
+
+#[test]
+fn a_request_a_rover_could_never_reach_is_refused_and_a_lander_is_not_asked() {
+    // Leashed to 20 metres at (10, 10); asked to survey (40, 10), 60 metres off.
+    let leashed = RoverStart {
+        x: 10,
+        y: 10,
+        leash_metres: Some(20),
+    };
+    let mut runner = runner(open(vec![leashed]), 1);
+    let rover = runner.simulation().rovers()[0];
+    let events = runner
+        .step_once(&[Intent::Request {
+            rover,
+            x: 40,
+            y: 10,
+        }])
+        .events;
+    assert_eq!(
+        events,
+        vec![Event::Answered {
+            rover,
+            response: TaskResponse::Refuse {
+                reason: Some(OUT_OF_REACH)
+            }
+        }]
+    );
+    assert!(runner.simulation().world().orders.get(rover).is_none());
+    let landed = runner.step_once(&[Intent::Land { x: 60, y: 10 }]).events;
+    let lander = match landed[0] {
+        Event::Landed { lander, .. } => lander,
+        ref other => panic!("not landed: {other:?}"),
+    };
+    let events = runner
+        .step_once(&[Intent::Request {
+            rover: lander,
+            x: 61,
+            y: 10,
+        }])
+        .events;
+    assert!(!events
+        .iter()
+        .any(|event| matches!(event, Event::Answered { .. })));
+}
+
+#[test]
+fn the_earliest_lander_departs_first_even_when_slots_are_reused() {
+    let mut runner = runner(open(vec![free(5, 5)]), 1);
+    let land = |runner: &mut lockstep_core::Runner<Survey>, x| match runner
+        .step_once(&[Intent::Land { x, y: 15 }])
+        .events[0]
+    {
+        Event::Landed { lander, .. } => lander,
+        ref other => panic!("not landed: {other:?}"),
+    };
+    let first = land(&mut runner, 30);
+    let second = land(&mut runner, 40);
+    runner.step_once(&[Intent::Depart { lander: first }]);
+    let third = land(&mut runner, 50);
+    assert_eq!(runner.simulation().world().arrivals, vec![second, third]);
+}
+
+#[test]
+fn a_rover_beside_the_lander_it_saw_parks_instead_of_circling() {
+    let mut runner = runner(open(vec![free(10, 10)]), 1);
+    let rover = runner.simulation().rovers()[0];
+    runner.step_once(&[Intent::Land { x: 12, y: 10 }]);
+    for _ in 0..600 {
+        runner.step_once(&[]);
+    }
+    let battery = *runner.simulation().world().battery.get(rover).unwrap();
+    let mut moves = 0;
+    for _ in 0..600 {
+        moves += runner
+            .step_once(&[])
+            .events
+            .iter()
+            .filter(|event| matches!(event, Event::Moved { .. }))
+            .count();
+    }
+    assert_eq!(moves, 0, "parked beside the lander");
+    assert!(*runner.simulation().world().battery.get(rover).unwrap() >= battery);
 }
