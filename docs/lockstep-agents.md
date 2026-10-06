@@ -42,6 +42,24 @@ and whether it is psychic. `Wind` has a direction (where it blows toward) and a 
 
 See decision 0018.
 
+## Weather
+
+`Weather` is the wind over time, advanced by `advance(minutes, rules, streams, events)` one whole
+game second at a time from the `"weather"` stream, so the same game minutes give the same weather
+at 30 or 60 steps a second. Each second:
+
+- Outside a front, the direction drifts by at most 12 turn units (under 4 degrees a game minute).
+- A front starts on average `fronts_per_day` times a day and swings the direction 90 to 180
+  degrees either way over 8 to 12 game minutes, on a straight schedule, ending exactly where it
+  swung to (`FrontStarted`, `FrontPassed`).
+- The strength moves a thirtieth of the way to `mean_strength` each game minute (stopping within
+  a fiftieth of a metre a second of it, where the step rounds to nothing).
+- A gust starts on average once or twice an hour (1.5 in 3,600 seconds) and adds 50 to 100
+  percent for 30 to 90 game seconds (`GustStarted`, `GustEnded`).
+
+`wind()` is the `Wind` now, gusts included, for `hear`. The reference keeps the weather with the
+regions; it lives here until that crate exists (departure P18). See decision 0022.
+
 ## Memory, alert states and the director
 
 Each agent has a `Mind`: its `Alertness` (Idle, Curious, Searching, Alert), a `LastKnown` memory
@@ -121,6 +139,10 @@ See decision 0021.
   step rates, the director's budget of eight among twenty, and the leash (decision 0019); 200
   agents through a one-cell doorway without sharing a cell, and a blocked mover past a body in two
   steps (decision 0020); utility ties going to the lowest id, and a refused task naming its
-  weakest reason (decision 0021).
+  weakest reason (decision 0021); one game day of weather from seed 42 equal at 30 and 60 steps a
+  second and matching `tests/fixtures/weather.hash` natively and under WebAssembly (decision
+  0022).
+- `tests/behaviour/weather.rs`: a day keeping the drift, gust and front bounds, about 36 gusts,
+  the strength moving toward the mean, a gust's percent, and a front ending where it swung.
 - `tests/behaviour/utility.rs`: per-consideration scores, totals that never wrap, a consideration
   as a type, and a task with none.

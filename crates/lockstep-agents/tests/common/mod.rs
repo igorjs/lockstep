@@ -138,3 +138,42 @@ impl Floor {
         events
     }
 }
+
+/// One game day of weather from a seed at a step rate, where a game day lasts 24 real minutes.
+/// Returns the weather after each game minute and every event.
+pub fn weather_day(
+    seed: u64,
+    steps_per_second: u32,
+) -> (
+    Vec<lockstep_agents::Weather>,
+    Vec<lockstep_agents::WeatherEvent>,
+) {
+    use lockstep_agents::{Weather, WeatherRules};
+    use lockstep_core::{Clock, ClockConfiguration, Streams};
+    let mut clock = Clock::new(
+        ClockConfiguration {
+            day_length_real_minutes: 24.0,
+            sunrise_minute: 360,
+            sunset_minute: 1_080,
+            starting_minute: 0,
+            starting_day: 0,
+        },
+        1.0 / steps_per_second as f32,
+    );
+    let rules = WeatherRules {
+        mean_strength: metres(6),
+        fronts_per_day: 3,
+    };
+    let mut weather = Weather::new(0, metres(4));
+    let mut streams = Streams::new(seed);
+    let (mut minutes, mut events) = (Vec::new(), Vec::new());
+    // One game minute is one real second here: a day is 1,440 seconds of steps.
+    for step in 1..=(1_440 * steps_per_second as u64) {
+        let (_, elapsed) = clock.advance_exactly(&mut Vec::new());
+        weather.advance(elapsed, &rules, &mut streams, &mut events);
+        if step % steps_per_second as u64 == 0 {
+            minutes.push(weather.clone());
+        }
+    }
+    (minutes, events)
+}
