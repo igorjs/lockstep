@@ -3,8 +3,9 @@
 //!
 //! ```text
 //! seed 20260925
-//! steps 9000
+//! steps 10000
 //! 10 move survivor 15 15 walk
+//! 200 wound survivor
 //! 800 multiplier 20
 //! ```
 //!
@@ -20,6 +21,9 @@ use std::collections::BTreeMap;
 pub enum Command {
     Move { cell: Cell, run: bool },
     Stop,
+    Wound,
+    Bandage,
+    Pray,
     Multiplier(f32),
 }
 
@@ -118,6 +122,18 @@ pub fn parse(text: &str) -> Result<Script, ParseError> {
                         expect_survivor(words.next(), line)?;
                         Command::Stop
                     }
+                    Some("wound") => {
+                        expect_survivor(words.next(), line)?;
+                        Command::Wound
+                    }
+                    Some("bandage") => {
+                        expect_survivor(words.next(), line)?;
+                        Command::Bandage
+                    }
+                    Some("pray") => {
+                        expect_survivor(words.next(), line)?;
+                        Command::Pray
+                    }
                     Some("multiplier") => {
                         Command::Multiplier(number(words.next(), line, "a multiplier")?)
                     }
@@ -184,6 +200,9 @@ pub fn run(script: &Script, seed: Option<u64>, steps: Option<u64>) -> Runner<Cap
                     run: *run,
                 }),
                 Command::Stop => intents.push(Intent::Stop { entity: survivor }),
+                Command::Wound => intents.push(Intent::Wound { entity: survivor }),
+                Command::Bandage => intents.push(Intent::Bandage { entity: survivor }),
+                Command::Pray => intents.push(Intent::Pray { entity: survivor }),
             }
         }
         runner.step_once(&intents);

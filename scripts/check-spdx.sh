@@ -2,12 +2,29 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 # Every tracked text file starts with the Apache-2.0 SPDX line, exactly, in its comment style
-# (after the shebang in scripts). Fixture data, the license text and Cargo.lock are exempt.
+# (after the shebang in scripts). A JSON file has a `.license` sidecar holding the line instead.
+# Fixture data, the license text and Cargo.lock are exempt.
 git rev-parse --git-dir >/dev/null
 missing=0
 while IFS= read -r -d '' file; do
   case "$file" in
     LICENSE|Cargo.lock|*.bin|*.hash) continue ;;
+    *.json)
+      # JSON has no comments, so the line lives in a sidecar file (the REUSE convention).
+      # The sidecar's own line is checked when the loop reaches it.
+      if [ -f "$file.license" ]; then
+        continue
+      fi
+      echo "missing SPDX sidecar: $file.license"
+      missing=1
+      continue
+      ;;
+    *.license)
+      [ "$(head -n 1 "$file")" = 'SPDX-License-Identifier: Apache-2.0' ] && continue
+      echo "wrong SPDX line: $file"
+      missing=1
+      continue
+      ;;
   esac
   [ -f "$file" ] || continue
   line=$(head -n 1 "$file")
