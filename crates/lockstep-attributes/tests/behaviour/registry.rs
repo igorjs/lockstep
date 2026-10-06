@@ -1,4 +1,4 @@
-use crate::common::{registry, REGISTRY};
+use crate::common::registry;
 use lockstep_attributes::{Curve, MaximumPolicy, Registry, RegistryError};
 use lockstep_core::math::Fixed32;
 
@@ -35,7 +35,6 @@ fn the_json_form_reads_names_numbers_policies_and_curves() {
         }
     );
     assert_eq!(registry.id("stamina"), None);
-    assert!(REGISTRY.contains("\"1\""), "decimal strings are accepted");
 }
 
 #[test]
@@ -125,6 +124,37 @@ fn every_invalid_registry_is_refused_with_its_reason() {
         ),
         RegistryError::Unsorted("c".into()),
     );
+    let derived = |name: &str, input: &str| {
+        format!(
+            r#"{{ "name": "{name}", "minimum": 0, "maximum": 10, "starting": 0, "derived": {{ "inputs": ["{input}"], "curve": "sum" }} }}"#
+        )
+    };
+    check(
+        &format!(
+            "{}, {}, {}",
+            plain("a"),
+            derived("b", "c"),
+            derived("c", "b")
+        ),
+        RegistryError::Cycle("b".into()),
+    );
+    check(
+        &format!(
+            "{}, {}, {}",
+            derived("x", "y"),
+            derived("y", "z"),
+            derived("z", "x")
+        ),
+        RegistryError::Cycle("x".into()),
+    );
+    // Reading a later attribute without a loop is allowed: it lags one change.
+    let later = format!(
+        r#"{{ "attributes": [ {}, {}, {} ] }}"#,
+        derived("b", "c"),
+        derived("c", "a"),
+        plain("a")
+    );
+    assert!(Registry::from_json(&later).is_ok());
     assert!(matches!(
         Registry::from_json(r#"{ "attributes": [], "extra": 1 }"#),
         Err(RegistryError::Json(_))

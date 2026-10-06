@@ -632,11 +632,19 @@ fn decimals_parse_exactly_and_round_ties_away_from_zero() {
     assert_eq!("2.25".parse::<Fixed32>(), Ok(Fixed32::from_ratio(9, 4)));
     assert_eq!(parse("-32768"), Ok(Fixed32::from_raw(i32::MIN)));
     assert_eq!(parse("32768"), Err(ParseFixedError::OutOfRange));
+    // Rounding happens before the range check: just under the top rounds out of range, and the
+    // same value negated rounds to exactly the bottom.
+    assert_eq!(parse("32767.99999999"), Err(ParseFixedError::OutOfRange));
+    assert_eq!(parse("-32767.99999999"), Ok(Fixed32::from_raw(i32::MIN)));
+    assert_eq!(parse("-0"), Ok(Fixed32::ZERO));
+    assert_eq!(parse("-0.0000001"), Ok(Fixed32::ZERO));
     assert_eq!(
         parse("99999999999999999999999"),
         Err(ParseFixedError::OutOfRange)
     );
-    for bad in ["", "-", ".", "1.2.3", "1e5", "0x10", " 1", "1,5", "--1"] {
+    for bad in [
+        "", "-", "+", ".", "1.2.3", "1e5", "0x10", " 1", "1,5", "--1",
+    ] {
         assert_eq!(parse(bad), Err(ParseFixedError::NotADecimal), "{bad:?}");
     }
     assert_eq!(

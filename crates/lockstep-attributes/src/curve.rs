@@ -62,9 +62,13 @@ impl Curve {
                     .1
             }
             Curve::Product => {
+                // The running product is held to 2^90 raw, which the next multiply by a 32-bit
+                // input cannot overflow, and saturates once at the end. Clamping to 16.16 after
+                // every input would make the answer depend on input order.
+                let bound = 1i128 << 90;
                 let mut product = raw(Fixed32::ONE);
                 for input in inputs {
-                    product = clamp_raw((product * raw(*input)) >> 16);
+                    product = ((product * raw(*input)) >> 16).clamp(-bound, bound);
                 }
                 saturate(product)
             }
@@ -86,10 +90,6 @@ pub(crate) fn divide_rounded(numerator: i128, divisor: i128) -> i128 {
     }
 }
 
-fn clamp_raw(raw: i128) -> i128 {
-    raw.clamp(i32::MIN as i128, i32::MAX as i128)
-}
-
 pub(crate) fn saturate(raw: i128) -> Fixed32 {
-    Fixed32::from_raw(clamp_raw(raw) as i32)
+    Fixed32::from_raw(raw.clamp(i32::MIN as i128, i32::MAX as i128) as i32)
 }

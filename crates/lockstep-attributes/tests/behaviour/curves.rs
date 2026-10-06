@@ -63,3 +63,17 @@ fn product_sum_and_difference_combine_every_input() {
     );
     assert_eq!(Curve::Difference.evaluate(&[whole(4)]), whole(4));
 }
+
+#[test]
+fn a_product_does_not_depend_on_input_order_even_past_the_range() {
+    let (big, bigger, small) = (whole(400), whole(200), Fixed32::from_ratio(1, 100));
+    let forward = Curve::Product.evaluate(&[big, bigger, small]);
+    assert_eq!(forward, Curve::Product.evaluate(&[small, big, bigger]));
+    assert_eq!(forward, Curve::Product.evaluate(&[bigger, small, big]));
+    // 0.01 is 655 raw units, so the product is 80,000 times 655 / 65,536, about 799.6.
+    assert_eq!(forward.floor(), 799);
+    assert_eq!(
+        Curve::Product.evaluate(&[big, bigger]),
+        Fixed32::from_raw(i32::MAX)
+    );
+}

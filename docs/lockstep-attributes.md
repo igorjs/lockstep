@@ -10,7 +10,7 @@ A `Registry` lists every attribute an entity can have, in a stable order; an `At
 index into it. Build one with `Registry::new` or read one from JSON with `Registry::from_json`. Both
 check it and refuse, with a `RegistryError`: duplicate or empty names, a minimum above the maximum, a
 starting value or threshold outside them, a derived input that does not exist or is the attribute
-itself, the wrong number of inputs for a curve, and knots or steps that are empty or not strictly
+itself, derived attributes that read each other in a loop, the wrong number of inputs for a curve, and knots or steps that are empty or not strictly
 increasing.
 
 ```json

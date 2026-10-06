@@ -72,6 +72,8 @@ pub enum RegistryError {
     },
     /// A derived attribute reads itself.
     ReadsItself(String),
+    /// Derived attributes read each other in a loop. Names the first one in registry order.
+    Cycle(String),
     /// Linear, piecewise and threshold curves read exactly one input; the others one or more.
     InputCount(String),
     /// Knots and steps must be non-empty and strictly increasing in their input.
@@ -184,6 +186,43 @@ impl Registry {
             if let Some(points) = points {
                 if points.is_empty() || points.windows(2).any(|pair| pair[0].0 >= pair[1].0) {
                     return Err(RegistryError::Unsorted(name.clone()));
+                }
+            }
+        }
+        self.check_cycles()
+    }
+
+    /// A derived attribute may read one declared after it (it lags one change), but no chain of
+    /// derived inputs may lead back to where it started.
+    fn check_cycles(&self) -> Result<(), RegistryError> {
+        // 0: not visited, 1: on the current path, 2: finished.
+        let mut state = vec![0u8; self.definitions.len()];
+        for start in 0..self.definitions.len() {
+            if state[start] != 0 {
+                continue;
+            }
+            // Depth first without recursion: (attribute, next input to look at).
+            let mut stack = vec![(start, 0usize)];
+            state[start] = 1;
+            while let Some((index, next)) = stack.last_mut() {
+                let inputs = self.definitions[*index]
+                    .derived
+                    .as_ref()
+                    .map_or(&[][..], |derived| &derived.inputs[..]);
+                let Some(input) = inputs.get(*next) else {
+                    state[*index] = 2;
+                    stack.pop();
+                    continue;
+                };
+                *next += 1;
+                let input = input.0 as usize;
+                match state[input] {
+                    0 => {
+                        state[input] = 1;
+                        stack.push((input, 0));
+                    }
+                    1 => return Err(RegistryError::Cycle(self.names[start].clone())),
+                    _ => {}
                 }
             }
         }
