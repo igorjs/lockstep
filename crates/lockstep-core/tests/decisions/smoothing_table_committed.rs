@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: the smoothed-roll increment for each basis point is found once by a search and
 //! committed as `fixtures/smoothing.bin`, and a test regenerates it and compares.
 //! Alternative rejected: searching at run time, which costs a search per new chance, or a closed

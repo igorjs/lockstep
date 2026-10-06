@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Integer CORDIC, run at compile time, for the sine and arctangent tables.
 //!
 //! No floats are involved anywhere: the constants below are plain integers, so the tables are the

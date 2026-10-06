@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Mars Rovers: the grid-shaped consumer scenario.
 //!
 //! Rovers land on a plateau, turn left or right, and move forward one cell at a time. The classic

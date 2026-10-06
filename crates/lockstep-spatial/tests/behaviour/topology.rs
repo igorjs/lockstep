@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use lockstep_spatial::{Cell, Square4, Square8, Topology};
 
 #[cfg(target_arch = "wasm32")]

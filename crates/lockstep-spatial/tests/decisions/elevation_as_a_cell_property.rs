@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: elevation is a property of a cell, not a third axis, and line of sight compares the
 //! top of each cell between the viewer's eye and the floor of the target with the line joining them.
 //! Alternative rejected: a full three-dimensional grid, which costs a whole extra axis of memory and

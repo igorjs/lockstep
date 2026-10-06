@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # ledger (example)
 
 The consumer scenario that is not a game: accounts and transfers.

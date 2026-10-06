@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: a percentage crosses the roll boundary as basis points (`Chance`, 10,000 is 100
 //! percent), and every roll compares integer draws.
 //! Alternative rejected: float probabilities, where 0.1 plus 0.2 is not 0.3 and a chance computed

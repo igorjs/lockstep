@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # 0001 Clock accumulation (decided)
 
 Status: decided, implemented.

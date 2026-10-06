@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The headless runner: runs a named fixture without a host and prints its state hash.
 //!
 //! Commands:

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: `Vector2::toward` truncates its step toward zero, so it never moves farther than
 //! asked, and it arrives exactly instead of oscillating around the target.
 //! Alternative rejected: normalising the direction and multiplying by the step, whose rounding can

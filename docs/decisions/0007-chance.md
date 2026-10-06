@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # 0007 Chance in basis points, and smoothed rolls from a committed table (decided)
 
 Status: decided and implemented in milestone M4.

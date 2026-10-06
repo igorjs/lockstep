@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # crowd (example)
 
 The consumer scenario for the path batch (decision 0006).

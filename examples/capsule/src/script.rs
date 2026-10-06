@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! A tiny text format for scripted sessions, run by the headless runner.
 //!
 //! ```text

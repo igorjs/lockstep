@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # The scripted capsule session. lockstep-headless runs this file and prints its state hash,
 # which must match the committed value on every platform.
 #

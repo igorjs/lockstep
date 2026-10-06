@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: game time is an exact integer position inside the day, advanced by an integer
 //! multiplier in 1/65,536ths. Floats appear only where a host reads or sets a value.
 //! Alternative rejected: accumulating minutes in a 32-bit float on every step, which drifted

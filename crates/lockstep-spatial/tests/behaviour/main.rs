@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Behaviour tests for the topologies, the map, and occupancy.
 
 #[path = "../common/mod.rs"]

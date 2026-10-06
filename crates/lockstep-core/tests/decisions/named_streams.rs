@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: randomness comes from named streams, each seeded from the master seed and its name.
 //! Alternative rejected: one global generator.
 //! Would change if: adding a thousand streams changes any existing stream (the number to beat

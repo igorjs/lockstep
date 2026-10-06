@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! A batch of path requests, solved serially or on several threads with identical answers.
 //!
 //! This is the one place the project allows threads in simulation code, and the reason is that the

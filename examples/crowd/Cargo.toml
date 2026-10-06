@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 [package]
 name = "crowd"
 description = "Consumer scenario for the path batch: a crowd walks to a goal around walls"
@@ -5,6 +6,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+readme = "README.md"
 publish = false
 
 [features]

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use lockstep_core::math::Fixed32;
 
 /// How a derived attribute turns its inputs into a value. Every curve saturates at the edges of

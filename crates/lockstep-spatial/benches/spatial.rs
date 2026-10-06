@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Benchmark for the spatial crate, with a committed baseline.
 //!
 //! Three measurements, each the best of five runs:
@@ -149,9 +150,12 @@ fn main() {
     );
     let write = std::env::args().any(|argument| argument == "--write-baseline");
     if write {
-        let text: String = measurements
-            .iter()
-            .map(|(name, micros)| format!("{name} {micros}\n"))
+        let text: String = std::iter::once("# SPDX-License-Identifier: Apache-2.0\n".to_string())
+            .chain(
+                measurements
+                    .iter()
+                    .map(|(name, micros)| format!("{name} {micros}\n")),
+            )
             .collect();
         std::fs::write(BASELINE, text).expect("write the baseline");
         println!("baseline written to {BASELINE}");

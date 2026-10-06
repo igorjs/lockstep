@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: the game clock is a rate (game minutes per step times a multiplier).
 //! Alternative rejected: ticks as game minutes, one minute per step.
 //! Would change if: a rest at twenty times needs more than 600 steps of real time per night

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use crate::curve::Curve;
 use lockstep_core::math::Fixed32;
 use serde::{Deserialize, Serialize};

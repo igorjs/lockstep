@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Percentages as rolls. A chance crosses the roll boundary as basis points (10,000 is 100
 //! percent), never as a float.
 

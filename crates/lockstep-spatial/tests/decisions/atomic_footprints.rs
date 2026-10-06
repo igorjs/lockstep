@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: a multi-cell body moves atomically. Either every target cell is free (or already its
 //! own) and the whole body moves, or nothing changes at all.
 //! Alternative rejected: moving cell by cell and undoing on failure, which can leave a body

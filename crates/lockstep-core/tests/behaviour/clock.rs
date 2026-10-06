@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use crate::common::{day_clock, probe_runner, STEP_SECONDS};
 use lockstep_core::{Clock, ClockEvent};
 

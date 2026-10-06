@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use serde::{Deserialize, Serialize};
 
 /// One step at multiplier 1.0 advances this many units. A multiplier is stored as a whole number

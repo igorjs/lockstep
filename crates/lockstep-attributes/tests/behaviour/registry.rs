@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use crate::common::registry;
 use lockstep_attributes::{Curve, MaximumPolicy, Registry, RegistryError};
 use lockstep_core::math::Fixed32;

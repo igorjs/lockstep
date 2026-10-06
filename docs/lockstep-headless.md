@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # lockstep-headless
 
 Runs a named fixture without a host and prints its state hash.

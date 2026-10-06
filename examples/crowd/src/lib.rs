@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The crowd: the consumer scenario for the path batch.
 //!
 //! A crowd of bodies on a walled map walks to one goal. Every step, the bodies still walking ask for a

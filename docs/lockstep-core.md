@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # lockstep-core
 
 A deterministic state machine advanced in fixed steps from intents. The same configuration, seed,

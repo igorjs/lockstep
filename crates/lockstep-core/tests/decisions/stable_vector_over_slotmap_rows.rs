@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: entities are generational handles into a stable vector, and components are columns.
 //! Alternatives rejected: archetype storage, and one row of fields per entity.
 //! Would change if: a stale handle ever resolves to a newer entity (the number to beat is zero

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use lockstep_core::{Chance, SmoothedState, Streams};
 
 #[cfg(target_arch = "wasm32")]

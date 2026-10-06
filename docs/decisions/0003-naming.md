@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # 0003 Naming (decided)
 
 Status: decided.

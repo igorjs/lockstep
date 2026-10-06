@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use crowd::{fixture_hash, run_fixture, runner, Crowd, Event, World, DEFAULT_SEED, DEFAULT_STEPS};
 use lockstep_core::{hash_of, Simulation};
 

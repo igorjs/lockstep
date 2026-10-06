@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Spike: does forcing the pathfinder's generation counter to wrap give the same paths as a fresh
 //! pathfinder?
 //!

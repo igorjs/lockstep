@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 [package]
 name = "lockstep-attributes"
 description = "Deterministic attributes for lockstep-core: modifiers, thresholds, derived values and timed effects"
@@ -5,6 +6,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+readme = "README.md"
 
 [dependencies]
 lockstep-core = { path = "../lockstep-core" }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Spike: does a restored store continue exactly as the original would have?
 //!
 //! A save is taken, loaded, and both copies then insert new entities. If the stores hand out

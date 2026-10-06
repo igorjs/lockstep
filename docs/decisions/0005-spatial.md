@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # 0005 The spatial crate (decided, with two open items)
 
 Status: decided and implemented for `lockstep-spatial` and its consumers, with two open items (the hexagon figure and

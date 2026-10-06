@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The ledger: a consumer scenario that is not a game.
 //!
 //! Accounts hold whole minor units (cents, pence) as integers. Transfers either move money

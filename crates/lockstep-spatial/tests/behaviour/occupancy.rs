@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use lockstep_core::{hash_of, Handle, StableVector, Streams};
 use lockstep_spatial::{Cell, GridMap, Occupancy, Occupied, Square4, Square8, Topology};
 use serde::Serialize;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decision: a flow field is computed once outward from the targets and every body then moves by a
 //! table lookup, with no search of its own.
 //! Alternative rejected: one A* search per body per replan, which costs a hundred searches for a
