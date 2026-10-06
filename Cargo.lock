@@ -46,6 +46,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-bay"
+version = "0.1.0"
+dependencies = [
+ "lockstep-attributes",
+ "lockstep-core",
+ "lockstep-inventory",
+ "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "cast"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -221,6 +232,7 @@ name = "lockstep-headless"
 version = "0.1.0"
 dependencies = [
  "capsule",
+ "cargo-bay",
  "crowd",
  "drone-fleet",
  "ledger",

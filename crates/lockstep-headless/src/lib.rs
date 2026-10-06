@@ -49,6 +49,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: drone_fleet::fixture_hash,
         },
         Fixture {
+            name: "cargo-bay",
+            default_seed: cargo_bay::DEFAULT_SEED,
+            default_steps: cargo_bay::DEFAULT_STEPS,
+            run: cargo_bay::fixture_hash,
+        },
+        Fixture {
             name: "sparring",
             default_seed: sparring::DEFAULT_SEED,
             default_steps: sparring::DEFAULT_STEPS,

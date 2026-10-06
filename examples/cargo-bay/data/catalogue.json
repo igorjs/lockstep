@@ -1,0 +1,20 @@
+{
+  "slots": ["suit", "hand"],
+  "spoilage": [
+    { "below": 5, "percent": 20 },
+    { "below": 25, "percent": 100 },
+    { "percent": 250 }
+  ],
+  "affixes": [
+    { "name": "faulty_seal", "binds": true,
+      "modifiers": [ { "attribute": "oxygen", "modifier": { "add": -30 } } ] }
+  ],
+  "kinds": [
+    { "name": "ration", "tags": ["food"], "weight": "0.5", "stack": 6,
+      "spoils_after_minutes": 360 },
+    { "name": "water", "tags": ["drink"], "weight": 1, "stack": 4 },
+    { "name": "suit", "tags": ["gear"], "weight": 12, "slot": "suit", "affix_slots": 1,
+      "modifiers": [ { "attribute": "oxygen", "modifier": { "add": 50 } } ] },
+    { "name": "drill", "tags": ["gear", "tool"], "weight": 4, "slot": "hand" }
+  ]
+}

@@ -7,7 +7,8 @@ Items as entities, containers, equipment, affixes and spoilage, all in integers.
 ## The catalogue
 
 `Catalogue::from_json(text, &attribute_registry)` reads every kind, equipment slot and affix, and
-the spoilage bands, and checks them. Numbers are whole numbers or decimal strings, never JSON
+the spoilage bands, and checks them. `kind_count` says how many kinds there are, so a simulation can check a
+`KindId` that arrives in an intent before using it. Numbers are whole numbers or decimal strings, never JSON
 fractions, as in the attribute registry.
 
 ```json

@@ -1,0 +1,8 @@
+{
+  "attributes": [
+    { "name": "oxygen", "minimum": 0, "maximum": 100, "starting": 100,
+      "on_maximum_change": "scale_current" },
+    { "name": "nourishment", "minimum": 0, "maximum": 100, "starting": 60,
+      "thresholds": [ { "at": 30, "name": "hungry" }, { "at": 10, "name": "weak" } ] }
+  ]
+}

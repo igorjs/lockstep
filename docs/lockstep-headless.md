@@ -13,7 +13,7 @@ lockstep-headless verify  <name> --expect <file> [--seed <number>] [--steps <num
 - `verify` compares the hash with a committed file, ignoring surrounding whitespace. It prints `ok <name> <hash>` on a match. On a mismatch it prints the expected and actual hashes to standard error and exits with status 1.
 - Without `--seed` and `--steps`, each fixture uses its own committed defaults.
 
-Fixtures: `capsule`, `crowd`, `drone-fleet`, `ledger`, `mars-rovers` and `sparring`. Each committed hash lives in
+Fixtures: `capsule`, `crowd`, `drone-fleet`, `ledger`, `mars-rovers`, `sparring` and `cargo-bay`. Each committed hash lives in
 `examples/<name>/fixtures/<name>.hash`. With the `parallel` feature the crowd solves its paths on a
 thread pool, and its hash must not change.
 
