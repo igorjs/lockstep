@@ -400,26 +400,34 @@ fn slide<T: Topology>(
     blocked: Cell,
     world: &MovementWorld<'_, T>,
 ) -> Option<Cell> {
-    let intended = direction(world.map, from, blocked);
+    sidestep(world.map, world.occupancy, who, from, blocked)
+}
+
+/// The separation nudge every mover shares, fighters and agents alike: when the cell a body
+/// wants is taken, try the two neighbours on either side of the way, nearest the intended
+/// direction first, and take the first the body can step into that is free (or holds the body
+/// itself). `None` means wait.
+pub fn sidestep<T: Topology>(
+    map: &GridMap<T>,
+    occupancy: &Occupancy,
+    who: Handle,
+    from: Cell,
+    blocked: Cell,
+) -> Option<Cell> {
+    let intended = direction(map, from, blocked);
     let mut neighbours = Vec::new();
-    world.map.neighbours(from, &mut neighbours);
+    map.neighbours(from, &mut neighbours);
     let mut candidates: Vec<(Turn, Cell)> = neighbours
         .into_iter()
         .filter(|cell| *cell != blocked)
-        .map(|cell| {
-            (
-                angle_between(direction(world.map, from, cell), intended),
-                cell,
-            )
-        })
+        .map(|cell| (angle_between(direction(map, from, cell), intended), cell))
         .collect();
     candidates.sort_unstable();
     candidates
         .into_iter()
         .take(2)
         .find(|(_, cell)| {
-            world.map.can_step(from, *cell)
-                && world.occupancy.at(*cell).is_none_or(|body| body == who)
+            map.can_step(from, *cell) && occupancy.at(*cell).is_none_or(|body| body == who)
         })
         .map(|(_, cell)| cell)
 }
