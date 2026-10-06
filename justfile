@@ -8,12 +8,14 @@ test:
     cargo test --workspace
     cargo test -p lockstep-spatial --features hex
     cargo test -p lockstep-spatial --features parallel
+    cargo test -p lockstep-combat --features hex
 
 check:
     cargo fmt --all -- --check
     cargo clippy --workspace --all-targets -- -D warnings
     cargo clippy -p lockstep-spatial --all-targets --features hex -- -D warnings
     cargo clippy -p lockstep-spatial --all-targets --features parallel -- -D warnings
+    cargo clippy -p lockstep-combat --all-targets --features hex -- -D warnings
     ./scripts/lint-determinism.sh
     ./scripts/check-spdx.sh
 
@@ -30,6 +32,7 @@ determinism:
     wasm-pack test --node crates/lockstep-attributes
     wasm-pack test --node crates/lockstep-spatial
     wasm-pack test --node crates/lockstep-spatial --features hex
+    wasm-pack test --node crates/lockstep-combat --features hex
     wasm-pack test --node examples/capsule
     wasm-pack test --node examples/ledger
     wasm-pack test --node examples/mars-rovers

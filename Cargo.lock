@@ -194,6 +194,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-combat"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "lockstep-spatial",
+ "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-core"
 version = "0.1.0"
 dependencies = [

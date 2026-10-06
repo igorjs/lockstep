@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::cell::Cell;
+use lockstep_core::math::{Fixed32, Vector2};
 
 /// How cells connect. Determinism depends on the fixed order of `neighbours`.
 ///
@@ -20,6 +21,19 @@ pub trait Topology: Copy + Default {
 
     /// The cells on a line from `from` to `to`, both ends included. Clears `out` first.
     fn line(from: Cell, to: Cell, width: u32, out: &mut Vec<Cell>);
+
+    /// How many single steps apart two cells are on an empty map, whatever each step costs: a
+    /// diagonal is one step on `Square8`.
+    fn steps(a: Cell, b: Cell, width: u32) -> u32;
+
+    /// The cell's centre, in cell widths: x grows east and y grows south. Angles between centres
+    /// give directions on any topology.
+    fn centre(cell: Cell, width: u32) -> Vector2;
+}
+
+fn square_centre(cell: Cell, width: u32) -> Vector2 {
+    let (x, y) = split(cell, width);
+    Vector2::new(Fixed32::from_int(x as i32), Fixed32::from_int(y as i32))
 }
 
 fn split(cell: Cell, width: u32) -> (i64, i64) {
@@ -130,6 +144,15 @@ impl Topology for Square8 {
     fn line(from: Cell, to: Cell, width: u32, out: &mut Vec<Cell>) {
         square_line(from, to, width, false, out);
     }
+
+    fn steps(a: Cell, b: Cell, width: u32) -> u32 {
+        let ((ax, ay), (bx, by)) = (split(a, width), split(b, width));
+        (ax - bx).unsigned_abs().max((ay - by).unsigned_abs()) as u32
+    }
+
+    fn centre(cell: Cell, width: u32) -> Vector2 {
+        square_centre(cell, width)
+    }
 }
 
 /// Square cells with four neighbours: N, E, S, W. Manhattan distance.
@@ -156,6 +179,15 @@ impl Topology for Square4 {
 
     fn line(from: Cell, to: Cell, width: u32, out: &mut Vec<Cell>) {
         square_line(from, to, width, true, out);
+    }
+
+    fn steps(a: Cell, b: Cell, width: u32) -> u32 {
+        let ((ax, ay), (bx, by)) = (split(a, width), split(b, width));
+        ((ax - bx).unsigned_abs() + (ay - by).unsigned_abs()) as u32
+    }
+
+    fn centre(cell: Cell, width: u32) -> Vector2 {
+        square_centre(cell, width)
     }
 }
 
@@ -290,5 +322,26 @@ impl Topology for Hex {
             let (column, row) = if inside(first.0) { first } else { second };
             out.push(join(column, row, width));
         }
+    }
+
+    fn steps(a: Cell, b: Cell, width: u32) -> u32 {
+        Self::distance(a, b, width) / 10
+    }
+
+    /// Odd rows sit half a cell east, and rows are √3/2 apart, so every neighbour is one cell
+    /// width away.
+    fn centre(cell: Cell, width: u32) -> Vector2 {
+        let (column, row) = split(cell, width);
+        let shift = if row % 2 == 1 {
+            Fixed32::HALF
+        } else {
+            Fixed32::ZERO
+        };
+        // √3/2 in 16.16, rounded to nearest.
+        let row_height = Fixed32::from_raw(56_756);
+        Vector2::new(
+            Fixed32::from_int(column as i32) + shift,
+            Fixed32::from_int(row as i32) * row_height,
+        )
     }
 }

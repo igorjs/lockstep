@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-use lockstep_spatial::{Cell, Square4, Square8, Topology};
+use lockstep_spatial::{Cell, GridMap, Square4, Square8, Topology};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
@@ -274,6 +274,63 @@ mod hex {
             for pair in cells.windows(2) {
                 assert_eq!(Hex::distance(pair[0], pair[1], WIDTH), 10);
             }
+        }
+    }
+}
+
+#[test]
+fn every_neighbour_is_one_step_away_and_steps_count_moves_not_cost() {
+    fn check<T: lockstep_spatial::Topology>(name: &str) {
+        let map: GridMap<T> = GridMap::new(9, 9);
+        let centre = map.index(4, 4);
+        let mut neighbours = Vec::new();
+        map.neighbours(centre, &mut neighbours);
+        for neighbour in &neighbours {
+            assert_eq!(map.steps(centre, *neighbour), 1, "{name}");
+            // Every neighbour's centre is about one cell width away.
+            let gap = map.centre(centre).distance(map.centre(*neighbour));
+            let one = lockstep_core::math::Fixed32::ONE;
+            let diagonal = lockstep_core::math::Fixed32::from_ratio(1_414, 1_000);
+            assert!(
+                gap >= one - lockstep_core::math::Fixed32::from_ratio(1, 100),
+                "{name}"
+            );
+            assert!(
+                gap <= diagonal + lockstep_core::math::Fixed32::from_ratio(1, 100),
+                "{name}"
+            );
+        }
+        assert_eq!(map.steps(centre, centre), 0);
+    }
+    check::<Square8>("Square8");
+    check::<Square4>("Square4");
+    #[cfg(feature = "hex")]
+    check::<lockstep_spatial::Hex>("Hex");
+    let map: GridMap<Square8> = GridMap::new(9, 9);
+    assert_eq!(
+        map.steps(map.index(0, 0), map.index(3, 2)),
+        3,
+        "a diagonal is one step"
+    );
+    let map: GridMap<Square4> = GridMap::new(9, 9);
+    assert_eq!(map.steps(map.index(0, 0), map.index(3, 2)), 5);
+}
+
+#[cfg(feature = "hex")]
+#[test]
+fn hexagon_centres_are_a_cell_apart_in_every_direction() {
+    let map: GridMap<lockstep_spatial::Hex> = GridMap::new(9, 9);
+    for centre in [map.index(4, 4), map.index(4, 3)] {
+        let mut neighbours = Vec::new();
+        map.neighbours(centre, &mut neighbours);
+        assert_eq!(neighbours.len(), 6);
+        for neighbour in neighbours {
+            let gap = map.centre(centre).distance(map.centre(neighbour));
+            let error = (gap - lockstep_core::math::Fixed32::ONE).abs();
+            assert!(
+                error <= lockstep_core::math::Fixed32::from_raw(8),
+                "{gap:?}"
+            );
         }
     }
 }

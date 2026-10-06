@@ -22,6 +22,10 @@ North is a smaller y. Neighbour order is fixed, because determinism depends on i
 cells from one cell to another, both ends included, using integer arithmetic only. Square lines are
 symmetric (A to B passes the same cells as B to A), and hex lines never leave the map.
 
+`steps(a, b)` counts single moves on an empty map, whatever they cost (a diagonal is one step on
+`Square8`), and `centre(cell)` is a cell's centre in cell widths, x east and y south; hexagon rows
+are √3/2 apart with odd rows half a cell east. Combat measures reach and angles with them.
+
 ## GridMap
 
 `GridMap<T>` holds, per cell: passable, cost, elevation, and wall height. `can_step(from, to)` needs a
