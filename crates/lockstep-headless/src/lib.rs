@@ -36,6 +36,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: crowd::fixture_hash,
         },
         Fixture {
+            name: "drone-fleet",
+            default_seed: drone_fleet::DEFAULT_SEED,
+            default_steps: drone_fleet::DEFAULT_STEPS,
+            run: drone_fleet::fixture_hash,
+        },
+        Fixture {
             name: "ledger",
             default_seed: ledger::DEFAULT_SEED,
             default_steps: ledger::DEFAULT_STEPS,

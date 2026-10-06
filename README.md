@@ -36,8 +36,9 @@ WebAssembly on every change.
 | Example | Shows |
 |---|---|
 | [`capsule`](examples/capsule) | A survivor walks a walled room along A* paths; needs, health and sanity are attributes from JSON, and decay, bleeding and prayer are effects. |
-| [`ledger`](examples/ledger) | Accounts and transfers: exact money, rejected transfers with reasons, nothing game specific. |
+| [`ledger`](examples/ledger) | Accounts and transfers: exact money, rejected transfers with reasons. Not a game. |
 | [`mars-rovers`](examples/mars-rovers) | The Mars Rovers kata on any topology, with collisions as occupancy. |
+| [`drone-fleet`](examples/drone-fleet) | Delivery drones whose batteries charge, drain and wear: attributes from JSON, effects, a ratchet, and fault rolls. Not a game. |
 | [`crowd`](examples/crowd) | Sixty bodies route to one goal, solving each step's paths as one batch, with the same hash on one thread or many. |
 
 ## The rules

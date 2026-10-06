@@ -22,6 +22,7 @@ determinism:
     cargo run -p lockstep-headless -- verify ledger --expect examples/ledger/fixtures/ledger.hash
     cargo run -p lockstep-headless -- verify mars-rovers --expect examples/mars-rovers/fixtures/mars-rovers.hash
     cargo run -p lockstep-headless -- verify crowd --expect examples/crowd/fixtures/crowd.hash
+    cargo run -p lockstep-headless -- verify drone-fleet --expect examples/drone-fleet/fixtures/drone-fleet.hash
     cargo run -p lockstep-headless --features parallel -- verify crowd --expect examples/crowd/fixtures/crowd.hash
     wasm-pack test --node crates/lockstep-core
     wasm-pack test --node crates/lockstep-attributes
@@ -31,6 +32,7 @@ determinism:
     wasm-pack test --node examples/ledger
     wasm-pack test --node examples/mars-rovers
     wasm-pack test --node examples/crowd
+    wasm-pack test --node examples/drone-fleet
 
 bench:
     cargo bench -p lockstep-spatial --features parallel

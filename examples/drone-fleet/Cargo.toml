@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "drone-fleet"
+description = "Non-game consumer scenario: delivery drones whose batteries charge, drain and wear"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-attributes = { path = "../../crates/lockstep-attributes" }
+lockstep-core = { path = "../../crates/lockstep-core" }
+serde = { workspace = true }
+
+[dev-dependencies]
+bincode = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }
