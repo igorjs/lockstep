@@ -8,6 +8,9 @@ it was renamed to stay generic.
 
 - **Directions.** North is a smaller y, and `Square8` lists neighbours clockwise from north. Hex lists them clockwise from north-east.
 - **`neighbours` and `line` clear their output first**, so a caller can reuse one buffer.
+- **Square lines are symmetric.** A line is always drawn from the smaller cell index and reversed when needed, so the line from A to B passes exactly the cells of the line from B to A. Line of sight needs this, or one body could see another without being seen back.
+- **Hex lines never leave the map.** A point exactly between two hexes is a tie. The line breaks it with a tiny nudge one way and then the other, and keeps the hex inside the map. A first version broke ties one fixed way, and on an edge column that picked a hex outside the map, which wrapped into a real cell on the far edge; the self-review of the pull request found it.
+- **Saves hold cells, not dirty marks.** The dirty chunk marks are bookkeeping for hosts and caches, so they are left out of saves, hashes and equality: two maps with the same cells are equal whatever history built them. A load checks the same things `new` does (at least one cell, per-cell lists of the right length, passable only where there is no wall) and fails at load, not later. A loaded map reports every chunk as changed, so a host redraws it.
 - **`step_cost` equals `distance`** for adjacent cells: 10 straight, 14 diagonal.
 - **Climbing.** `step_limit` bounds a climb only. A drop of any height is allowed.
 - **No corner cutting.** A diagonal step is refused when either orthogonal neighbour is a wall. The test is topology-neutral: a step that costs more than a straight step is a diagonal.

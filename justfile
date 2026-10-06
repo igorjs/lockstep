@@ -18,6 +18,7 @@ determinism:
     cargo run -p lockstep-headless -- verify ledger --expect examples/ledger/fixtures/ledger.hash
     wasm-pack test --node crates/lockstep-core
     wasm-pack test --node crates/lockstep-spatial
+    wasm-pack test --node crates/lockstep-spatial --features hex
     wasm-pack test --node examples/capsule
     wasm-pack test --node examples/ledger
 

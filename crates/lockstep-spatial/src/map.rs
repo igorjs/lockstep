@@ -16,8 +16,13 @@ const FULL_WALL: u8 = 255;
 /// so nothing sees over it), and `set_low_wall` makes a wall of a given height that blocks sight
 /// only when it reaches the line of sight. Interiors with floors are separate maps linked by portal
 /// cells, a later feature.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(bound = "")]
+///
+/// A save holds the cells only. The dirty chunk marks are bookkeeping for hosts and caches, not
+/// state: they are left out of saves, hashes and equality, so two maps with the same cells are
+/// equal whatever history built them. A loaded map is checked the same way `new` checks its
+/// arguments, and reports every chunk as changed so a host redraws it.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(bound = "", try_from = "SavedMap", into = "SavedMap")]
 pub struct GridMap<T: Topology> {
     width: u32,
     height: u32,
@@ -34,6 +39,87 @@ pub struct GridMap<T: Topology> {
     /// One bit per 32 by 32 chunk, for hosts and caches.
     dirty_chunks: Vec<u64>,
     topology: PhantomData<T>,
+}
+
+/// The saved form of a map: everything except the dirty chunk marks.
+#[derive(Clone, Serialize, Deserialize)]
+struct SavedMap {
+    width: u32,
+    height: u32,
+    passable: Vec<u8>,
+    cost: Vec<u8>,
+    elevation: Vec<u8>,
+    wall_height: Vec<u8>,
+    step_limit: u8,
+}
+
+impl<T: Topology> From<GridMap<T>> for SavedMap {
+    fn from(map: GridMap<T>) -> Self {
+        SavedMap {
+            width: map.width,
+            height: map.height,
+            passable: map.passable,
+            cost: map.cost,
+            elevation: map.elevation,
+            wall_height: map.wall_height,
+            step_limit: map.step_limit,
+        }
+    }
+}
+
+impl<T: Topology> TryFrom<SavedMap> for GridMap<T> {
+    type Error = String;
+
+    fn try_from(saved: SavedMap) -> Result<Self, String> {
+        if saved.width == 0 || saved.height == 0 {
+            return Err("a map needs at least one cell".into());
+        }
+        let cells = saved.width as u64 * saved.height as u64;
+        if cells > u32::MAX as u64 {
+            return Err("the map is too large".into());
+        }
+        let lengths = [
+            saved.passable.len(),
+            saved.cost.len(),
+            saved.elevation.len(),
+            saved.wall_height.len(),
+        ];
+        if lengths.iter().any(|length| *length as u64 != cells) {
+            return Err(format!(
+                "a map of {cells} cells has per-cell lists of lengths {lengths:?}"
+            ));
+        }
+        for index in 0..cells as usize {
+            let passable = saved.passable[index];
+            if passable > 1 || (passable == 1) != (saved.wall_height[index] == 0) {
+                return Err(format!(
+                    "cell {index} is passable {passable} with wall height {}",
+                    saved.wall_height[index]
+                ));
+            }
+        }
+        let mut map = GridMap::new(saved.width, saved.height);
+        map.passable = saved.passable;
+        map.cost = saved.cost;
+        map.elevation = saved.elevation;
+        map.wall_height = saved.wall_height;
+        map.step_limit = saved.step_limit;
+        map.mark_all_dirty();
+        Ok(map)
+    }
+}
+
+impl<T: Topology> PartialEq for GridMap<T> {
+    /// Equal when the cells are equal. The dirty chunk marks are not compared.
+    fn eq(&self, other: &Self) -> bool {
+        self.width == other.width
+            && self.height == other.height
+            && self.passable == other.passable
+            && self.cost == other.cost
+            && self.elevation == other.elevation
+            && self.wall_height == other.wall_height
+            && self.step_limit == other.step_limit
+    }
 }
 
 impl<T: Topology> GridMap<T> {
@@ -184,6 +270,13 @@ impl<T: Topology> GridMap<T> {
     fn chunk_of(&self, cell: Cell) -> usize {
         let (x, y) = self.coordinates(cell);
         ((y / CHUNK) * self.width.div_ceil(CHUNK) + x / CHUNK) as usize
+    }
+
+    fn mark_all_dirty(&mut self) {
+        let chunks = (self.width.div_ceil(CHUNK) * self.height.div_ceil(CHUNK)) as usize;
+        for chunk in 0..chunks {
+            self.dirty_chunks[chunk / 64] |= 1 << (chunk % 64);
+        }
     }
 
     fn mark_dirty(&mut self, cell: Cell) {

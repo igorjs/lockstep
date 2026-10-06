@@ -157,10 +157,48 @@ fn a_square4_line_has_no_diagonal_steps() {
     }
 }
 
+/// Every line between every pair of cells on the test map: the right ends, one neighbour step at a
+/// time, and the same cells in both directions.
+fn every_line_is_sound<T: Topology>() {
+    for from in 0..WIDTH * HEIGHT {
+        for to in 0..WIDTH * HEIGHT {
+            let (from, to) = (Cell(from), Cell(to));
+            let forward = line::<T>(from, to);
+            assert_eq!((forward[0], *forward.last().unwrap()), (from, to));
+            for pair in forward.windows(2) {
+                assert!(
+                    neighbours::<T>(pair[0]).contains(&pair[1]),
+                    "{from:?} to {to:?}: {pair:?} are not neighbours"
+                );
+            }
+            let mut backward = line::<T>(to, from);
+            backward.reverse();
+            assert_eq!(
+                forward, backward,
+                "{from:?} to {to:?} is not the reverse of {to:?} to {from:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn every_square8_line_has_the_right_ends_adjacent_steps_and_is_symmetric() {
+    every_line_is_sound::<Square8>();
+}
+
+#[test]
+fn every_square4_line_has_the_right_ends_adjacent_steps_and_is_symmetric() {
+    every_line_is_sound::<Square4>();
+}
+
 #[cfg(feature = "hex")]
 mod hex {
     use super::*;
+
+    // An explicit import wins over the glob above, which would otherwise make `test` ambiguous.
     use lockstep_spatial::Hex;
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::wasm_bindgen_test as test;
 
     #[test]
     fn a_hex_has_six_neighbours_each_at_distance_one() {
@@ -187,6 +225,37 @@ mod hex {
         assert_eq!(Hex::distance(cell(0, 0), cell(0, 2), WIDTH), 20);
         assert_eq!(Hex::distance(cell(0, 0), cell(4, 4), WIDTH), 60);
         assert_eq!(Hex::distance(cell(4, 4), cell(0, 0), WIDTH), 60);
+    }
+
+    #[test]
+    fn every_hex_line_stays_inside_the_map_and_steps_between_neighbours() {
+        for from in 0..WIDTH * HEIGHT {
+            for to in 0..WIDTH * HEIGHT {
+                let (from, to) = (Cell(from), Cell(to));
+                let cells = line::<Hex>(from, to);
+                assert_eq!((cells[0], *cells.last().unwrap()), (from, to));
+                assert_eq!(cells.len() as u32, Hex::distance(from, to, WIDTH) / 10 + 1);
+                for pair in cells.windows(2) {
+                    // A cell that wrapped around the edge would not be a neighbour.
+                    assert!(
+                        neighbours::<Hex>(pair[0]).contains(&pair[1]),
+                        "{from:?} to {to:?}: {pair:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_hex_line_down_an_edge_column_never_wraps_to_the_other_edge() {
+        // These two crossed a rounding tie that once picked the hex outside the map.
+        assert_eq!(
+            line::<Hex>(cell(0, 0), cell(0, 2)),
+            vec![cell(0, 0), cell(0, 1), cell(0, 2)]
+        );
+        let right = line::<Hex>(cell(9, 1), cell(9, 3));
+        assert_eq!((right[0], right[2]), (cell(9, 1), cell(9, 3)));
+        assert_eq!(right[1], cell(9, 2));
     }
 
     #[test]

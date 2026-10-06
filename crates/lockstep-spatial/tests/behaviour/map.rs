@@ -1,4 +1,6 @@
+use lockstep_core::hash_of;
 use lockstep_spatial::{Cell, GridMap, Square4, Square8, CHUNK};
+use serde::Serialize;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
@@ -113,7 +115,7 @@ fn a_diagonal_step_may_not_cut_the_corner_of_a_wall() {
 }
 
 #[test]
-fn square4_has_no_diagonal_corner_rule_to_apply() {
+fn a_straight_step_beside_a_wall_is_allowed() {
     let mut map: GridMap<Square4> = GridMap::new(5, 5);
     map.set_passable(map.index(2, 1), false);
     assert!(map.can_step(map.index(1, 1), map.index(1, 2)));
@@ -169,4 +171,75 @@ fn the_map_forwards_the_topology_functions() {
     assert_eq!(map.step_cost(map.index(0, 0), map.index(1, 1)), 14);
     map.line(map.index(0, 0), map.index(2, 0), &mut out);
     assert_eq!(out.len(), 3);
+}
+
+/// The saved layout of a map, written out by hand so a test can build broken saves.
+#[derive(Serialize)]
+struct Save {
+    width: u32,
+    height: u32,
+    passable: Vec<u8>,
+    cost: Vec<u8>,
+    elevation: Vec<u8>,
+    wall_height: Vec<u8>,
+    step_limit: u8,
+}
+
+fn good_save() -> Save {
+    Save {
+        width: 3,
+        height: 2,
+        passable: vec![1; 6],
+        cost: vec![1; 6],
+        elevation: vec![0; 6],
+        wall_height: vec![0; 6],
+        step_limit: 1,
+    }
+}
+
+fn load(save: &Save) -> Result<GridMap<Square8>, bincode::Error> {
+    bincode::deserialize(&bincode::serialize(save).unwrap())
+}
+
+#[test]
+fn a_well_formed_save_loads() {
+    let map = load(&good_save()).unwrap();
+    assert_eq!((map.width(), map.height()), (3, 2));
+}
+
+#[test]
+fn a_malformed_save_is_refused_at_load_not_later() {
+    let mut empty = good_save();
+    empty.width = 0;
+    assert!(load(&empty).is_err(), "no cells");
+    let mut short = good_save();
+    short.cost.pop();
+    assert!(load(&short).is_err(), "a per-cell list of the wrong length");
+    let mut mixed = good_save();
+    mixed.wall_height[2] = 3;
+    assert!(load(&mixed).is_err(), "a wall on a passable cell");
+    let mut strange = good_save();
+    strange.passable[1] = 2;
+    assert!(load(&strange).is_err(), "passable must be 0 or 1");
+}
+
+#[test]
+fn a_loaded_map_reports_every_chunk_changed_so_a_host_redraws_it() {
+    let map: GridMap<Square8> = GridMap::new(CHUNK * 3, CHUNK * 2);
+    let mut loaded: GridMap<Square8> =
+        bincode::deserialize(&bincode::serialize(&map).unwrap()).unwrap();
+    assert_eq!(loaded.take_dirty_chunks(), (0..6).collect::<Vec<u32>>());
+}
+
+#[test]
+fn dirty_marks_are_not_state_so_they_change_neither_equality_nor_the_hash() {
+    let mut drained: GridMap<Square8> = GridMap::new(40, 40);
+    let mut fresh: GridMap<Square8> = GridMap::new(40, 40);
+    for map in [&mut drained, &mut fresh] {
+        let cell = map.index(5, 5);
+        map.set_cost(cell, 4);
+    }
+    drained.take_dirty_chunks();
+    assert_eq!(drained, fresh);
+    assert_eq!(hash_of(&drained), hash_of(&fresh));
 }

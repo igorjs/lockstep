@@ -52,8 +52,14 @@ fn square_neighbours(
 
 /// Integer line between two points, one cell per step along the longer axis. When
 /// `four_connected` is set, a step that changes both axes first changes x, so the line has no
-/// diagonal steps.
+/// diagonal steps. The line is always drawn from the smaller cell index and reversed when needed,
+/// so the line from A to B passes exactly the cells of the line from B to A.
 fn square_line(from: Cell, to: Cell, width: u32, four_connected: bool, out: &mut Vec<Cell>) {
+    if to < from {
+        square_line(to, from, width, four_connected, out);
+        out.reverse();
+        return;
+    }
     out.clear();
     let (mut x, mut y) = split(from, width);
     let (target_x, target_y) = split(to, width);
@@ -182,6 +188,47 @@ mod hex {
         (0, 1, -1),
     ];
 
+    /// Scale for the nudge that breaks ties: far finer than any real difference along a line.
+    const NUDGE_SCALE: i64 = 1_000;
+
+    /// The hex (as a column and row) at position `index` of `steps` along the line from `a` to `b`
+    /// in cube coordinates, with the point nudged by `nudge` thousandths of a hex so it never lies
+    /// exactly on an edge. The nudge adds up to zero, so the point stays on the cube plane.
+    pub fn round_on_line(
+        a: (i64, i64, i64),
+        b: (i64, i64, i64),
+        steps: i64,
+        index: i64,
+        nudge: (i64, i64, i64),
+    ) -> (i64, i64) {
+        let scale = steps * NUDGE_SCALE;
+        let scaled = |from: i64, to: i64, offset: i64| {
+            (from * (steps - index) + to * index) * NUDGE_SCALE + offset
+        };
+        let (sx, sy, sz) = (
+            scaled(a.0, b.0, nudge.0),
+            scaled(a.1, b.1, nudge.1),
+            scaled(a.2, b.2, nudge.2),
+        );
+        let (mut rx, ry, mut rz) = (
+            divide_round(sx, scale),
+            divide_round(sy, scale),
+            divide_round(sz, scale),
+        );
+        let (error_x, error_y, error_z) = (
+            (rx * scale - sx).abs(),
+            (ry * scale - sy).abs(),
+            (rz * scale - sz).abs(),
+        );
+        if error_x > error_y && error_x > error_z {
+            rx = -ry - rz;
+        } else if error_y <= error_z {
+            rz = -rx - ry;
+        }
+        // When y moved the most, it is recomputed from x and z, which is what dropping it does.
+        from_cube(rx, rz)
+    }
+
     /// `numerator / denominator` rounded to nearest, ties away from zero, for a positive denominator.
     pub fn divide_round(numerator: i64, denominator: i64) -> i64 {
         let half = denominator / 2;
@@ -202,17 +249,17 @@ impl Topology for Hex {
         let (column, row) = split(cell, width);
         let (x, _, z) = hex::to_cube(column, row);
         for (dx, _, dz) in hex::CUBE_DIRECTIONS {
-            let (nc, nr) = hex::from_cube(x + dx, z + dz);
-            if inside(nc, nr, width, height) {
-                out.push(join(nc, nr, width));
+            let (neighbour_column, neighbour_row) = hex::from_cube(x + dx, z + dz);
+            if inside(neighbour_column, neighbour_row, width, height) {
+                out.push(join(neighbour_column, neighbour_row, width));
             }
         }
     }
 
     fn distance(a: Cell, b: Cell, width: u32) -> u32 {
-        let ((ac, ar), (bc, br)) = (split(a, width), split(b, width));
-        let (ax, ay, az) = hex::to_cube(ac, ar);
-        let (bx, by, bz) = hex::to_cube(bc, br);
+        let ((a_column, a_row), (b_column, b_row)) = (split(a, width), split(b, width));
+        let (ax, ay, az) = hex::to_cube(a_column, a_row);
+        let (bx, by, bz) = hex::to_cube(b_column, b_row);
         10 * (((ax - bx).abs() + (ay - by).abs() + (az - bz).abs()) / 2) as u32
     }
 
@@ -222,37 +269,24 @@ impl Topology for Hex {
 
     fn line(from: Cell, to: Cell, width: u32, out: &mut Vec<Cell>) {
         out.clear();
-        let ((fc, fr), (tc, tr)) = (split(from, width), split(to, width));
-        let (ax, _, az) = hex::to_cube(fc, fr);
-        let (bx, _, bz) = hex::to_cube(tc, tr);
-        let (ay, by) = (-ax - az, -bx - bz);
-        let steps = (((ax - bx).abs() + (ay - by).abs() + (az - bz).abs()) / 2).max(0);
+        let ((from_column, from_row), (to_column, to_row)) = (split(from, width), split(to, width));
+        let (ax, ay, az) = hex::to_cube(from_column, from_row);
+        let (bx, by, bz) = hex::to_cube(to_column, to_row);
+        let steps = ((ax - bx).abs() + (ay - by).abs() + (az - bz).abs()) / 2;
         if steps == 0 {
             out.push(from);
             return;
         }
+        // The map's height is unknown here, so "inside" means inside the columns; rows stay
+        // between the two ends, which are inside the map.
+        let inside = |column: i64| (0..width as i64).contains(&column);
         for index in 0..=steps {
-            // Interpolate every coordinate scaled by `steps`, round each to nearest, then repair the
-            // one that moved the most so the three still add up to zero.
-            let scaled = |a: i64, b: i64| a * (steps - index) + b * index;
-            let (sx, sy, sz) = (scaled(ax, bx), scaled(ay, by), scaled(az, bz));
-            let (mut rx, ry, mut rz) = (
-                hex::divide_round(sx, steps),
-                hex::divide_round(sy, steps),
-                hex::divide_round(sz, steps),
-            );
-            let (error_x, error_y, error_z) = (
-                (rx * steps - sx).abs(),
-                (ry * steps - sy).abs(),
-                (rz * steps - sz).abs(),
-            );
-            if error_x > error_y && error_x > error_z {
-                rx = -ry - rz;
-            } else if error_y <= error_z {
-                rz = -rx - ry;
-            }
-            // When y moved the most, it is recomputed from x and z, which is what dropping it does.
-            let (column, row) = hex::from_cube(rx, rz);
+            // A point exactly on the edge between two hexes is a tie. Nudge it a little one way and
+            // then the other, and keep the first hex that is inside the map: on an edge column one
+            // of the two always is.
+            let first = hex::round_on_line((ax, ay, az), (bx, by, bz), steps, index, (1, 2, -3));
+            let second = hex::round_on_line((ax, ay, az), (bx, by, bz), steps, index, (-1, -2, 3));
+            let (column, row) = if inside(first.0) { first } else { second };
             out.push(join(column, row, width));
         }
     }
