@@ -3,8 +3,8 @@
 # lockstep-agents
 
 Local awareness: agents sense through cones and hearing, so a crowd converges only on what it
-saw or heard. Everything is integers. Perception, noise, memory, alert states and the director
-are in place; steering and utility decisions follow in the same milestone.
+saw or heard. Everything is integers. Perception, noise, memory, alert states, the director and
+steering are in place; utility decisions follow in the same milestone.
 
 Distances are metres, turned into cells by the caller's cell size (`cell_metres`, half a metre in
 the reference). Angles are `Turn`s, counter-clockwise from east.
@@ -70,6 +70,24 @@ which space a horde's arrival into pulses, wait for a consumer (deferral D5 in t
 
 See decision 0019.
 
+## Steering
+
+`steer(map, occupancy, field, agents, leashes, cell_metres, events)` moves each agent one cell
+down a `FlowField`, in handle order. An agent takes the field's next cell when the map still lets
+it step there and no other body holds it; otherwise `lockstep_combat::sidestep_where`: the two
+neighbours either side of the way, nearest the intended direction first, among the cells it may
+take. Fighters use the same sidestep. Within a leash any cell inside it may be taken; an agent
+outside its leash, knocked or placed there, may take any cell no farther from home than its own,
+so it finds its way back. A wall raised after the field was built is stepped around. Moving through occupancy reserves the cell at once, so no later agent in the same
+step takes it and no two bodies ever share a cell. An agent that cannot move gets `Waited`; one at
+the field's goal, or out of its reach, stays put without an event.
+
+Agents stop on the first goal cell they reach, so a goal spread across a room fills from its near
+edge and can block the way in; put a crowd's goal where arrivals pack in from the back. Call
+`steer` on the steps an agent should move, to set its speed.
+
+See decision 0020.
+
 ## Tests
 
 - `tests/behaviour/sight.rs`: the cone's range and angle edges, the circle behind, a wall, and
@@ -77,8 +95,13 @@ See decision 0019.
 - `tests/behaviour/hearing.rs`: listeners at the edge of a noise, the source left out, the wind
   less its threshold, a wall halving the reach, a listener off the axes on `Square4` and
   `Square8`, a tall listener over a low wall, a negative wind, and the hearing range.
+- `tests/behaviour/steering.rs`: a leashed agent stopping at its leash, a boxed-in agent
+  waiting while one at the goal stays quiet, a door closed after the field was built, an agent
+  walking back into its leash, and a sidestep that gives way to the other side inside the leash.
 - `tests/behaviour/minds.rs`: a noise making an agent Curious, confidence fading, sighting again,
   Alert ignoring noise, and a stronger memory kept.
 - `tests/decisions`: the exact wind ranges, the gale, psychic noise, and staggered checks for a
   thousand agents (decision 0018); memory fading to Searching at 2 minutes and Idle at 10 at two
-  step rates, the director's budget of eight among twenty, and the leash (decision 0019).
+  step rates, the director's budget of eight among twenty, and the leash (decision 0019); 200
+  agents through a one-cell doorway without sharing a cell, and a blocked mover past a body in two
+  steps (decision 0020).
