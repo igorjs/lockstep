@@ -33,4 +33,15 @@ fn a_drop_of_70_through_60_40_and_20_emits_exactly_three_ordered_events() {
     assert!(crossings(&events).is_empty());
     attributes.apply(who, hunger, whole(15), &registry, &mut events);
     assert_eq!(crossings(&events), [("starving".to_string(), true)]);
+
+    // A climb passes the thresholds lowest first, the reverse of how they are declared.
+    attributes.apply(who, hunger, whole(-15), &registry, &mut events);
+    events.clear();
+    attributes.apply(who, hunger, whole(55), &registry, &mut events);
+    assert_eq!(attributes.get(hunger).current(), whole(65));
+    let expected = [("starving", true), ("hungry", true), ("peckish", true)];
+    assert_eq!(
+        crossings(&events),
+        expected.map(|(name, upward)| (name.to_string(), upward))
+    );
 }

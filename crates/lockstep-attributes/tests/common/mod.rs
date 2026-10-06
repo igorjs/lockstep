@@ -16,6 +16,7 @@ pub const REGISTRY: &str = r#"{
     { "name": "luck", "minimum": 0, "maximum": 20, "starting": 3,
       "on_maximum_change": "scale_current" },
     { "name": "critical_chance", "minimum": 0, "maximum": 100, "starting": 0,
+      "thresholds": [ { "at": 10, "name": "keen" } ],
       "derived": { "inputs": ["luck"], "curve": { "linear": { "per_point": "1", "offset": "5" } } } },
     { "name": "corruption", "minimum": 0, "maximum": 100, "starting": 0,
       "on_maximum_change": "ratchet",

@@ -66,7 +66,8 @@ What a new maximum does to the current value is the attribute's `MaximumPolicy`:
 ## Derived attributes and curves
 
 A derived attribute is data: inputs and a `Curve`. Every derived attribute is recomputed in registry
-order after any change, clamped to its own minimum and maximum, and reports its own crossings.
+order after any change, clamped to its own minimum and maximum, and reports its own crossings. A
+new maximum always clamps a derived value, whatever its policy, because the curve sets the value.
 `apply` on a derived attribute changes nothing.
 
 | Curve | Value |

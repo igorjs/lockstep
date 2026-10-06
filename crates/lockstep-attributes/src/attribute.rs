@@ -181,7 +181,14 @@ impl Attributes {
         let maximum = modified_maximum(definition, &attribute.modifiers).max(attribute.minimum);
         attribute.maximum = maximum;
         let (current, minimum) = (attribute.current, attribute.minimum);
-        let next = match definition.on_maximum_change {
+        // A derived value comes from its curve, recomputed right after this, so scaling it here
+        // would only report crossings the recompute takes back.
+        let policy = if definition.derived.is_some() {
+            MaximumPolicy::Clamp
+        } else {
+            definition.on_maximum_change
+        };
+        let next = match policy {
             MaximumPolicy::Clamp | MaximumPolicy::Ratchet => current,
             MaximumPolicy::ScaleCurrent => {
                 let old_span = old_maximum.raw() as i128 - minimum.raw() as i128;

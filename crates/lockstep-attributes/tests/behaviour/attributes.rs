@@ -137,11 +137,49 @@ fn the_fraction_runs_from_the_minimum_to_the_maximum() {
 #[test]
 fn a_derived_attribute_ignores_apply_and_reports_its_own_crossings() {
     let (registry, mut attributes, who) = fresh();
-    let critical = id(&registry, "critical_chance");
+    let (luck, critical) = (id(&registry, "luck"), id(&registry, "critical_chance"));
     let mut events = Vec::new();
     attributes.apply(who, critical, whole(50), &registry, &mut events);
     assert_eq!(attributes.get(critical).current(), whole(8));
     assert!(events.is_empty());
+    attributes.apply(who, luck, whole(2), &registry, &mut events);
+    assert_eq!(
+        events,
+        [AttributeEvent::Crossed {
+            who,
+            attribute: critical,
+            threshold: "keen".into(),
+            upward: true
+        }]
+    );
+}
+
+#[test]
+fn a_derived_attribute_with_scale_current_reports_nothing_for_a_modifier_it_does_not_feel() {
+    let registry = lockstep_attributes::Registry::from_json(
+        r#"{ "attributes": [
+            { "name": "focus", "minimum": 0, "maximum": 100, "starting": 40 },
+            { "name": "insight", "minimum": 0, "maximum": 100, "starting": 0,
+              "on_maximum_change": "scale_current",
+              "thresholds": [ { "at": 50, "name": "clear" } ],
+              "derived": { "inputs": ["focus"], "curve": "sum" } }
+        ] }"#,
+    )
+    .unwrap();
+    let insight = registry.id("insight").unwrap();
+    let mut attributes = Attributes::from_registry(&registry);
+    let who = someone();
+    let mut events = Vec::new();
+    attributes.add_modifier(
+        who,
+        insight,
+        Modifier::Multiply(whole(2)),
+        &registry,
+        &mut events,
+    );
+    assert_eq!(attributes.get(insight).current(), whole(40));
+    assert_eq!(attributes.get(insight).maximum(), whole(200));
+    assert!(events.is_empty(), "{events:?}");
 }
 
 #[test]
@@ -166,18 +204,30 @@ fn a_derived_value_is_clamped_to_its_own_bounds() {
 
 #[test]
 fn events_name_the_entity_they_happened_to() {
-    let (registry, mut attributes, _) = fresh();
-    let other = someone();
+    let (registry, _, _) = fresh();
+    let mut entities = lockstep_core::StableVector::new();
+    let (first, second) = (entities.insert(()), entities.insert(()));
+    assert_ne!(first, second);
     let mut events = Vec::new();
-    attributes.apply(
-        other,
-        id(&registry, "hunger"),
-        whole(-30),
-        &registry,
-        &mut events,
-    );
-    assert!(matches!(events[0], AttributeEvent::Crossed { who, .. } if who == other));
-    assert_eq!(crossings(&events).len(), 1);
+    for who in [first, second] {
+        let mut attributes = Attributes::from_registry(&registry);
+        attributes.apply(
+            who,
+            id(&registry, "hunger"),
+            whole(-30),
+            &registry,
+            &mut events,
+        );
+    }
+    let named: Vec<_> = events
+        .iter()
+        .map(|event| match event {
+            AttributeEvent::Crossed { who, .. } => *who,
+            other => panic!("unexpected {other:?}"),
+        })
+        .collect();
+    assert_eq!(named, [first, second]);
+    assert_eq!(crossings(&events).len(), 2);
 }
 
 #[test]

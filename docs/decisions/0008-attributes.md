@@ -12,7 +12,8 @@ values from curves.
 
 - Modifiers apply Add, then Multiply, then the last Override, whatever order they were added in.
 - Each attribute picks `clamp`, `scale_current` or `ratchet` for a changed maximum.
-- A threshold fires once per crossing, in the order the value passes them.
+- A threshold fires once per crossing, in the order the value passes them. The spec said
+  definition order, which reports a climb through thresholds declared highest first backwards.
 - Derived attributes recompute in registry order after every change.
 - A ratchet turns each threshold the value rises through into its minimum. The spec only said "the
   minimum only rises"; tying the rise to thresholds gives corruption named points of no return.
