@@ -68,14 +68,13 @@ impl Streams {
     /// Use it for hits and criticals. Never use it for farmable rolls or for a roll that
     /// affects another player in multiplayer.
     pub fn roll_smoothed(&mut self, name: &str, chance: Chance, state: &mut SmoothedState) -> bool {
+        // Draw first, as every roll does, so a chance that reaches 100 percent leaves the
+        // stream's later draws where they were.
+        let draw = self.next_u32(name) as u64;
         let points = chance.clamped();
-        if points == CERTAIN {
-            state.failures = 0;
-            return true;
-        }
         let attempt = state.failures as u64 + 1;
         let threshold = (smoothing_increment(points) as u64).saturating_mul(attempt);
-        if (self.next_u32(name) as u64) < threshold {
+        if points == CERTAIN || draw < threshold {
             state.failures = 0;
             true
         } else {

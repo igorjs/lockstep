@@ -14,6 +14,7 @@ and intents produce the same state and the same hash on every platform.
 | `Clock`, `ClockConfiguration`, `ClockEvent` | The game clock: a rate with a multiplier, sunrise, sunset, new day. Time of day is an exact integer position, so a day is an exact number of steps. |
 | `StableVector`, `Column`, `Handle` | Entities as generational handles; components as columns keyed by those handles. Inserts reuse the lowest free slot, and a restored store continues exactly as the original. The handle `Handle::from_raw(0)` never refers to anything. |
 | `Streams` | Named random streams, each seeded from the master seed and its name. |
+| `Chance`, `SmoothedState`, `CERTAIN` | Percentages as basis points, and the three rolls on `Streams`: `roll`, `roll_with_luck`, `roll_smoothed`. See decision 0007. |
 | `hash_of` | xxh3 over fixed-width, little-endian bincode bytes. |
 | `math` | Deterministic math: `Fixed32` (16.16 fixed point), `isqrt`, `Vector2`, and angles as whole turns (`sin`, `cos`, `unit`, `atan2`, `unit_circle_table`). Integer only. See decision 0004. |
 | `Message` | Marker for anything that crosses the boundary or lands in a save. Written by hand in milestone M1. |
@@ -58,7 +59,7 @@ No hash maps or sets, no wall clocks, no threads, no transcendental float functi
 
 ## Tests
 
-- `tests/behaviour`: runner, intent queue, clock, store, streams.
+- `tests/behaviour`: runner, intent queue, clock, store, streams, chance.
 - `tests/decisions`: one file per design decision, with the rejected alternative and the number that would change it.
 - `tests/spikes`: experiments that check a design before other code builds on it. The restore spike found a defect that became decision 0002.
 - Every test also runs under WebAssembly in Node (`wasm-pack test --node crates/lockstep`).
@@ -67,5 +68,5 @@ No hash maps or sets, no wall clocks, no threads, no transcendental float functi
 
 ## Not in milestone M1
 
-Money, grid, attributes, saves and migrations, record and replay, the
+Money, grid, attributes, chance rolls (milestone M4), saves and migrations, record and replay, the
 timeline, the derive macro for `Message`. See the roadmap.
