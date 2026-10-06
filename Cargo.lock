@@ -104,6 +104,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "drone-fleet"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "lockstep-attributes",
+ "lockstep-core",
+ "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "either"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -200,6 +211,7 @@ version = "0.1.0"
 dependencies = [
  "capsule",
  "crowd",
+ "drone-fleet",
  "ledger",
  "mars-rovers",
 ]

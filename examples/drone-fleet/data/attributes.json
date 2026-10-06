@@ -1,0 +1,12 @@
+{
+  "attributes": [
+    { "name": "wear", "minimum": 0, "maximum": 100, "starting": 0,
+      "on_maximum_change": "ratchet",
+      "thresholds": [ { "at": 25, "name": "worn" }, { "at": 50, "name": "tired" },
+                      { "at": 75, "name": "retire" } ] },
+    { "name": "capacity", "minimum": 0, "maximum": 100, "starting": 100,
+      "derived": { "inputs": ["wear"], "curve": { "linear": { "per_point": -1, "offset": 100 } } } },
+    { "name": "charge", "minimum": 0, "maximum": 100, "starting": 100,
+      "thresholds": [ { "at": 20, "name": "low" }, { "at": 5, "name": "critical" } ] }
+  ]
+}

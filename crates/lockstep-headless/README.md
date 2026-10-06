@@ -15,7 +15,7 @@ lockstep-headless verify  <name> --expect <file> [--seed <number>] [--steps <num
 - `verify` compares it with a committed file (surrounding whitespace ignored), prints `ok <name> <hash>` on a
   match, and exits with status 1 on a mismatch.
 
-Fixtures: `capsule`, `ledger`, `mars-rovers` and `crowd`. With the `parallel` feature, the crowd
+Fixtures: `capsule`, `ledger`, `mars-rovers`, `crowd` and `drone-fleet`. With the `parallel` feature, the crowd
 solves its paths on a thread pool, and its hash must not change:
 
 ```sh

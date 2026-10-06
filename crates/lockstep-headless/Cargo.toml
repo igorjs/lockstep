@@ -11,6 +11,7 @@ readme = "README.md"
 [dependencies]
 capsule = { path = "../../examples/capsule" }
 crowd = { path = "../../examples/crowd" }
+drone-fleet = { path = "../../examples/drone-fleet" }
 ledger = { path = "../../examples/ledger" }
 mars-rovers = { path = "../../examples/mars-rovers" }
 
