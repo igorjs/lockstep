@@ -1,6 +1,6 @@
 [package]
-name = "capsule"
-description = "Game-shaped consumer scenario: a survivor walks and starves"
+name = "mars-rovers"
+description = "Grid-shaped consumer scenario: rovers on a plateau, on any topology"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,8 +9,11 @@ publish = false
 
 [dependencies]
 lockstep-core = { path = "../../crates/lockstep-core" }
-lockstep-spatial = { path = "../../crates/lockstep-spatial" }
+lockstep-spatial = { path = "../../crates/lockstep-spatial", features = ["hex"] }
 serde = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = { workspace = true }
+
+[dev-dependencies]
+bincode = { workspace = true }

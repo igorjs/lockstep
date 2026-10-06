@@ -39,6 +39,7 @@ name = "capsule"
 version = "0.1.0"
 dependencies = [
  "lockstep-core",
+ "lockstep-spatial",
  "serde",
  "wasm-bindgen-test",
 ]
@@ -145,6 +146,7 @@ version = "0.1.0"
 dependencies = [
  "capsule",
  "ledger",
+ "mars-rovers",
 ]
 
 [[package]]
@@ -153,6 +155,17 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "lockstep-core",
+ "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
+name = "mars-rovers"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "lockstep-core",
+ "lockstep-spatial",
  "serde",
  "wasm-bindgen-test",
 ]

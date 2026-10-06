@@ -1,8 +1,9 @@
 //! The capsule: a game-shaped consumer scenario.
 //!
-//! One survivor lives in a small room. The host clicks a cell and the survivor walks there, one
-//! cell every few steps. Needs drain with game time. When hunger reaches zero, health drains,
-//! and the survivor starves. Everything the survivor is lives in columns keyed by a handle.
+//! One survivor lives in a small room with a wall across the middle. The host clicks a cell and the
+//! survivor walks there along the cheapest path around the wall, one cell every few steps. Needs
+//! drain with game time. When hunger reaches zero, health drains, and the survivor starves.
+//! Everything the survivor is lives in columns keyed by a handle.
 
 pub mod script;
 
@@ -10,11 +11,19 @@ use lockstep_core::{
     hash_of, ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation,
     StableVector, StepConfiguration, Streams,
 };
+use lockstep_spatial::{
+    Cell as GridCell, GridMap, Occupancy, PathOptions, PathResult, Pathfinder, Square8,
+};
 use serde::{Deserialize, Serialize};
 
 pub const ROOM_SIZE: i32 = 16;
 pub const STEPS_PER_CELL_WALKING: u32 = 6;
 pub const STEPS_PER_CELL_RUNNING: u32 = 3;
+/// The wall across the room: the column `WALL_COLUMN`, from `WALL_FIRST_ROW` to `WALL_LAST_ROW`.
+/// There is a gap above it and a gap below it.
+pub const WALL_COLUMN: i32 = 8;
+pub const WALL_FIRST_ROW: i32 = 2;
+pub const WALL_LAST_ROW: i32 = 12;
 
 /// Drain per game minute. A survivor with full hunger starves in about sixteen game hours.
 const HUNGER_PER_MINUTE: f32 = 0.1;
@@ -38,11 +47,13 @@ pub struct Needs {
     pub sanity: f32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Walk {
     pub destination: Cell,
     pub run: bool,
     pub steps_until_next_cell: u32,
+    /// The cells still to walk, in order, as indexes into the room map. The first is next.
+    pub path: Vec<u32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -86,6 +97,8 @@ impl Message for Event {
 /// The whole world. It is also the snapshot, so a save is exactly this value.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct World {
+    /// The room: sixteen by sixteen cells with a wall across the middle.
+    pub room: GridMap<Square8>,
     pub entities: StableVector<String>,
     pub positions: Column<Cell>,
     pub walks: Column<Walk>,
@@ -133,11 +146,36 @@ impl World {
     }
 }
 
+/// The room for a new world.
+pub fn build_room() -> GridMap<Square8> {
+    let mut room: GridMap<Square8> = GridMap::new(ROOM_SIZE as u32, ROOM_SIZE as u32);
+    for y in WALL_FIRST_ROW..=WALL_LAST_ROW {
+        room.set_passable(room.index(WALL_COLUMN as u32, y as u32), false);
+    }
+    room
+}
+
 pub struct Capsule {
     world: World,
+    /// Search buffers, reused for every move. They are not part of the state.
+    pathfinder: Pathfinder,
+    path: Vec<GridCell>,
+    /// No bodies block each other yet, so this is empty; the pathfinder needs one.
+    occupancy: Occupancy,
 }
 
 impl Capsule {
+    fn with_world(world: World) -> Self {
+        let pathfinder = Pathfinder::new(&world.room);
+        let occupancy = Occupancy::new(&world.room);
+        Capsule {
+            world,
+            pathfinder,
+            path: Vec::new(),
+            occupancy,
+        }
+    }
+
     pub fn world(&self) -> &World {
         &self.world
     }
@@ -156,6 +194,7 @@ impl Simulation for Capsule {
 
     fn create(configuration: Configuration, randomness: &mut Streams) -> Self {
         let mut world = World {
+            room: build_room(),
             entities: StableVector::new(),
             positions: Column::new(),
             walks: Column::new(),
@@ -165,13 +204,17 @@ impl Simulation for Capsule {
             starving: Column::new(),
         };
         let survivor = world.entities.insert(configuration.survivor_name);
-        world.positions.set(
-            survivor,
-            Cell {
+        // Spawn on open ground: draw again if the draw lands on the wall.
+        let spawn = loop {
+            let cell = Cell {
                 x: randomness.range("spawn", 0, ROOM_SIZE),
                 y: randomness.range("spawn", 0, ROOM_SIZE),
-            },
-        );
+            };
+            if world.room.is_passable(room_cell(&world.room, cell)) {
+                break cell;
+            }
+        };
+        world.positions.set(survivor, spawn);
         world.needs.set(
             survivor,
             Needs {
@@ -181,11 +224,11 @@ impl Simulation for Capsule {
             },
         );
         world.health.set(survivor, 100.0);
-        Capsule { world }
+        Capsule::with_world(world)
     }
 
     fn step(&mut self, context: &mut Context<'_, Self>, intents: &[Intent]) {
-        apply_intents(&mut self.world, intents, context);
+        apply_intents(self, intents, context);
         walking_system(&mut self.world, context);
         needs_system(&mut self.world, context);
         starvation_system(&mut self.world, context);
@@ -196,7 +239,7 @@ impl Simulation for Capsule {
     }
 
     fn restore(snapshot: World) -> Self {
-        Capsule { world: snapshot }
+        Capsule::with_world(snapshot)
     }
 }
 
@@ -204,11 +247,50 @@ fn inside_room(cell: Cell) -> bool {
     (0..ROOM_SIZE).contains(&cell.x) && (0..ROOM_SIZE).contains(&cell.y)
 }
 
-fn apply_intents(world: &mut World, intents: &[Intent], context: &mut Context<'_, Capsule>) {
+/// The room map's cell for a position inside the room.
+fn room_cell(room: &GridMap<Square8>, cell: Cell) -> GridCell {
+    room.index(cell.x as u32, cell.y as u32)
+}
+
+fn position_of_room_cell(room: &GridMap<Square8>, cell: GridCell) -> Cell {
+    let (x, y) = room.coordinates(cell);
+    Cell {
+        x: x as i32,
+        y: y as i32,
+    }
+}
+
+fn apply_intents(capsule: &mut Capsule, intents: &[Intent], context: &mut Context<'_, Capsule>) {
+    let Capsule {
+        world,
+        pathfinder,
+        path,
+        occupancy,
+    } = capsule;
     for intent in intents {
         match intent {
             Intent::MoveTo { entity, cell, run } => {
-                if !world.entities.contains(*entity) || !inside_room(*cell) {
+                let from = world.positions.get(*entity).copied();
+                let reachable = match from {
+                    Some(from) if world.entities.contains(*entity) && inside_room(*cell) => {
+                        let (from, to) =
+                            (room_cell(&world.room, from), room_cell(&world.room, *cell));
+                        world.room.is_passable(to)
+                            && matches!(
+                                pathfinder.find(
+                                    &world.room,
+                                    occupancy,
+                                    from,
+                                    to,
+                                    PathOptions::default(),
+                                    path
+                                ),
+                                PathResult::Found { .. }
+                            )
+                    }
+                    _ => false,
+                };
+                if !reachable {
                     context.events.push(Event::Rejected { entity: *entity });
                     continue;
                 }
@@ -223,6 +305,7 @@ fn apply_intents(world: &mut World, intents: &[Intent], context: &mut Context<'_
                         destination: *cell,
                         run: *run,
                         steps_until_next_cell: steps,
+                        path: path.iter().map(|step| step.0).collect(),
                     },
                 );
             }
@@ -248,13 +331,10 @@ fn walking_system(world: &mut World, context: &mut Context<'_, Capsule>) {
         } else {
             STEPS_PER_CELL_WALKING
         };
-        // One axis at a time, horizontal first, so every platform picks the same path.
-        if position.x != walk.destination.x {
-            position.x += (walk.destination.x - position.x).signum();
-        } else if position.y != walk.destination.y {
-            position.y += (walk.destination.y - position.y).signum();
+        if !walk.path.is_empty() {
+            *position = position_of_room_cell(&world.room, GridCell(walk.path.remove(0)));
         }
-        if *position == walk.destination {
+        if walk.path.is_empty() {
             arrived.push((entity, *position));
         }
     }

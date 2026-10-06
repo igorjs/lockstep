@@ -1,6 +1,6 @@
 # 0005 The spatial crate (decided, with two open items)
 
-Status: decided and implemented for `lockstep-spatial`, with two open items (the hexagon figure and
+Status: decided and implemented for `lockstep-spatial` and its consumers, with two open items (the hexagon figure and
 the pathfinding benchmark target). The reference calls this crate `lockstep-grid`;
 it was renamed to stay generic.
 
@@ -26,6 +26,11 @@ it was renamed to stay generic.
 - **The flow field is Dijkstra**, because step costs differ. A body on a wall cell is not a starting point: the first version gave wall cells distances, and the tests that check every cell's next step caught it.
 - **Line of sight aims at the target's floor.** A line between two eyes is the same line in both directions, so a terrace could not see over a wall that the ground cannot see up over. Aiming from the viewer's eye to the floor of the target makes a wall near a raised eye easier to clear than a wall near a low target, which is what the reference's example describes. An eye height of zero lets flat ground block, so use at least one.
 - **Generation counter.** A search that wraps the counter clears the stamps, and a spike forces the wrap and checks the paths do not change.
+
+## Consumers
+
+- **Mars Rovers** (`examples/mars-rovers`) runs on all three topologies. The kata numbers its plateau with y growing northward while the grid's north is a smaller y, so positions are converted at the boundary and the classic answers (1 3 N and 5 1 E) are unchanged. A plateau is stored with a ring of wall cells, so the edge is a wall and every cell a rover stands on has a full neighbour list. Rovers act one instruction per step in handle order: a rover sees the moves of lower handles in the same step, a contested cell goes to the lower handle, and a program added in a step starts in the next one.
+- **The capsule** walks A* paths around a wall across its room. This changed its movement on purpose, so its fixture hash changed from `316b312aae0edd6a` to `5f834ccde46abfef` (rule: a move follows the cheapest path around the wall, and a spawn that lands on the wall is redrawn). The Mars Rovers fixture hash is `df95ff68f0f75c69`.
 
 ## Open item: the pathfinding benchmark target
 
