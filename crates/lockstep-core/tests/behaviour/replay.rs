@@ -137,3 +137,18 @@ fn checkpoints_that_could_never_be_compared_are_an_error() {
         Err(ReplayError::Checkpoints { .. })
     ));
 }
+
+#[test]
+fn the_simulation_id_is_the_first_thing_in_a_recording() {
+    let mut recording = recorder(5, 10);
+    recording.step_once(&[Add(1)]);
+    let bytes = recording.into_recording().to_bytes().unwrap();
+    assert_eq!(
+        lockstep_core::recorded_simulation_id(&bytes).unwrap(),
+        "tally"
+    );
+    assert!(lockstep_core::recorded_simulation_id(&bytes[..5]).is_err());
+    let mut lying = bytes.clone();
+    lying[..8].copy_from_slice(&u64::MAX.to_le_bytes());
+    assert!(lockstep_core::recorded_simulation_id(&lying).is_err());
+}

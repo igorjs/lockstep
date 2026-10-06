@@ -29,12 +29,14 @@ lockstep-headless stats  <file>
 ```
 
 - `record` writes the fixture session as a recording, with a checkpoint every 100 steps unless
-  `--every` says otherwise. The ledger can be recorded today.
+  `--every` says otherwise, keeping the snapshot at each checkpoint. The ledger can be recorded today.
 - `replay` reads the simulation id at the front of the file, runs the recording again and prints
   `identical <id> after <steps> steps, hash <hash>`. A divergence prints the step and both hashes to
   standard error and exits with status 1. `--until` stops after that many steps.
 - `bisect` prints the last checkpoint that matched and the first that differs, then the lines of the
-  two snapshots that differ when the recording kept them.
+  two snapshots that differ, or says the snapshots match and only the recorded hash differs. A
+  divergence exits with status 1, as with `replay`.
+- Each command refuses options it does not use, so `--until` is for `replay` only.
 - `stats` prints the seed, the length in steps and real seconds, intents per real minute, the steps
   spent at each clock multiplier, and the number of checkpoints and snapshots.
 

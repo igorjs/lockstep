@@ -26,10 +26,10 @@ cargo run -p lockstep-headless --features parallel -- verify crowd --expect exam
 It also records and replays sessions:
 
 ```sh
-cargo run -p lockstep-headless -- record ledger --out ledger.lkrec --steps 3000
-cargo run -p lockstep-headless -- replay ledger.lkrec
-cargo run -p lockstep-headless -- bisect ledger.lkrec
-cargo run -p lockstep-headless -- stats ledger.lkrec
+cargo run -p lockstep-headless -- record ledger --out ledger.recording --steps 3000
+cargo run -p lockstep-headless -- replay ledger.recording
+cargo run -p lockstep-headless -- bisect ledger.recording
+cargo run -p lockstep-headless -- stats ledger.recording
 ```
 
 See the [full documentation](https://github.com/igorjs/lockstep/blob/main/docs/lockstep-headless.md).

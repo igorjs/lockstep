@@ -73,6 +73,8 @@ pub enum CommandError {
     },
     /// A recording that cannot be read or run.
     Recording(String),
+    /// A file that cannot be written.
+    Unwritable(String),
     /// A replay that no longer matches its recording.
     Diverged(String),
 }
@@ -98,7 +100,9 @@ impl std::fmt::Display for CommandError {
                 formatter,
                 "fixture '{name}' diverged: expected {expected}, got {actual}"
             ),
-            CommandError::Recording(message) | CommandError::Diverged(message) => {
+            CommandError::Recording(message)
+            | CommandError::Unwritable(message)
+            | CommandError::Diverged(message) => {
                 write!(formatter, "{message}")
             }
         }
@@ -157,6 +161,34 @@ fn parse_options(arguments: &[String]) -> Result<Options, CommandError> {
     Ok(options)
 }
 
+/// Each command takes only its own options, so a misplaced one is an error, not ignored.
+fn refuse_unused_options(command: &str, options: &Options) -> Result<(), CommandError> {
+    let given = [
+        ("--seed", options.seed.is_some()),
+        ("--steps", options.steps.is_some()),
+        ("--expect", options.expect.is_some()),
+        ("--out", options.out.is_some()),
+        ("--every", options.every.is_some()),
+        ("--until", options.until.is_some()),
+    ];
+    let allowed: &[&str] = match command {
+        "fixture" => &["--seed", "--steps"],
+        "verify" => &["--seed", "--steps", "--expect"],
+        "record" => &["--seed", "--steps", "--out", "--every"],
+        "replay" => &["--until"],
+        _ => &[],
+    };
+    match given
+        .iter()
+        .find(|(flag, present)| *present && !allowed.contains(flag))
+    {
+        Some((flag, _)) => Err(CommandError::Usage(format!(
+            "{command} does not take {flag}\n{USAGE}"
+        ))),
+        None => Ok(()),
+    }
+}
+
 fn parse_number(flag: &str, value: &str) -> Result<u64, CommandError> {
     value
         .parse()
@@ -182,6 +214,7 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
         .split_first()
         .ok_or_else(|| CommandError::Usage(USAGE.to_string()))?;
     let options = parse_options(rest)?;
+    refuse_unused_options(command, &options)?;
     match command.as_str() {
         "fixture" => Ok(format_hash(run_named(name, &options)?)),
         "verify" => {
@@ -224,7 +257,7 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
             )
             .map_err(CommandError::Recording)?;
             fs::write(&out, &bytes).map_err(|error| {
-                CommandError::Unreadable(format!("cannot write {out}: {error}"))
+                CommandError::Unwritable(format!("cannot write {out}: {error}"))
             })?;
             Ok(format!("recorded {name} to {out} ({} bytes)", bytes.len()))
         }
@@ -249,7 +282,14 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
                         Err(CommandError::Diverged(replayed.report))
                     }
                 }
-                "bisect" => (replayable.bisect)(&bytes).map_err(CommandError::Recording),
+                "bisect" => {
+                    let found = (replayable.bisect)(&bytes).map_err(CommandError::Recording)?;
+                    if found.identical {
+                        Ok(found.report)
+                    } else {
+                        Err(CommandError::Diverged(found.report))
+                    }
+                }
                 _ => (replayable.stats)(&bytes).map_err(CommandError::Recording),
             }
         }

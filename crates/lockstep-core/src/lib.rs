@@ -29,7 +29,8 @@ pub mod __private {
 }
 pub use message::{Indexable, Message};
 pub use replay::{
-    bisect, replay, Bisection, RecordedStep, Recorder, Recording, ReplayError, ReplayOutcome,
+    bisect, recorded_simulation_id, replay, Bisection, RecordedStep, Recorder, Recording,
+    ReplayError, ReplayOutcome,
 };
 pub use runner::{Advanced, Runner, StepConfiguration};
 pub use simulation::{Context, Simulation};

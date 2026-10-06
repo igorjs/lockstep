@@ -2,7 +2,7 @@
 //! Commands on recorded sessions: `record`, `replay`, `bisect` and `stats`. A recording names its
 //! simulation, and the table below finds the code that can run it.
 
-use lockstep_core::{bisect, replay, Recording, ReplayOutcome, Simulation};
+use lockstep_core::{bisect, recorded_simulation_id, replay, Recording, ReplayOutcome, Simulation};
 
 /// A simulation the headless runner can record and replay.
 pub struct Replayable {
@@ -10,11 +10,11 @@ pub struct Replayable {
     /// Records the fixture session: seed, steps, checkpoint every.
     pub record: fn(u64, u64, u64) -> Result<Vec<u8>, String>,
     pub replay: fn(&[u8], Option<u64>) -> Result<Replayed, String>,
-    pub bisect: fn(&[u8]) -> Result<String, String>,
+    pub bisect: fn(&[u8]) -> Result<Replayed, String>,
     pub stats: fn(&[u8]) -> Result<String, String>,
 }
 
-/// What a replay found.
+/// What a replay or a bisect found: `identical` is false when the session diverged.
 #[derive(Debug, PartialEq)]
 pub struct Replayed {
     pub identical: bool,
@@ -25,7 +25,8 @@ pub fn replayables() -> Vec<Replayable> {
     vec![Replayable {
         id: ledger::SIMULATION_ID,
         record: |seed, steps, every| {
-            ledger::record_fixture(seed, steps, every)
+            // The ledger's snapshot is small, so recordings keep one per checkpoint for bisect.
+            ledger::record_fixture(seed, steps, every, true)
                 .to_bytes()
                 .map_err(|error| error.to_string())
         },
@@ -35,19 +36,9 @@ pub fn replayables() -> Vec<Replayable> {
     }]
 }
 
-/// The simulation id at the start of a recording's bytes: a little-endian 64-bit length, then
-/// that many bytes of text, as the fixed-endian encoding writes the first field.
+/// The simulation id at the front of a recording's bytes.
 pub fn simulation_id(bytes: &[u8]) -> Result<String, String> {
-    let length = bytes
-        .get(..8)
-        .map(|prefix| u64::from_le_bytes(prefix.try_into().expect("eight bytes")))
-        .ok_or("not a recording: too short")?;
-    let text = usize::try_from(length)
-        .ok()
-        .and_then(|length| bytes.get(8..8usize.checked_add(length)?))
-        .ok_or("not a recording: the simulation id runs past the end")?;
-    String::from_utf8(text.to_vec())
-        .map_err(|_| "not a recording: the simulation id is not text".to_string())
+    recorded_simulation_id(bytes).map_err(|error| error.to_string())
 }
 
 fn read<S: Simulation>(bytes: &[u8]) -> Result<Recording<S::Intent>, String> {
@@ -93,15 +84,18 @@ fn replay_report<S: Simulation>(bytes: &[u8], until: Option<u64>) -> Result<Repl
     })
 }
 
-fn bisect_report<S: Simulation>(bytes: &[u8]) -> Result<String, String> {
+fn bisect_report<S: Simulation>(bytes: &[u8]) -> Result<Replayed, String> {
     let recording = read::<S>(bytes)?;
     let found = bisect::<S>(&recording).map_err(|error| error.to_string())?;
     let Some(found) = found else {
-        return Ok(format!(
-            "no divergence in {} steps of {}",
-            recording.steps.len(),
-            recording.simulation_id
-        ));
+        return Ok(Replayed {
+            identical: true,
+            report: format!(
+                "no divergence in {} steps of {}",
+                recording.steps.len(),
+                recording.simulation_id
+            ),
+        });
     };
     let mut lines = vec![
         match found.last_good_step {
@@ -110,12 +104,17 @@ fn bisect_report<S: Simulation>(bytes: &[u8]) -> Result<String, String> {
         },
         format!("first bad checkpoint: step {}", found.first_bad_step),
     ];
-    if found.differences.is_empty() {
+    if !found.compared_snapshots {
         lines.push("the recording kept no snapshot here, so no difference to show".to_string());
+    } else if found.differences.is_empty() {
+        lines.push("the kept snapshot matches, so only the recorded hash differs".to_string());
     } else {
         lines.extend(found.differences);
     }
-    Ok(lines.join("\n"))
+    Ok(Replayed {
+        identical: false,
+        report: lines.join("\n"),
+    })
 }
 
 fn stats_report<S: Simulation>(bytes: &[u8]) -> Result<String, String> {
