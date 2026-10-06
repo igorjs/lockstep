@@ -15,8 +15,8 @@ health, sanity, hunger, a rover's battery, a credit limit.
   product, sum, difference), saturating instead of wrapping.
 
 - `Effects`: timed effects that hold a modifier or drain per game minute, with four stacking rules
-  (independent, refresh, replace, and a daily budget). One minute in one tick or in 1,800 ticks gives
-  the same result.
+  (independent, refresh, replace, and a daily budget). For an effect on its own, one minute in one
+  tick or in 1,800 ticks gives the same result.
 
 ## Example
 

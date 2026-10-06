@@ -108,7 +108,9 @@ impl Effects {
     }
 
     /// Applies an effect to `who`, following its stacking rule. A `RefreshDuration` effect the entity
-    /// already has restarts its timer and returns the existing handle.
+    /// already has restarts its timer with the new duration and returns the existing handle; it
+    /// keeps its attribute, modifier and rate, so a stronger effect needs `Replace`. Give the entity
+    /// its attributes first: an effect added before them never gets its modifier.
     pub fn add(
         &mut self,
         who: Handle,
@@ -194,8 +196,10 @@ impl Effects {
     }
 
     /// Advances every effect by `elapsed_minutes` of game time on game day `day`, in the order they
-    /// were applied: drains change their attribute, and finished effects expire. The result depends
-    /// only on the total minutes, so one tick of a minute and 1,800 shorter ticks agree.
+    /// were applied: drains change their attribute, and finished effects expire. An effect on its
+    /// own depends only on the total minutes, so one tick of a minute and 1,800 shorter ticks agree.
+    /// Effects that meet at a clamp or share a budget are settled tick by tick, so for them the
+    /// tick size can matter.
     pub fn tick(&mut self, elapsed_minutes: Fixed32, day: u32, context: &mut EffectContext<'_>) {
         assert!(
             elapsed_minutes >= Fixed32::ZERO,
@@ -218,19 +222,22 @@ impl Effects {
                 let total = ((per_minute.raw() as i128 * elapsed as i128) >> 16) as i64;
                 let mut change = total - active.applied;
                 active.applied = total;
-                if let Stacking::DailyBudget { cap_per_day } = active.effect.stacking {
-                    change = Self::spend(
-                        &mut self.budgets,
-                        active.who,
-                        &active.effect.tag,
-                        day,
-                        cap_per_day,
-                        change,
-                    );
-                }
                 let (who, attribute) = (active.who, active.effect.attribute);
+                // A budget is spent by what actually lands, after the attribute clamps, so a
+                // prayer at full hope spends nothing.
+                let budget = match active.effect.stacking {
+                    Stacking::DailyBudget { cap_per_day } => {
+                        let index = Self::budget(&mut self.budgets, who, &active.effect.tag, day);
+                        let budget = &self.budgets[index];
+                        let left = (cap_per_day.raw().max(0) as i64 - budget.used).max(0);
+                        change = change.signum() * change.abs().min(left);
+                        Some(index)
+                    }
+                    _ => None,
+                };
                 if change != 0 {
                     if let Some(attributes) = context.attributes.get_mut(who) {
+                        let before = attributes.get(attribute).current();
                         let change = Fixed32::from_raw(
                             change.clamp(i32::MIN as i64, i32::MAX as i64) as i32,
                         );
@@ -241,6 +248,11 @@ impl Effects {
                             context.registry,
                             context.attribute_events,
                         );
+                        let landed =
+                            attributes.get(attribute).current().raw() as i64 - before.raw() as i64;
+                        if let Some(index) = budget {
+                            self.budgets[index].used += landed.abs();
+                        }
                     }
                 }
             }
@@ -280,15 +292,8 @@ impl Effects {
             .any(|active| active.who == who && &active.effect.tag == tag)
     }
 
-    /// Clips a change to what is left of today's budget for this entity and tag, and records it.
-    fn spend(
-        budgets: &mut Vec<Budget>,
-        who: Handle,
-        tag: &EffectTag,
-        day: u32,
-        cap: Fixed32,
-        change: i64,
-    ) -> i64 {
+    /// The index of today's budget for this entity and tag, created or restarted as needed.
+    fn budget(budgets: &mut Vec<Budget>, who: Handle, tag: &EffectTag, day: u32) -> usize {
         let index = match budgets
             .iter()
             .position(|budget| budget.who == who && &budget.tag == tag)
@@ -309,10 +314,7 @@ impl Effects {
             budget.day = day;
             budget.used = 0;
         }
-        let left = (cap.raw().max(0) as i64 - budget.used).max(0);
-        let given = change.abs().min(left);
-        budget.used += given;
-        given * change.signum()
+        index
     }
 
     fn remove_matching(

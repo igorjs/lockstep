@@ -106,9 +106,15 @@ takes one argument for them.
 | `DailyBudget { cap_per_day }` | is its own effect, but the tag's total change on the entity is capped per game day |
 
 A drain depends only on the total minutes an effect has run: each tick applies the change in the
-running total `per_minute × minutes`. One minute in one tick and in 1,800 ticks give the same values
-and the same events. A budget's day is the `day` passed to `tick`; a change past the cap is lost,
+running total `per_minute × minutes`. For an effect on its own, one minute in one tick and in 1,800
+ticks give the same values and the same events. Effects that meet at a clamp or share a budget are
+settled tick by tick, so for them the tick size can matter. A budget's day is the `day` passed to
+`tick`. It is spent by what lands after the attribute clamps, and a change past the cap is lost,
 not owed.
+
+A refresh restarts the timer with the new duration but keeps the attribute, modifier and rate; use
+`Replace` for a stronger version. Give an entity its attributes before its effects: an effect added
+earlier never gets its modifier.
 
 Needs decay is a set of effects with `per_minute` drains and no system code.
 

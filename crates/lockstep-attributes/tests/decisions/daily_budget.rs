@@ -65,3 +65,52 @@ fn a_capped_effect_gives_nothing_past_its_cap_until_the_next_game_day() {
     effects.tick(whole(10), 1, &mut context);
     assert_eq!(current(&context), whole(40), "today's 15 are spent");
 }
+
+#[test]
+fn a_gain_that_lands_on_a_full_attribute_spends_nothing() {
+    let (registry, _, who) = fresh();
+    let hunger = id(&registry, "hunger");
+    let mut attributes = column_with(&registry, who);
+    let (mut attribute_events, mut effect_events) = (Vec::new(), Vec::new());
+    let mut effects = Effects::new();
+    let mut context = EffectContext {
+        attributes: &mut attributes,
+        registry: &registry,
+        attribute_events: &mut attribute_events,
+        effect_events: &mut effect_events,
+    };
+    let current =
+        |context: &EffectContext<'_>| context.attributes.get(who).unwrap().get(hunger).current();
+    context.attributes.get_mut(who).unwrap().apply(
+        who,
+        hunger,
+        whole(20),
+        &registry,
+        &mut Vec::new(),
+    );
+    assert_eq!(current(&context), whole(100), "full");
+    let prayer = Effect {
+        attribute: hunger,
+        modifier: None,
+        per_minute: Some(whole(2)),
+        remaining_minutes: Some(whole(10)),
+        tag: EffectTag::new("prayer"),
+        stacking: Stacking::DailyBudget {
+            cap_per_day: whole(15),
+        },
+    };
+    effects.add(who, prayer.clone(), &mut context);
+    effects.tick(whole(10), 0, &mut context);
+    assert_eq!(current(&context), whole(100));
+    // Later the same day the whole budget is still there.
+    context.attributes.get_mut(who).unwrap().apply(
+        who,
+        hunger,
+        whole(-50),
+        &registry,
+        &mut Vec::new(),
+    );
+    effects.add(who, prayer, &mut context);
+    effects.tick(whole(10), 0, &mut context);
+    assert_eq!(current(&context), whole(65));
+}

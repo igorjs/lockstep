@@ -69,3 +69,40 @@ fn a_refreshed_effect_applies_its_modifier_once_and_restarts_its_timer() {
         ]
     );
 }
+
+#[test]
+fn a_refreshed_drain_starts_counting_again_and_never_heals() {
+    let (registry, _, who) = fresh();
+    let health = id(&registry, "health");
+    let mut attributes = column_with(&registry, who);
+    let (mut attribute_events, mut effect_events) = (Vec::new(), Vec::new());
+    let mut effects = Effects::new();
+    let mut context = EffectContext {
+        attributes: &mut attributes,
+        registry: &registry,
+        attribute_events: &mut attribute_events,
+        effect_events: &mut effect_events,
+    };
+    let poison = Effect {
+        attribute: health,
+        modifier: None,
+        per_minute: Some(whole(-2)),
+        remaining_minutes: Some(whole(10)),
+        tag: EffectTag::new("poison"),
+        stacking: Stacking::RefreshDuration,
+    };
+    let current =
+        |context: &EffectContext<'_>| context.attributes.get(who).unwrap().get(health).current();
+    effects.add(who, poison.clone(), &mut context);
+    effects.tick(whole(8), 0, &mut context);
+    assert_eq!(current(&context), whole(34));
+    effects.add(who, poison, &mut context);
+    effects.tick(whole(1), 0, &mut context);
+    assert_eq!(
+        current(&context),
+        whole(32),
+        "one more minute at 2, not a heal"
+    );
+    effects.tick(whole(20), 0, &mut context);
+    assert_eq!(current(&context), whole(14), "ten minutes from the refresh");
+}
