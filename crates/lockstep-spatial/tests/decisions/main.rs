@@ -10,3 +10,4 @@ mod flow_fields_for_hordes;
 mod heap_key_cell_tie_break;
 mod queries_sort_their_output;
 mod square8_for_silent_bells;
+mod threads_change_no_path;

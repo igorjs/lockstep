@@ -52,6 +52,15 @@ start, including the goal) and returns `Found { cost }` (in tenths), `Unreachabl
 `(f_cost, cell)` and neighbours come in a fixed order, so equal-cost paths are identical on every
 platform. `last_expansions()` reports the work of the last search.
 
+## Batches
+
+`find_paths(map, occupancy, requests, options)` solves a batch of `PathRequest { from, to }` and returns
+one `(PathResult, path)` per request, in request order. With the `parallel` feature it runs on a thread
+pool; without it (and on WebAssembly) it runs serially, and `find_paths_serially` always does. The
+answers are identical either way, so a simulation can call it inside a step and apply the answers in
+request order without affecting replay or the hash. It is the only place threads are allowed; see
+decision 0006.
+
 ## Flow fields
 
 `FlowField::build(map, targets, maximum_distance)` runs one search outward from the targets (Dijkstra,

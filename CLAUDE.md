@@ -6,7 +6,8 @@ Core never renders, never does input or output, never knows what a game is.
 
 ## Rules
 - No HashMap, clocks, threads, or transcendental floats in simulation code;
-  scripts/lint-determinism.sh enforces it. Use lockstep_core::math.
+  scripts/lint-determinism.sh enforces it. Use lockstep_core::math. The one exception is
+  the path batch in crates/lockstep-spatial/src/batch.rs (decision 0006).
 - Entities are Handles into StableVector; components are Columns; no references
   between entities; group fields by access pattern.
 - Every feature ships with a test that fails without it, a decision test when it

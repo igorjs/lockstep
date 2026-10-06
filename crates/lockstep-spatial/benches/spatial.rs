@@ -12,7 +12,9 @@
 //! intended change to write a new baseline.
 
 use lockstep_core::{Handle, StableVector, Streams};
-use lockstep_spatial::{Cell, FlowField, GridMap, Occupancy, PathOptions, Pathfinder, Square8};
+use lockstep_spatial::{
+    find_paths, Cell, FlowField, GridMap, Occupancy, PathOptions, PathRequest, Pathfinder, Square8,
+};
 use std::time::Instant;
 
 const BASELINE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/benches/baseline.txt");
@@ -77,6 +79,23 @@ fn main() {
         total
     });
 
+    // The same 500 paths as one batch: on a thread pool with the `parallel` feature, serially
+    // without it. The checksum must equal the serial one.
+    let batch: Vec<PathRequest> = pairs
+        .iter()
+        .map(|(from, to)| PathRequest {
+            from: *from,
+            to: *to,
+        })
+        .collect();
+    let (batched, batch_check) = best_of_five(|| {
+        find_paths(&map, &occupancy, &batch, PathOptions::default())
+            .iter()
+            .map(|(_, path)| path.len() as u64)
+            .sum()
+    });
+    assert_eq!(batch_check, path_check, "the batch walked different paths");
+
     let mut crowd = Occupancy::new(&map);
     let mut entities = StableVector::new();
     let agents: Vec<Handle> = (0..1_000).map(|_| entities.insert(())).collect();
@@ -111,6 +130,7 @@ fn main() {
 
     let measurements = [
         ("paths_500", paths),
+        ("paths_500_batch", batched),
         ("within_1000_agents", within),
         ("flow_field", flow),
     ];
