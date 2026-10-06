@@ -72,6 +72,9 @@ Continuous integration runs `just ci` on Linux for pull requests and on Linux, m
 
 ## Documentation
 
+[`docs/roadmap.md`](docs/roadmap.md) shows each milestone's status and every gap, deferral and
+departure from the reference.
+
 Each crate and example has a page in [`docs`](docs), and every behavioural decision has a record in
 [`docs/decisions`](docs/decisions) and a test in `tests/decisions` that fails if the decision stops
 holding.

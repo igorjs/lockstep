@@ -34,6 +34,10 @@ A type that keeps handles somewhere the derive cannot see, such as a map, writes
 The spec also has the derive register the type for schema export. Nothing reads a schema yet, so
 that waits for a consumer, as the backlog rule says.
 
+Conversions between message versions also wait: a shape is frozen once a save holding it ships,
+and no save ships before saves and migrations (milestone M16). Until then a version can change
+without a conversion.
+
 ## Would change if
 
 A type needs handles in a shape the derive does not see (a map or a nested struct): then a field

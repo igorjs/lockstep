@@ -19,6 +19,9 @@ the phases; it never decides when a hit lands.
 - A stagger interrupts a wind-up whose action allows it, never a recovery: committing is a real cost.
 - Invulnerability is checked at the strike: an overlapping hit is dodged unless it grabs or cannot
   be avoided. A dodge within the perfect window of its press refunds stamina and opens a counter.
+- The reference's cases are a dodge 0.11 seconds before the strike (perfect) and 0.13 (not),
+  against a 0.12 second window. At 30 steps a second neither is a whole number of steps, so the
+  test uses the steps either side of the window: 3 (0.100 seconds) and 4 (0.133 seconds).
 - The counter window runs only while the fighter is free, so the dodge's own recovery does not eat
   it. The spec does not say when the window starts; starting it at the dodge left almost nothing.
 - An order sent while busy waits up to 0.15 seconds; the newest order replaces a waiting one.
