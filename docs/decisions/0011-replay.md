@@ -28,6 +28,13 @@ at the checkpoints; `bisect` names the last matching and first differing checkpo
   a kept snapshot that no longer decodes is an error, and `to_bytes` refuses a recording too large
   to read back.
 
+## Deferred
+
+- The crash bundle: on an error at the host boundary, the host writes the recording, the last good
+  save and its log, and `lockstep-headless replay` reproduces it. A host writes it, so it waits for
+  a host.
+- Saving mid-recording and `replay --save` wait for saves and migrations.
+
 ## Alternatives rejected
 
 - Recording every step's state: a ten hour session grows from megabytes to gigabytes.
