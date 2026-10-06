@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 const UNITS_PER_STEP: u64 = 65_536;
 const MAXIMUM_MULTIPLIER: f32 = 1_000_000.0;
 const MINUTES_PER_DAY: u64 = 1440;
+/// The most game minutes one step may cover, so a step's exact minutes always fit `Fixed32`.
+const MAXIMUM_MINUTES_PER_STEP: u64 = 16_384;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClockConfiguration {
@@ -58,10 +60,14 @@ impl Clock {
         }
     }
 
-    /// Negative and not-a-number values become zero. Values are rounded to 1/65,536 and capped.
+    /// Negative and not-a-number values become zero. Values are rounded to 1/65,536 and capped
+    /// at a million, and at whatever makes one step cover 16,384 game minutes (about eleven
+    /// days), so the exact minutes of a step always fit `Fixed32`.
     pub fn set_multiplier(&mut self, multiplier: f32) {
         let clamped = multiplier.clamp(0.0, MAXIMUM_MULTIPLIER);
-        self.multiplier_units = (clamped * UNITS_PER_STEP as f32).round() as u64;
+        let units = (clamped * UNITS_PER_STEP as f32).round() as u64;
+        let ceiling = self.units_per_day * MAXIMUM_MINUTES_PER_STEP / MINUTES_PER_DAY;
+        self.multiplier_units = units.min(ceiling);
     }
 
     /// The calendar package calls this at each new day to set seasonal daylight.
@@ -136,7 +142,8 @@ impl Clock {
             events.push(ClockEvent::Sunrise);
         }
         self.position = after;
-        let exact = (self.minutes_raw() - minutes_before).clamp(0, i32::MAX as i128);
+        // At most 16,384 minutes by the multiplier's ceiling, so this always fits.
+        let exact = self.minutes_raw() - minutes_before;
         (elapsed, Fixed32::from_raw(exact as i32))
     }
 }

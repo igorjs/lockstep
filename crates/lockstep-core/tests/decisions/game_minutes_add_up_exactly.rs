@@ -26,34 +26,55 @@ fn configuration() -> ClockConfiguration {
 
 #[test]
 fn a_day_of_steps_adds_up_to_exactly_1440_minutes_at_any_multiplier() {
+    // 216,000 steps make this day, so one step is 65,536 × 216,000 position units per day.
+    let units_per_day: u64 = 216_000 * 65_536;
     for multiplier in [1.0, 0.37, 7.0, 20.0] {
         let mut clock = Clock::new(configuration(), 1.0 / 30.0);
         clock.set_multiplier(multiplier);
         let (start_day, start_position) = (clock.day(), clock.position_units());
         let mut total: i64 = 0;
         let mut events = Vec::new();
-        let mut steps = 0u64;
         while (clock.day(), clock.position_units()) < (start_day + 1, start_position) {
             total += clock.advance_exactly(&mut events).1.raw() as i64;
-            steps += 1;
         }
-        // The last step can pass the starting position; measure to exactly where it stopped.
+        // The last step may pass the starting position. The start is a whole minute, so the
+        // exact answer is a day plus the minutes of that overshoot, rounded down.
         let overshoot = clock.position_units() - start_position;
-        let units_per_step = (multiplier as f64 * 65_536.0).round() as u64;
-        assert!(
-            overshoot < units_per_step.max(1),
-            "{multiplier}: overshoot {overshoot}"
-        );
-        let expected = Fixed32::from_int(1_440).raw() as i64;
-        let overshoot_minutes = total - expected;
-        assert!(
-            (0..=units_per_step as i64).contains(&overshoot_minutes),
-            "{multiplier}: {steps} steps gave {total} raw units against {expected}"
-        );
-        if overshoot == 0 {
-            assert_eq!(total, expected, "{multiplier}: an exact day");
-        }
+        let expected = Fixed32::from_int(1_440).raw() as i64
+            + (overshoot as u128 * 1_440 * 65_536 / units_per_day as u128) as i64;
+        assert_eq!(total, expected, "multiplier {multiplier}");
     }
+}
+
+#[test]
+fn a_huge_multiplier_on_a_short_day_still_counts_every_minute() {
+    // A ten minute day at a million times would cover 80,000 game minutes a step, past what
+    // `Fixed32` holds; the multiplier is capped so a step covers at most 16,384.
+    let mut clock = Clock::new(
+        ClockConfiguration {
+            day_length_real_minutes: 10.0,
+            ..configuration()
+        },
+        1.0 / 30.0,
+    );
+    clock.set_multiplier(1_000_000.0);
+    let mut events = Vec::new();
+    let (start_day, start_position) = (clock.day(), clock.position_units());
+    let mut total: i64 = 0;
+    for _ in 0..10 {
+        let minutes = clock.advance_exactly(&mut events).1;
+        assert!(minutes > Fixed32::ZERO && minutes <= Fixed32::from_int(16_384));
+        total += minutes.raw() as i64;
+    }
+    let units_per_day: u128 = 18_000 * 65_536;
+    let travelled = (clock.day() - start_day) as u128 * units_per_day
+        + clock.position_units() as u128
+        - start_position as u128;
+    assert_eq!(
+        total as u128,
+        travelled * 1_440 * 65_536 / units_per_day,
+        "ten steps cover exactly the minutes the clock moved"
+    );
 }
 
 #[test]
