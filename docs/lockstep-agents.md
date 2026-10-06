@@ -53,7 +53,7 @@ at 30 or 60 steps a second. Each second:
   degrees either way over 8 to 12 game minutes, on a straight schedule, ending exactly where it
   swung to (`FrontStarted`, `FrontPassed`).
 - The strength moves a thirtieth of the way to `mean_strength` each game minute (stopping within
-  a fiftieth of a metre a second of it, where the step rounds to nothing).
+  about three hundredths of a metre a second of it, where the step rounds to nothing).
 - A gust starts on average once or twice an hour (1.5 in 3,600 seconds) and adds 50 to 100
   percent for 30 to 90 game seconds (`GustStarted`, `GustEnded`).
 

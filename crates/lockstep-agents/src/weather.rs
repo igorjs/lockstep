@@ -110,10 +110,12 @@ impl Weather {
         match &mut self.front {
             Some(front) => {
                 front.seconds_done += 1;
-                let swung = front.swing as i64 * front.seconds_done as i64 / front.seconds as i64;
+                // A front of no seconds swings at once rather than dividing by zero.
+                let seconds = front.seconds.max(1);
+                let done = front.seconds_done.min(seconds);
+                let swung = front.swing as i64 * done as i64 / seconds as i64;
                 self.direction = front.from.wrapping_add(swung as i16 as u16);
-                if front.seconds_done >= front.seconds {
-                    self.direction = front.from.wrapping_add(front.swing as u16);
+                if done >= seconds {
                     self.front = None;
                     events.push(WeatherEvent::FrontPassed);
                 }
@@ -145,7 +147,7 @@ impl Weather {
         // Gusts: once or twice an hour on average, 1.5 in 3,600 seconds.
         match &mut self.gust {
             Some(gust) => {
-                gust.seconds_left -= 1;
+                gust.seconds_left = gust.seconds_left.saturating_sub(1);
                 if gust.seconds_left == 0 {
                     self.gust = None;
                     events.push(WeatherEvent::GustEnded);

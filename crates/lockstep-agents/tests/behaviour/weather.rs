@@ -76,3 +76,28 @@ fn a_gust_raises_the_wind_by_its_percent_and_a_front_ends_where_it_swung() {
     }
     panic!("no front passed in a day");
 }
+
+#[test]
+fn a_hand_built_gust_or_front_with_no_time_left_ends_cleanly() {
+    let rules = lockstep_agents::WeatherRules {
+        mean_strength: metres(6),
+        fronts_per_day: 0,
+    };
+    let mut weather = Weather::new(0, metres(6));
+    weather.gust = Some(lockstep_agents::Gust {
+        extra_percent: 60,
+        seconds_left: 0,
+    });
+    weather.front = Some(lockstep_agents::Front {
+        from: 0,
+        swing: 16_384,
+        seconds: 0,
+        seconds_done: 0,
+    });
+    let mut events = Vec::new();
+    let mut streams = lockstep_core::Streams::new(1);
+    weather.advance(Fixed32::from_int(1), &rules, &mut streams, &mut events);
+    assert!(weather.gust.is_none() || weather.gust.unwrap().seconds_left <= 90);
+    assert!(events.contains(&WeatherEvent::FrontPassed));
+    assert!(events.contains(&WeatherEvent::GustEnded));
+}
