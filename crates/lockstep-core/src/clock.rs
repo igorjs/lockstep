@@ -94,6 +94,12 @@ impl Clock {
         self.position
     }
 
+    /// The whole minute of the day, 0 to 1,439, from the exact position: the same on every
+    /// platform, unlike the float `minute_of_day`.
+    pub fn whole_minute(&self) -> u16 {
+        (self.position * MINUTES_PER_DAY / self.units_per_day) as u16
+    }
+
     pub fn is_night(&self) -> bool {
         let minute = self.position * MINUTES_PER_DAY / self.units_per_day;
         minute < self.configuration.sunrise_minute as u64

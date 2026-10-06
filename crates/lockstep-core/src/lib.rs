@@ -11,6 +11,7 @@ mod runner;
 mod simulation;
 mod store;
 mod streams;
+mod timeline;
 
 pub use chance::{
     search_smoothing_increment, smoothed_rate, smoothing_increment, Chance, SmoothedState, CERTAIN,
@@ -34,3 +35,4 @@ pub use runner::{Advanced, Runner, StepConfiguration};
 pub use simulation::{Context, Simulation};
 pub use store::{Column, Handle, StableVector};
 pub use streams::Streams;
+pub use timeline::{Entry, Timeline};

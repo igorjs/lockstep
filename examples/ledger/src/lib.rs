@@ -6,9 +6,9 @@
 //! money type yet (it arrives in milestone M16), so this scenario uses plain integers and a
 //! single currency, which also shows the core needs nothing game-specific.
 
-use lockstep_core::ClockConfiguration;
 use lockstep_core::{
-    Column, Context, Handle, Message, Runner, Simulation, StableVector, StepConfiguration, Streams,
+    ClockConfiguration, Column, Context, Handle, Message, Recorder, Recording, Runner, Simulation,
+    StableVector, StepConfiguration, Streams, Timeline,
 };
 use serde::{Deserialize, Serialize};
 
@@ -197,16 +197,16 @@ pub const DEFAULT_STEPS: u64 = 10_000;
 pub const ACCOUNT_COUNT: usize = 8;
 pub const OPENING_BALANCE_MINOR: i64 = 100_000;
 
-pub fn runner(seed: u64) -> Runner<Ledger> {
+/// The configuration, step and clock every ledger session uses.
+fn settings() -> (Configuration, StepConfiguration, ClockConfiguration) {
     let names = (0..ACCOUNT_COUNT)
         .map(|index| format!("account-{index}"))
         .collect();
-    Runner::new(
+    (
         Configuration {
             account_names: names,
             opening_balance_minor: OPENING_BALANCE_MINOR,
         },
-        seed,
         StepConfiguration::default(),
         ClockConfiguration {
             day_length_real_minutes: 1440.0,
@@ -218,32 +218,116 @@ pub fn runner(seed: u64) -> Runner<Ledger> {
     )
 }
 
+pub fn runner(seed: u64) -> Runner<Ledger> {
+    let (configuration, step_configuration, clock_configuration) = settings();
+    Runner::new(configuration, seed, step_configuration, clock_configuration)
+}
+
+/// The name a recording of the ledger carries.
+pub const SIMULATION_ID: &str = "ledger";
+
+/// The stream set the fixture script draws from, apart from the simulation's own.
+fn script_streams(seed: u64) -> Streams {
+    Streams::new(seed ^ 0x6c65_6467_6572)
+}
+
+/// One random intent of the scripted session.
+fn script_intent(script: &mut Streams, accounts: &[Handle]) -> Intent {
+    let from = accounts[script.pick("account", accounts.len())];
+    let to = accounts[script.pick("account", accounts.len())];
+    // Amounts run past the opening balance on purpose, so some transfers are rejected.
+    let amount_minor = script.range("amount", -50, 40_000) as i64;
+    if script.chance("kind", 0.05) {
+        Intent::Deposit {
+            account: from,
+            amount_minor,
+        }
+    } else {
+        Intent::Transfer {
+            from,
+            to,
+            amount_minor,
+        }
+    }
+}
+
 /// The scripted session the fixture hash covers: one random intent per step, drawn from a
 /// separate stream set so the script depends only on the seed.
 pub fn run_fixture(seed: u64, steps: u64) -> Runner<Ledger> {
     let mut runner = runner(seed);
     let accounts = runner.simulation().books().accounts.handles();
-    let mut script = Streams::new(seed ^ 0x6c65_6467_6572);
+    let mut script = script_streams(seed);
     for _ in 0..steps {
-        let from = accounts[script.pick("account", accounts.len())];
-        let to = accounts[script.pick("account", accounts.len())];
-        // Amounts run past the opening balance on purpose, so some transfers are rejected.
-        let amount_minor = script.range("amount", -50, 40_000) as i64;
-        let intent = if script.chance("kind", 0.05) {
-            Intent::Deposit {
-                account: from,
-                amount_minor,
-            }
-        } else {
-            Intent::Transfer {
-                from,
-                to,
-                amount_minor,
-            }
-        };
+        let intent = script_intent(&mut script, &accounts);
         runner.step_once(&[intent]);
     }
     runner
+}
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps.
+pub fn record_fixture(seed: u64, steps: u64, checkpoint_every: u64) -> Recording<Intent> {
+    let (configuration, step_configuration, clock_configuration) = settings();
+    let mut recorder = Recorder::<Ledger>::new(
+        SIMULATION_ID,
+        configuration,
+        seed,
+        step_configuration,
+        clock_configuration,
+        checkpoint_every,
+    );
+    let accounts = recorder.runner().simulation().books().accounts.handles();
+    let mut script = script_streams(seed);
+    for _ in 0..steps {
+        let intent = script_intent(&mut script, &accounts);
+        recorder.step_once(&[intent]);
+    }
+    recorder.into_recording()
+}
+
+/// The journal of a session: one line per event, with the day and time it happened, account names
+/// from the books, and amounts in major units.
+pub fn journal(timeline: &Timeline<Event>, books: &Books) -> Vec<String> {
+    let name = |account: &Handle| {
+        books
+            .accounts
+            .get(*account)
+            .cloned()
+            .unwrap_or_else(|| "a closed account".to_string())
+    };
+    let money = |minor: i64| {
+        let sign = if minor < 0 { "-" } else { "" };
+        format!("{sign}{}.{:02}", (minor / 100).abs(), (minor % 100).abs())
+    };
+    timeline
+        .entries()
+        .iter()
+        .map(|entry| {
+            let when = format!(
+                "day {} {:02}:{:02}",
+                entry.day,
+                entry.minute_of_day / 60,
+                entry.minute_of_day % 60
+            );
+            let what = match &entry.event {
+                Event::Deposited {
+                    account,
+                    amount_minor,
+                } => format!("{} deposited into {}", money(*amount_minor), name(account)),
+                Event::Transferred {
+                    from,
+                    to,
+                    amount_minor,
+                } => format!(
+                    "{} moved from {} to {}",
+                    money(*amount_minor),
+                    name(from),
+                    name(to)
+                ),
+                Event::Rejected { reason } => format!("rejected: {reason:?}"),
+            };
+            format!("{when}  #{:<6} {what}", entry.sequence)
+        })
+        .collect()
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {
