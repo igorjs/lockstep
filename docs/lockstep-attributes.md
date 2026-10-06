@@ -33,10 +33,41 @@ Numbers are whole JSON numbers (`100`) or decimal strings (`"1.5"`), parsed exac
 the same everywhere. Unknown fields are refused too. `on_maximum_change` defaults to `clamp`,
 `thresholds` to none, and `derived` to none (a primary attribute).
 
-## Curves
+## Attributes and modifiers
 
-A derived attribute's value is a `Curve` of its inputs. `Curve::evaluate` saturates at the edges of
-the 16.16 range instead of wrapping.
+`Attributes::from_registry` gives one entity every attribute at its starting value. Keep it in a
+`Column<Attributes>`.
+
+- `apply(who, id, delta, registry, events)` changes the current value by `delta`, clamped between the
+  minimum and the maximum.
+- `add_modifier` returns a `ModifierHandle`; `remove_modifier` takes it back, so an item removes
+  exactly the modifier it added.
+- The maximum is `(base + every Add) × every Multiply`, then the last `Override` added wins, and it
+  never falls below the minimum. Base 100 with +20 and ×1.5 is 180 in either order.
+
+What a new maximum does to the current value is the attribute's `MaximumPolicy`:
+
+| Policy | Example | 50 of 100, then ×1.5 |
+|---|---|---|
+| `clamp` | hunger | 50 of 150 |
+| `scale_current` | health, Luck | 75 of 150 |
+| `ratchet` | corruption | 50 of 150, and each threshold the value rises through becomes the minimum |
+
+## Events
+
+`AttributeEvent` names the entity (`who`) and the attribute:
+
+- `Crossed { threshold, upward }`: once each time the current value passes a threshold, in the order
+  it passes them. Falling below 60, 40 and 20 in one change gives three events, highest first.
+  Staying on one side gives none.
+- `Emptied`: the current value reached the minimum.
+- `Filled`: the current value reached the maximum, including when a lowered maximum meets it.
+
+## Derived attributes and curves
+
+A derived attribute is data: inputs and a `Curve`. Every derived attribute is recomputed in registry
+order after any change, clamped to its own minimum and maximum, and reports its own crossings.
+`apply` on a derived attribute changes nothing.
 
 | Curve | Value |
 |---|---|
@@ -46,9 +77,16 @@ the 16.16 range instead of wrapping.
 | `product`, `sum` | every input multiplied, or added |
 | `difference` | the first input minus the others |
 
+A derived attribute that reads one declared after it sees that one's value from before the change
+and catches up on the next change (`tests/spikes`). Declare inputs first.
+
 ## Tests
 
-- `tests/behaviour`: registry reading and refusals, and every curve.
+- `tests/behaviour`: registry reading and refusals, changes and events, modifier handles, curves, and
+  a saved set of attributes continuing exactly like the original.
+- `tests/decisions`: Add then Multiply then Override, scale versus clamp, thresholds once per crossing,
+  derived values following their inputs, and the ratchet. See decision 0008.
+- `tests/spikes`: the one-change lag of a derived input declared later.
 - Every test also runs under WebAssembly in Node.
 
-Attributes, modifiers, thresholds and effects arrive in the next parts of milestone M4.
+Effects (timed modifiers and drains) and their stacking arrive in the next part of milestone M4.
