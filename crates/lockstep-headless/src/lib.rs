@@ -49,6 +49,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: drone_fleet::fixture_hash,
         },
         Fixture {
+            name: "sparring",
+            default_seed: sparring::DEFAULT_SEED,
+            default_steps: sparring::DEFAULT_STEPS,
+            run: sparring::fixture_hash,
+        },
+        Fixture {
             name: "ledger",
             default_seed: ledger::DEFAULT_SEED,
             default_steps: ledger::DEFAULT_STEPS,

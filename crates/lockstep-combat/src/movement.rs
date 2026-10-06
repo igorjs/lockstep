@@ -320,8 +320,9 @@ fn walk<T: Topology>(
             events.push(MovementEvent::Unreachable { who });
             return false;
         };
-        // The map may have changed since the path was planned: a closed door is planned around.
-        if !world.map.can_step(from, next) {
+        // The map may have changed since the path was planned (a closed door is planned around),
+        // or knockback or a dodge may have moved the body off its path.
+        if world.map.steps(from, next) != 1 || !world.map.can_step(from, next) {
             if !plan(who, mover, world) {
                 stop(mover);
                 events.push(MovementEvent::Unreachable { who });

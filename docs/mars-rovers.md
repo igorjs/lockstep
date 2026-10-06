@@ -16,6 +16,9 @@ The grid-shaped consumer scenario: rovers on a plateau, on any topology.
   contested cell; a rover can move into a cell a lower handle vacated earlier in the same step, but not into
   one a higher handle will vacate later; a rover that lands on an edge, rock or occupied cell is wrecked,
   holds no cell and never moves.
+- `X` rams: it moves like `M`, except a rover in the way is first pushed one cell the way the rammer faces,
+  through `knock_back` from `lockstep-combat`. A rock, the edge or a third rover beyond it stops the push,
+  and then nobody moves. Rams do not chain. The fixture never rams, so its hash did not change.
 - A program added in a step starts running in the next one.
 - The compass names: north is the first heading of every topology (north-east on hexagons), east points
   along +x, and south and west are their opposites. A rock outside the plateau is ignored.

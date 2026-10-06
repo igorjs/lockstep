@@ -299,3 +299,27 @@ fn a_runner_held_behind_a_body_recovers_stamina() {
         walkers.stamina(who)
     );
 }
+
+#[test]
+fn a_walker_pushed_off_its_path_plans_again_instead_of_jumping() {
+    let mut walkers = Walkers::new(20, 9);
+    let who = walkers.add(1, 4);
+    walkers.step(&[(who, order(&walkers, 15, 4, Gait::Walk))]);
+    walkers.wait(10);
+    // Knockback or a dodge moves the body three rows away from its path.
+    let (x, _) = walkers.at(who);
+    walkers
+        .occupancy
+        .move_to(who, walkers.map.index(x, 7))
+        .unwrap();
+    for _ in 0..200 {
+        let before = walkers.at(who);
+        for event in walkers.step(&[]) {
+            if let MovementEvent::Moved { from, to, .. } = event {
+                assert_eq!(walkers.map.steps(from, to), 1, "one cell at a time");
+                assert_eq!(walkers.map.index(before.0, before.1), from);
+            }
+        }
+    }
+    assert_eq!(walkers.at(who), (15, 4));
+}

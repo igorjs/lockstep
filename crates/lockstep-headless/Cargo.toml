@@ -13,6 +13,7 @@ lockstep-core = { path = "../lockstep-core" }
 capsule = { path = "../../examples/capsule" }
 crowd = { path = "../../examples/crowd" }
 drone-fleet = { path = "../../examples/drone-fleet" }
+sparring = { path = "../../examples/sparring" }
 ledger = { path = "../../examples/ledger" }
 mars-rovers = { path = "../../examples/mars-rovers" }
 

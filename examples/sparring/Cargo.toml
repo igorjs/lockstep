@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
-name = "mars-rovers"
-description = "Grid-shaped consumer scenario: rovers on a plateau, on any topology"
+name = "sparring"
+description = "Consumer scenario for lockstep-combat: sparring partners that strike, dodge, throw and move"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,13 +10,10 @@ readme = "README.md"
 publish = false
 
 [dependencies]
-lockstep-combat = { path = "../../crates/lockstep-combat", features = ["hex"] }
+lockstep-combat = { path = "../../crates/lockstep-combat" }
 lockstep-core = { path = "../../crates/lockstep-core" }
-lockstep-spatial = { path = "../../crates/lockstep-spatial", features = ["hex"] }
+lockstep-spatial = { path = "../../crates/lockstep-spatial" }
 serde = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = { workspace = true }
-
-[dev-dependencies]
-bincode = { workspace = true }
