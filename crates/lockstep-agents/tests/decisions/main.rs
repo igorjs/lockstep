@@ -7,5 +7,7 @@
 #[path = "../common/mod.rs"]
 mod common;
 
+mod director_never_exceeds_its_budget;
+mod memory_fades_to_searching_then_idle;
 mod staggered_checks;
 mod wind_ranges;

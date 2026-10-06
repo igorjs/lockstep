@@ -3,8 +3,8 @@
 # lockstep-agents
 
 Local awareness: agents sense through cones and hearing, so a crowd converges only on what it
-saw or heard. Everything is integers. This first part is perception and noise; memory, alert
-states, the director, steering and utility decisions follow in the same milestone.
+saw or heard. Everything is integers. Perception, noise, memory, alert states and the director
+are in place; steering and utility decisions follow in the same milestone.
 
 Distances are metres, turned into cells by the caller's cell size (`cell_metres`, half a metre in
 the reference). Angles are `Turn`s, counter-clockwise from east.
@@ -42,6 +42,34 @@ and whether it is psychic. `Wind` has a direction (where it blows toward) and a 
 
 See decision 0018.
 
+## Memory, alert states and the director
+
+Each agent has a `Mind`: its `Alertness` (Idle, Curious, Searching, Alert), a `LastKnown` memory
+(a position, the target when one was seen, a confidence and an age), and how long its target has
+been out of sight. An agent hunts its memory, not the target.
+
+`think(minds, leashes, stimuli, minutes, rules, director, surroundings, events)` runs one step in
+handle order. Each agent's stimuli apply first, in the order given; then, when it saw nothing this
+step, its memory ages, so a noise heard this step ages with it and a sighting starts fresh:
+
+- Each `Stimulus` outside the agent's `Leash` (a home cell and a radius) is ignored.
+- `Saw` sets a fresh memory at confidence 1 and makes the agent Alert.
+- `Heard` makes an Idle agent Curious, and replaces the memory only when the noise's starting
+  confidence (`heard_confidence`) is at least the memory's. An Alert agent ignores noises.
+- Without a sighting, the memory ages by `minutes` and its confidence fades linearly from where it
+  started to zero at `forget_after_minutes`, computed from the age so it never drifts. Alert out of
+  sight for `lose_sight_after_minutes` turns Searching; a forgotten memory turns the agent Idle.
+- The `Director` then grants Alert on each target to at most `alert_budget` agents: nearest the
+  target's freshest known position first (the youngest memory of it), then those already Alert,
+  then by handle. The rest turn Curious, with one `Held` event when the hold starts; the hold lasts
+  while the agent stays Curious about that target.
+- Every change is a `Changed` event, after the director has ruled.
+
+`Leash::allows` says whether a cell is within the leash, for steering too. The director's waves,
+which space a horde's arrival into pulses, wait for a consumer (deferral D5 in the roadmap).
+
+See decision 0019.
+
 ## Tests
 
 - `tests/behaviour/sight.rs`: the cone's range and angle edges, the circle behind, a wall, and
@@ -49,5 +77,8 @@ See decision 0018.
 - `tests/behaviour/hearing.rs`: listeners at the edge of a noise, the source left out, the wind
   less its threshold, a wall halving the reach, a listener off the axes on `Square4` and
   `Square8`, a tall listener over a low wall, a negative wind, and the hearing range.
+- `tests/behaviour/minds.rs`: a noise making an agent Curious, confidence fading, sighting again,
+  Alert ignoring noise, and a stronger memory kept.
 - `tests/decisions`: the exact wind ranges, the gale, psychic noise, and staggered checks for a
-  thousand agents (decision 0018).
+  thousand agents (decision 0018); memory fading to Searching at 2 minutes and Idle at 10 at two
+  step rates, the director's budget of eight among twenty, and the leash (decision 0019).

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #![allow(dead_code)]
 
-use lockstep_agents::{Cone, Senses};
+use lockstep_agents::{
+    Cone, Director, Leash, Mind, MindEvent, MindRules, Senses, Stimulus, Surroundings,
+};
 use lockstep_core::math::Fixed32;
 use lockstep_core::{Column, Handle, StableVector};
 use lockstep_spatial::{GridMap, Occupancy, Square8};
@@ -12,6 +14,10 @@ pub fn half_metre() -> Fixed32 {
 }
 
 pub fn metres(whole: i32) -> Fixed32 {
+    Fixed32::from_int(whole)
+}
+
+pub fn minutes(whole: i32) -> Fixed32 {
     Fixed32::from_int(whole)
 }
 
@@ -66,5 +72,69 @@ impl Floor {
 
     pub fn cell(&self, x: u32, y: u32) -> lockstep_spatial::Cell {
         self.map.index(x, y)
+    }
+}
+
+/// Forgotten after 10 minutes, out of sight for 2 turns Alert to Searching, a noise starts at a
+/// half.
+pub fn rules() -> MindRules {
+    MindRules {
+        forget_after_minutes: minutes(10),
+        lose_sight_after_minutes: minutes(2),
+        heard_confidence: Fixed32::HALF,
+    }
+}
+
+impl Floor {
+    /// Gives every body a fresh mind.
+    pub fn minds(&self) -> Column<Mind> {
+        let mut minds = Column::new();
+        for body in &self.bodies {
+            minds.set(*body, Mind::default());
+        }
+        minds
+    }
+
+    /// One `think` of `minutes` with these stimuli, under the common rules.
+    pub fn think(
+        &self,
+        minds: &mut Column<Mind>,
+        leashes: &Column<Leash>,
+        stimuli: &[(Handle, Stimulus)],
+        minutes: Fixed32,
+        budget: u16,
+    ) -> Vec<MindEvent> {
+        self.think_with(&rules(), minds, leashes, stimuli, minutes, budget)
+    }
+
+    /// One `think` under the given rules.
+    pub fn think_with(
+        &self,
+        rules: &MindRules,
+        minds: &mut Column<Mind>,
+        leashes: &Column<Leash>,
+        stimuli: &[(Handle, Stimulus)],
+        minutes: Fixed32,
+        budget: u16,
+    ) -> Vec<MindEvent> {
+        let mut events = Vec::new();
+        let surroundings = Surroundings {
+            map: &self.map,
+            occupancy: &self.occupancy,
+            cell_metres: half_metre(),
+        };
+        lockstep_agents::think(
+            minds,
+            leashes,
+            stimuli,
+            minutes,
+            rules,
+            &Director {
+                alert_budget: budget,
+            },
+            &surroundings,
+            &mut events,
+        );
+        events
     }
 }

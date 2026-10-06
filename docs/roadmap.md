@@ -18,7 +18,7 @@ items in a milestone are out of scope here.
 | M5 Timeline, replay, derive | Done, three deferrals (D1 to D3) | `#[derive(Message)]` and `Indexable`; recorder, replay, bisect; timeline with compaction; ledger journal; headless `record`, `replay`, `bisect`, `stats` | Met: a planted rule change is found at the right checkpoint |
 | M6 Combat and movement | Done | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges, projectiles, movement; sparring; rovers ram | Met: the duel fixture hash is equal natively and under WebAssembly; 200 partners spar for 10,000 steps without sharing a cell or going below zero health |
 | M7 Inventory | Done | `lockstep-inventory`: catalogue from JSON, items as entities, containers, stacking, equipment with modifiers, binding affixes, spoilage by temperature; cargo-bay | Met: the same game minutes spoil on the same minute at 30 and 60 steps a second, natively and under WebAssembly |
-| M8 Agents | In progress | `lockstep-agents`: sight cones with line of sight, staggered checks, noise carried by the wind, hearing thresholds, psychic noise | Pending: memory, alert states, the director, steering, utility and delegation, weather, the rover and horde consumers, the benchmark |
+| M8 Agents | In progress | `lockstep-agents`: sight cones with line of sight, staggered checks, noise carried by the wind, hearing thresholds, psychic noise; memory that fades, alert states, the director's budget, leashes | Pending: steering, utility and delegation, weather, the rover and horde consumers, the benchmark |
 | M9 Knowledge | Not started | | |
 | M10 Progression | Not started | | |
 | M11 Relations | Not started | | |
@@ -45,6 +45,7 @@ items in a milestone are out of scope here.
 | D2 | The crash bundle (a recording, the last good save and the host's log) | M5 | A host, which writes it | Decision 0011 |
 | D3 | `replay --save` and saving mid-recording | M5 | Saves and migrations (M16) | `docs/lockstep-headless.md`, `docs/lockstep-core.md` |
 | D4 | Conversions between message versions | M16 | Saves: until a save ships, no version has shipped | Decision 0010 |
+| D5 | The director's waves, spacing a horde's arrival into pulses | M8 | A consumer with a horde that arrives over time | `docs/lockstep-agents.md` |
 
 ## Departures: where the work differs from the reference on purpose
 
