@@ -23,6 +23,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: capsule::fixture_hash,
         },
         Fixture {
+            name: "mars-rovers",
+            default_seed: mars_rovers::DEFAULT_SEED,
+            default_steps: mars_rovers::DEFAULT_STEPS,
+            run: mars_rovers::fixture_hash,
+        },
+        Fixture {
             name: "ledger",
             default_seed: ledger::DEFAULT_SEED,
             default_steps: ledger::DEFAULT_STEPS,

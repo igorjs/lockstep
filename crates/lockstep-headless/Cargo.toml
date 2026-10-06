@@ -9,3 +9,4 @@ repository.workspace = true
 [dependencies]
 capsule = { path = "../../examples/capsule" }
 ledger = { path = "../../examples/ledger" }
+mars-rovers = { path = "../../examples/mars-rovers" }

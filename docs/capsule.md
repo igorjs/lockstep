@@ -3,7 +3,7 @@
 The game shaped consumer scenario. One survivor lives in a sixteen by sixteen room.
 
 - Intents: `MoveTo { entity, cell, run }`, `Stop { entity }`.
-- Walking: one cell every six steps, three when running, horizontal first, then vertical.
+- Walking: one cell every six steps, three when running, along the cheapest path (A*) around a wall that crosses the room at column 8 from row 2 to row 12, with gaps above and below. A move onto the wall, outside the room, or to an unreachable cell is rejected.
 - Needs: hunger, thirst, and sanity drain per game minute, so a rest at twenty times drains twenty times faster.
 - Starvation: when hunger or thirst is empty, health drains. At zero the survivor dies and every column entry is removed.
 - Events: `Arrived`, `Hungry`, `Starving`, `Died`, `Rejected`.
