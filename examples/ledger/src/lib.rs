@@ -12,14 +12,11 @@ use lockstep_core::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub struct Configuration {
     pub account_names: Vec<String>,
     pub opening_balance_minor: i64,
-}
-
-impl Message for Configuration {
-    const VERSION: u32 = 1;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -31,7 +28,8 @@ pub enum Reason {
     Overflow,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub enum Intent {
     Deposit {
         account: Handle,
@@ -44,11 +42,8 @@ pub enum Intent {
     },
 }
 
-impl Message for Intent {
-    const VERSION: u32 = 1;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub enum Event {
     Deposited {
         account: Handle,
@@ -64,20 +59,13 @@ pub enum Event {
     },
 }
 
-impl Message for Event {
-    const VERSION: u32 = 1;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub struct Books {
     pub accounts: StableVector<String>,
     pub balances: Column<i64>,
     pub transfers_applied: u64,
     pub transfers_rejected: u64,
-}
-
-impl Message for Books {
-    const VERSION: u32 = 1;
 }
 
 impl Books {

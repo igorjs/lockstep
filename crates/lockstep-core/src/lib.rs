@@ -17,7 +17,15 @@ pub use chance::{
 };
 pub use clock::{Clock, ClockConfiguration, ClockEvent};
 pub use hashing::hash_of;
-pub use message::Message;
+pub use lockstep_macros::Message;
+
+/// Paths the derive macros use; not part of the public interface.
+#[doc(hidden)]
+pub mod __private {
+    pub use serde::de::DeserializeOwned;
+    pub use serde::Serialize;
+}
+pub use message::{Indexable, Message};
 pub use runner::{Advanced, Runner, StepConfiguration};
 pub use simulation::{Context, Simulation};
 pub use store::{Column, Handle, StableVector};

@@ -71,16 +71,14 @@ pub enum Status {
     Stranded,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub struct Configuration {
     pub drones: u32,
 }
 
-impl Message for Configuration {
-    const VERSION: u32 = 1;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub enum Intent {
     /// Fly for this many game minutes.
     Launch { drone: Handle, minutes: u16 },
@@ -88,10 +86,6 @@ pub enum Intent {
     Dock { drone: Handle },
     /// Repair wear while docked, but never below the last wear mark passed.
     Service { drone: Handle },
-}
-
-impl Message for Intent {
-    const VERSION: u32 = 1;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -104,7 +98,8 @@ pub enum Refusal {
     UnknownDrone,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub enum Event {
     Launched {
         drone: Handle,
@@ -140,11 +135,8 @@ pub enum Event {
     },
 }
 
-impl Message for Event {
-    const VERSION: u32 = 1;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub struct World {
     pub drones: StableVector<String>,
     pub status: Column<Status>,
@@ -152,10 +144,6 @@ pub struct World {
     pub effects: Effects,
     /// The modifier that holds each charge maximum at its capacity.
     pub capacity_limits: Column<ModifierHandle>,
-}
-
-impl Message for World {
-    const VERSION: u32 = 1;
 }
 
 pub struct Fleet {

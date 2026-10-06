@@ -48,18 +48,16 @@ pub fn instructions(letters: &str) -> Vec<Instruction> {
 }
 
 /// The plateau is `width` by `height` cells, numbered from zero, with rocks on some cells.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub struct Configuration {
     pub width: u32,
     pub height: u32,
     pub rocks: Vec<(u32, u32)>,
 }
 
-impl Message for Configuration {
-    const VERSION: u32 = 1;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub enum Intent {
     /// Lands the next rover at a plateau position facing a heading (an index into the neighbour list).
     Land { x: u32, y: u32, heading: u8 },
@@ -71,10 +69,6 @@ pub enum Intent {
     },
 }
 
-impl Message for Intent {
-    const VERSION: u32 = 1;
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Obstacle {
     Edge,
@@ -82,7 +76,8 @@ pub enum Obstacle {
     Rover,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub enum Event {
     Landed { rover: Handle, x: u32, y: u32 },
     Wrecked { rover: Handle, obstacle: Obstacle },
@@ -90,11 +85,8 @@ pub enum Event {
     Blocked { rover: Handle, obstacle: Obstacle },
 }
 
-impl Message for Event {
-    const VERSION: u32 = 1;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 #[serde(bound = "")]
 pub struct World<T: RoverTopology> {
     map: GridMap<T>,
@@ -106,10 +98,6 @@ pub struct World<T: RoverTopology> {
     headings: Column<u8>,
     programs: Column<Vec<Instruction>>,
     wrecked: Column<()>,
-}
-
-impl<T: RoverTopology> Message for World<T> {
-    const VERSION: u32 = 1;
 }
 
 /// The Mars Rovers simulation on one topology.

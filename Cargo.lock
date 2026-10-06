@@ -198,6 +198,7 @@ name = "lockstep-core"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "lockstep-macros",
  "rand",
  "rand_pcg",
  "serde",
@@ -214,6 +215,15 @@ dependencies = [
  "drone-fleet",
  "ledger",
  "mars-rovers",
+]
+
+[[package]]
+name = "lockstep-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

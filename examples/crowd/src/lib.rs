@@ -16,7 +16,8 @@ use lockstep_spatial::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub struct Configuration {
     pub width: u32,
     pub height: u32,
@@ -25,19 +26,13 @@ pub struct Configuration {
     pub goal: (u32, u32),
 }
 
-impl Message for Configuration {
-    const VERSION: u32 = 1;
-}
-
 /// The crowd takes no input after it starts.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub enum Intent {}
 
-impl Message for Intent {
-    const VERSION: u32 = 1;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub enum Event {
     Arrived {
         body: Handle,
@@ -49,20 +44,13 @@ pub enum Event {
     },
 }
 
-impl Message for Event {
-    const VERSION: u32 = 1;
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
 pub struct World {
     pub map: GridMap<Square8>,
     pub goal: Cell,
     pub bodies: StableVector<()>,
     pub positions: Column<Cell>,
-}
-
-impl Message for World {
-    const VERSION: u32 = 1;
 }
 
 pub struct Crowd {
