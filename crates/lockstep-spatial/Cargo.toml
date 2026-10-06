@@ -19,3 +19,9 @@ bincode = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = { workspace = true }
+
+# The benchmark prints its timings and compares them with benches/baseline.txt. It is a plain
+# program (no harness) so it needs no extra dependencies.
+[[bench]]
+name = "spatial"
+harness = false
