@@ -7,6 +7,7 @@
 //! simulation resolves contested cells in handle order by applying its moves in handle order.
 //! Everything takes the topology as a type parameter and only calls the four topology functions.
 
+mod batch;
 mod cell;
 mod flow;
 mod map;
@@ -15,6 +16,7 @@ mod pathfinder;
 mod sight;
 mod topology;
 
+pub use batch::{find_paths, find_paths_serially, PathAnswer, PathRequest};
 pub use cell::Cell;
 pub use flow::FlowField;
 pub use map::{GridMap, CHUNK};

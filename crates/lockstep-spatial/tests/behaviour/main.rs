@@ -3,6 +3,7 @@
 #[path = "../common/mod.rs"]
 mod common;
 
+mod batch;
 mod flow;
 mod map;
 mod occupancy;

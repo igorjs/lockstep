@@ -9,13 +9,20 @@ repository.workspace = true
 [features]
 # Hexagonal cells: odd-row offset storage, cube distance, integer-rounded lines.
 hex = []
+# Solve a batch of path requests on several threads. The answers are identical to the serial
+# batch, which is what builds without this feature (and WebAssembly) run.
+parallel = ["dep:rayon"]
 
 [dependencies]
 lockstep-core = { path = "../lockstep-core" }
 serde = { workspace = true }
+rayon = { workspace = true, optional = true }
 
 [dev-dependencies]
 bincode = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+rayon = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = { workspace = true }
