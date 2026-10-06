@@ -5,6 +5,7 @@
 
 mod clock;
 mod hashing;
+pub mod math;
 mod message;
 mod runner;
 mod simulation;
