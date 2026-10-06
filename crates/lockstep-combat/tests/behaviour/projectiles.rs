@@ -185,3 +185,136 @@ fn a_dodging_fighter_lets_a_projectile_pass() {
         "it flew on past"
     );
 }
+
+#[test]
+fn rising_ground_stops_an_arrow_and_one_launched_from_a_hill_flies_over_a_low_wall() {
+    let mut duel = Duel::new();
+    let left = duel.left;
+    duel.occupancy.vacate(duel.right);
+    let hill = duel.map.index(8, 2);
+    duel.map.set_elevation(hill, 5);
+    let events = fire(&mut duel, left, (5, 2), arrow(6, 1));
+    let (at, reason) = stopped(&events).unwrap();
+    assert_eq!(
+        (duel.map.coordinates(at), reason),
+        ((7, 2), Stopped::Wall),
+        "the hill"
+    );
+
+    // From a cell 3 high, a 2-high wall at ground level sits well below the arrow.
+    let mut duel = Duel::new();
+    let left = duel.left;
+    duel.occupancy.vacate(duel.right);
+    let perch = duel.map.index(2, 2);
+    duel.map.set_elevation(perch, 3);
+    let wall = duel.map.index(4, 2);
+    duel.map.set_low_wall(wall, 2);
+    let events = fire(&mut duel, left, (2, 2), arrow(4, 1));
+    assert_eq!(stopped(&events).unwrap().1, Stopped::Spent);
+}
+
+#[test]
+fn a_projectile_clears_a_low_wall_corner_it_flies_above_and_not_a_full_one() {
+    // Heading north-east from (2, 3): the diagonal passes between (2, 2) and (3, 3).
+    let shot = |full: bool| {
+        let mut duel = Duel::new();
+        let left = duel.left;
+        duel.occupancy.vacate(duel.right);
+        let side = duel.map.index(3, 3);
+        if full {
+            duel.map.set_passable(side, false);
+        } else {
+            duel.map.set_low_wall(side, 1);
+        }
+        let mut projectiles = StableVector::new();
+        let from = duel.map.index(2, 3);
+        let mut launch = arrow(1, 1);
+        launch.height = 5;
+        projectiles.insert(Projectile::launch(&duel.map, left, from, 8_192, &launch));
+        let mut events = Vec::new();
+        step_projectiles(
+            &mut projectiles,
+            &mut duel.fighters,
+            &duel.movesets,
+            &duel.map,
+            &mut duel.occupancy,
+            duel.rate,
+            &mut duel.streams,
+            &mut events,
+        );
+        stopped(&events).unwrap()
+    };
+    assert_eq!(
+        shot(false).1,
+        Stopped::Spent,
+        "the low corner is below the arrow"
+    );
+    assert_eq!(shot(true).1, Stopped::Wall, "a full wall corner stops it");
+}
+
+#[test]
+fn a_projectile_passes_its_owner_and_hits_the_next_body() {
+    let mut duel = Duel::new();
+    let (left, right) = (duel.left, duel.right);
+    // Fired from behind its owner: the line crosses the owner's cell first.
+    let events = fire(&mut duel, left, (3, 2), arrow(6, 1));
+    let target = events.iter().find_map(|event| match event {
+        CombatEvent::ProjectileHit { hit, .. } => Some(hit.target),
+        _ => None,
+    });
+    assert_eq!(target, Some(right));
+}
+
+#[test]
+fn a_dodging_body_two_cells_wide_dodges_an_arrow_once() {
+    let mut duel = Duel::new();
+    duel.dodge().distance_cells = 0;
+    let (left, right) = (duel.left, duel.right);
+    let wide = [duel.map.index(6, 2), duel.map.index(7, 2)];
+    duel.occupancy.move_footprint(right, &wide).unwrap();
+    duel.step(&[(right, Order::Dodge { heading: 0 })]);
+    duel.wait(4);
+    let events = fire(&mut duel, left, (5, 2), arrow(5, 1));
+    let dodges = events
+        .iter()
+        .filter(|event| {
+            matches!(
+                event,
+                CombatEvent::Dodged { .. } | CombatEvent::PerfectDodge { .. }
+            )
+        })
+        .count();
+    assert_eq!(dodges, 1);
+}
+
+#[test]
+fn a_projectile_reports_running_out_on_the_step_it_does() {
+    let mut duel = Duel::new();
+    let left = duel.left;
+    duel.occupancy.vacate(duel.right);
+    let mut projectiles = StableVector::new();
+    let from = duel.map.index(5, 2);
+    projectiles.insert(Projectile::launch(
+        &duel.map,
+        left,
+        from,
+        EAST,
+        &arrow(4, 2),
+    ));
+    let mut steps = 0;
+    while !projectiles.is_empty() {
+        let mut events = Vec::new();
+        step_projectiles(
+            &mut projectiles,
+            &mut duel.fighters,
+            &duel.movesets,
+            &duel.map,
+            &mut duel.occupancy,
+            duel.rate,
+            &mut duel.streams,
+            &mut events,
+        );
+        steps += 1;
+    }
+    assert_eq!(steps, 2, "four cells at two a step");
+}

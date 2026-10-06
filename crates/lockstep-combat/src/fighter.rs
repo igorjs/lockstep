@@ -293,12 +293,10 @@ impl Indexable for CombatEvent {
             | CombatEvent::DodgeStarted { who }
             | CombatEvent::Refused { who, .. }
             | CombatEvent::Expired { who } => out.push(*who),
-            CombatEvent::ProjectileHit {
-                by,
-                projectile,
-                hit,
-            } => out.extend([*by, *projectile, hit.target]),
-            CombatEvent::ProjectileStopped { projectile, .. } => out.push(*projectile),
+            // A projectile's own handle comes from a separate store and could equal an entity's,
+            // so only the entities it involves are indexed.
+            CombatEvent::ProjectileHit { by, hit, .. } => out.extend([*by, hit.target]),
+            CombatEvent::ProjectileStopped { .. } => {}
             CombatEvent::Sounded { by, .. } => out.push(*by),
         }
     }

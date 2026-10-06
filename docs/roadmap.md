@@ -61,4 +61,5 @@ items in a milestone are out of scope here.
 | P8 | A recording may keep snapshots, so `bisect` can show what differs | Decision 0011 |
 | P9 | `Defence` carries evasion and block; `Reach` stops at the first body and `Line` pierces | Decision 0013 |
 | P10 | Combat phases count whole steps; the counter window runs only while the fighter is free | Decision 0014 |
+| P14 | Projectiles fly at an absolute altitude instead of checking `can_step`, and a dodged projectile flies on | Decision 0015 |
 | P11 | The perfect window is 0.12 seconds; its cases are 3 steps (0.100 seconds, perfect) and 4 (0.133, not), the whole steps either side of the reference's 0.11 and 0.13 second cases at 30 a second | Decision 0014 |

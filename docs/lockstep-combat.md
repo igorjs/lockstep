@@ -99,17 +99,23 @@ and 4 steps (0.133 seconds) is not.
 fighters, movesets, map, occupancy, steps_per_second, streams, events)` moves each, in handle order,
 up to `cells_per_step` cells:
 
-- A cut wall corner, or a wall at least as high as the projectile, stops it (`Stopped::Wall`); a
-  full wall is always high enough, and a low wall below the projectile is flown over.
+- It flies at an absolute altitude: its launch cell's elevation plus its `height`. A cell whose
+  elevation plus wall height reaches that altitude stops it (`Stopped::Wall`), whether a wall or
+  rising ground; on a diagonal, so does either cell it passes between. A full wall reaches any
+  altitude; a low wall or ground below it is flown over.
 - In each cell it is `Sounded` when it has a loudness.
-- A body other than its owner takes its damage through the same rules as a strike: an
-  invulnerable fighter dodges it and it flies on, otherwise it lands (`ProjectileHit`) and stops.
-  A projectile with no damage, such as a scream, passes through bodies.
-- With `descent_every`, it drops a height every that many cells and stops on the ground
-  (`Stopped::Landed`).
-- Out of cells: `Stopped::Spent` at its full range, `Stopped::Wall` when the line left the map.
+- The first cell of a body other than its owner takes its damage through the same rules as a
+  strike: an invulnerable fighter dodges it and it flies on (one dodge however wide the body is),
+  otherwise it lands (`ProjectileHit`) and stops. A projectile with no damage, such as a scream,
+  passes through bodies.
+- With `descent_every`, it drops a level every that many cells, and lands where its altitude
+  meets the ground (`Stopped::Landed`).
+- Out of cells, it stops on that step: `Stopped::Spent` at its full range, `Stopped::Wall` when the
+  line left the map.
 
-Projectiles are not in occupancy, so they never block a body. Keep them in a `StableVector`.
+Projectiles are not in occupancy, so they never block a body. Keep them in a `StableVector`. The
+timeline indexes a projectile's events under its owner and target, not under the projectile's own
+handle, which comes from a separate store. See decision 0015.
 
 ## Tests
 

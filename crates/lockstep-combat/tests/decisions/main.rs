@@ -13,3 +13,4 @@ mod actions_and_dodges;
 mod arc_cells_per_topology;
 mod armour_before_resistance;
 mod knockback_stops_at_walls;
+mod projectiles;
