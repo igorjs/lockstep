@@ -60,6 +60,10 @@ pub struct DodgeDefinition {
     pub counter_seconds: Fixed32,
 }
 
+/// Which `Moveset` a fighter uses: its index in the slice `step_combat` is given.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct MovesetId(pub u16);
+
 /// Every action a kind of fighter can take, and its dodge.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Moveset {
@@ -72,6 +76,19 @@ pub fn buffer_seconds() -> Fixed32 {
     Fixed32::from_ratio(15, 100)
 }
 
+/// How many steps a duration lasts at `rate` steps a second: the nearest whole number, ties up.
+/// Counting whole steps keeps a 0.2 second wind-up at 6 steps at 30 a second and 12 at 60, where a
+/// rounded step length would drift.
+pub fn steps_for(seconds: Fixed32, rate: u32) -> u32 {
+    let scaled = seconds.raw().max(0) as u64 * rate as u64;
+    ((scaled + 32_768) / 65_536) as u32
+}
+
+/// Whether `steps` at `rate` steps a second last no longer than `seconds`, compared exactly.
+fn within(steps: u32, rate: u32, seconds: Fixed32) -> bool {
+    steps as u64 * 65_536 <= seconds.raw().max(0) as u64 * rate as u64
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Message)]
 #[message(version = 1)]
 pub enum Order {
@@ -79,61 +96,70 @@ pub enum Order {
     Dodge { heading: Turn },
 }
 
+/// Where a fighter is in its commitment. `left` counts the steps still to run.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Phase {
     Ready,
     Windup {
         action: ActionId,
-        left: Fixed32,
+        left: u32,
     },
     Active {
         action: ActionId,
-        left: Fixed32,
+        left: u32,
         struck: bool,
     },
     Recovery {
-        left: Fixed32,
+        left: u32,
     },
     DodgeStartup {
         heading: Turn,
-        left: Fixed32,
+        left: u32,
     },
     DodgeInvulnerable {
-        left: Fixed32,
+        left: u32,
     },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct Buffered {
     order: Order,
-    age: Fixed32,
+    /// Steps it has waited.
+    age: u32,
 }
 
 /// One fighter's combat state. Keep it in a `Column<Fighter>`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Fighter {
+    pub moveset: MovesetId,
     pub phase: Phase,
     pub facing: Turn,
     pub stamina: Fixed32,
+    pub maximum_stamina: Fixed32,
     pub defence: Defence,
     buffered: Option<Buffered>,
-    cooldown: Fixed32,
-    counter: Fixed32,
-    /// Seconds since the current dodge was pressed, while dodging.
-    since_dodge: Option<Fixed32>,
+    /// Steps until the next dodge may start.
+    cooldown: u32,
+    /// Free steps left in which the next attack skips its wind-up.
+    counter: u32,
+    /// Steps since the current dodge was pressed, until a strike uses its perfect window.
+    since_dodge: Option<u32>,
     evasion_memory: SmoothedState,
 }
 
 impl Fighter {
-    pub fn new(stamina: Fixed32, defence: Defence) -> Self {
+    /// A ready fighter with full stamina.
+    pub fn new(moveset: MovesetId, stamina: Fixed32, defence: Defence) -> Self {
         Fighter {
+            moveset,
             phase: Phase::Ready,
             facing: 0,
             stamina,
+            maximum_stamina: stamina,
             defence,
             buffered: None,
-            cooldown: Fixed32::ZERO,
-            counter: Fixed32::ZERO,
+            cooldown: 0,
+            counter: 0,
             since_dodge: None,
             evasion_memory: SmoothedState::default(),
         }
@@ -141,7 +167,7 @@ impl Fighter {
 
     /// Whether the next attack skips its wind-up, after a perfect dodge.
     pub fn countering(&self) -> bool {
-        self.counter > Fixed32::ZERO
+        self.counter > 0
     }
 
     pub fn invulnerable(&self) -> bool {
@@ -161,6 +187,7 @@ pub struct Hit {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Refusal {
     UnknownAction,
+    UnknownMoveset,
     Tired,
 }
 
@@ -249,40 +276,52 @@ impl Indexable for CombatEvent {
     }
 }
 
-/// Runs one step of combat for every fighter.
+/// Runs one step of combat for every fighter, at `steps_per_second` (30 for the default runner).
 ///
 /// 1. Each order replaces its fighter's buffered order, in the order given.
-/// 2. In handle order, each fighter's timers and phase advance by `step_seconds`, then its buffered
-///    order starts if the fighter is free (a dodge may also cancel a wind-up), or waits up to
-///    0.15 seconds.
-/// 3. Every attack whose first active step is now strikes, in handle order: an invulnerable target
-///    dodges it unless it grabs or cannot be avoided, any other target takes `resolve`, a stagger
-///    interrupts a wind-up whose mask allows it and breaks a dodge still in startup, and knockback
-///    moves the target.
+/// 2. In handle order, each fighter's timers and phase advance one step, then its buffered order
+///    starts if the fighter is free (a dodge may also cancel a wind-up), or waits up to 0.15
+///    seconds.
+/// 3. Every attack on its first active step reads its targets, all before any of them resolves, so
+///    two fighters trading blows on the same step both land.
+/// 4. The strikes resolve in handle order: an invulnerable target dodges unless the attack grabs or
+///    cannot be avoided, any other target takes `resolve`, a stagger interrupts a wind-up whose mask
+///    allows it and breaks a dodge still in startup, and knockback moves the target.
 #[allow(clippy::too_many_arguments)]
 pub fn step_combat<T: Topology>(
     fighters: &mut Column<Fighter>,
-    moveset: &Moveset,
+    movesets: &[Moveset],
     map: &GridMap<T>,
     occupancy: &mut Occupancy,
     orders: &[(Handle, Order)],
-    step_seconds: Fixed32,
+    steps_per_second: u32,
     streams: &mut Streams,
     events: &mut Vec<CombatEvent>,
 ) {
+    let rate = steps_per_second.max(1);
     for (who, order) in orders {
         if let Some(fighter) = fighters.get_mut(*who) {
             fighter.buffered = Some(Buffered {
                 order: *order,
-                age: Fixed32::ZERO,
+                age: 0,
             });
         }
     }
     let mut strikes = Vec::new();
     for who in fighters.handles() {
         let fighter = fighters.get_mut(who).expect("listed");
-        advance(who, fighter, moveset, map, occupancy, step_seconds);
-        start_buffered(who, fighter, moveset, step_seconds, events);
+        let Some(moveset) = movesets.get(fighter.moveset.0 as usize) else {
+            if fighter.buffered.take().is_some() {
+                events.push(CombatEvent::Refused {
+                    who,
+                    reason: Refusal::UnknownMoveset,
+                });
+            }
+            fighter.phase = Phase::Ready;
+            continue;
+        };
+        advance(who, fighter, moveset, map, occupancy, rate);
+        start_buffered(who, fighter, moveset, map, occupancy, rate, events);
         if let Phase::Active {
             action,
             left,
@@ -294,13 +333,82 @@ pub fn step_combat<T: Topology>(
                 left,
                 struck: true,
             };
-            strikes.push((who, action, fighter.facing));
+            strikes.push((who, fighter.moveset, action, fighter.facing));
         }
     }
-    for (who, action, facing) in strikes {
+    // Read every strike's targets before any resolves or moves anyone.
+    let reached: Vec<_> = strikes
+        .into_iter()
+        .filter_map(|(who, moveset, action, facing)| {
+            let from = occupancy.cell_of(who)?;
+            let definition = &movesets[moveset.0 as usize].actions[action.0 as usize];
+            let mut targets = Vec::new();
+            hits(
+                definition.shape,
+                map,
+                occupancy,
+                who,
+                from,
+                facing,
+                &mut targets,
+            );
+            Some((who, moveset, action, from, targets))
+        })
+        .collect();
+    for (who, moveset, action, from, targets) in reached {
         strike(
-            who, action, facing, fighters, moveset, map, occupancy, streams, events,
+            who,
+            &movesets[moveset.0 as usize],
+            action,
+            from,
+            targets,
+            fighters,
+            movesets,
+            map,
+            occupancy,
+            rate,
+            streams,
+            events,
         );
+    }
+}
+
+/// The phase that follows a wind-up: the action's active window, at least one step so it strikes.
+fn active(moveset: &Moveset, action: ActionId, rate: u32) -> Phase {
+    Phase::Active {
+        action,
+        left: steps_for(moveset.actions[action.0 as usize].active_seconds, rate).max(1),
+        struck: false,
+    }
+}
+
+/// A recovery of `seconds`, or ready at once when it lasts no step.
+fn recovery(seconds: Fixed32, rate: u32) -> Phase {
+    match steps_for(seconds, rate) {
+        0 => Phase::Ready,
+        left => Phase::Recovery { left },
+    }
+}
+
+/// Starts the dodge's invulnerability: moves the body and counts the invulnerable steps, going
+/// straight to recovery when there are none.
+fn invulnerable<T: Topology>(
+    who: Handle,
+    heading: Turn,
+    fighter: &mut Fighter,
+    moveset: &Moveset,
+    map: &GridMap<T>,
+    occupancy: &mut Occupancy,
+    rate: u32,
+) -> Phase {
+    let dodge = &moveset.dodge;
+    knock_back(map, occupancy, who, heading, dodge.distance_cells);
+    match steps_for(dodge.invulnerable_seconds, rate) {
+        0 => {
+            fighter.since_dodge = None;
+            recovery(dodge.recovery_seconds, rate)
+        }
+        left => Phase::DodgeInvulnerable { left },
     }
 }
 
@@ -310,73 +418,61 @@ fn advance<T: Topology>(
     moveset: &Moveset,
     map: &GridMap<T>,
     occupancy: &mut Occupancy,
-    step: Fixed32,
+    rate: u32,
 ) {
-    let down = |value: Fixed32| (value - step).max(Fixed32::ZERO);
-    fighter.cooldown = down(fighter.cooldown);
+    fighter.cooldown = fighter.cooldown.saturating_sub(1);
     // The counter window runs only while the fighter is free to use it, not during the dodge's
     // own recovery.
     if fighter.phase == Phase::Ready {
-        fighter.counter = down(fighter.counter);
+        fighter.counter = fighter.counter.saturating_sub(1);
     }
     if let Some(since) = fighter.since_dodge.as_mut() {
-        *since += step;
+        *since += 1;
     }
-    let dodge = &moveset.dodge;
     fighter.phase = match fighter.phase {
         Phase::Ready => Phase::Ready,
-        Phase::Windup { action, left } => match down(left) {
-            Fixed32::ZERO => Phase::Active {
-                action,
-                left: moveset.actions[action.0 as usize].active_seconds,
-                struck: false,
-            },
+        Phase::Windup { action, left } => match left.saturating_sub(1) {
+            0 => active(moveset, action, rate),
             left => Phase::Windup { action, left },
         },
         Phase::Active {
             action,
             left,
             struck,
-        } => match down(left) {
-            Fixed32::ZERO => Phase::Recovery {
-                left: moveset.actions[action.0 as usize].recovery_seconds,
-            },
+        } => match left.saturating_sub(1) {
+            0 => recovery(moveset.actions[action.0 as usize].recovery_seconds, rate),
             left => Phase::Active {
                 action,
                 left,
                 struck,
             },
         },
-        Phase::Recovery { left } => match down(left) {
-            Fixed32::ZERO => Phase::Ready,
+        Phase::Recovery { left } => match left.saturating_sub(1) {
+            0 => Phase::Ready,
             left => Phase::Recovery { left },
         },
-        Phase::DodgeStartup { heading, left } => match down(left) {
-            Fixed32::ZERO => {
-                knock_back(map, occupancy, who, heading, dodge.distance_cells);
-                Phase::DodgeInvulnerable {
-                    left: dodge.invulnerable_seconds,
-                }
-            }
+        Phase::DodgeStartup { heading, left } => match left.saturating_sub(1) {
+            0 => invulnerable(who, heading, fighter, moveset, map, occupancy, rate),
             left => Phase::DodgeStartup { heading, left },
         },
-        Phase::DodgeInvulnerable { left } => match down(left) {
-            Fixed32::ZERO => {
+        Phase::DodgeInvulnerable { left } => match left.saturating_sub(1) {
+            0 => {
                 fighter.since_dodge = None;
-                Phase::Recovery {
-                    left: dodge.recovery_seconds,
-                }
+                recovery(moveset.dodge.recovery_seconds, rate)
             }
             left => Phase::DodgeInvulnerable { left },
         },
     };
 }
 
-fn start_buffered(
+#[allow(clippy::too_many_arguments)]
+fn start_buffered<T: Topology>(
     who: Handle,
     fighter: &mut Fighter,
     moveset: &Moveset,
-    step: Fixed32,
+    map: &GridMap<T>,
+    occupancy: &mut Occupancy,
+    rate: u32,
     events: &mut Vec<CombatEvent>,
 ) {
     let Some(buffered) = fighter.buffered else {
@@ -388,14 +484,14 @@ fn start_buffered(
         (Order::Dodge { .. }, Phase::Windup { .. }) => true,
         _ => false,
     };
-    let cooling = matches!(buffered.order, Order::Dodge { .. }) && fighter.cooldown > Fixed32::ZERO;
+    let cooling = matches!(buffered.order, Order::Dodge { .. }) && fighter.cooldown > 0;
     if !free || cooling {
-        let age = buffered.age + step;
-        if age > buffer_seconds() {
+        let age = buffered.age + 1;
+        if within(age, rate, buffer_seconds()) {
+            fighter.buffered = Some(Buffered { age, ..buffered });
+        } else {
             fighter.buffered = None;
             events.push(CombatEvent::Expired { who });
-        } else {
-            fighter.buffered = Some(Buffered { age, ..buffered });
         }
         return;
     }
@@ -418,20 +514,16 @@ fn start_buffered(
             }
             fighter.stamina -= definition.stamina_cost;
             fighter.facing = facing;
-            let skip_windup = fighter.countering() || definition.windup_seconds <= Fixed32::ZERO;
-            fighter.counter = Fixed32::ZERO;
-            fighter.phase = if skip_windup {
-                Phase::Active {
-                    action,
-                    left: definition.active_seconds,
-                    struck: false,
-                }
+            let windup = steps_for(definition.windup_seconds, rate);
+            fighter.phase = if fighter.countering() || windup == 0 {
+                active(moveset, action, rate)
             } else {
                 Phase::Windup {
                     action,
-                    left: definition.windup_seconds,
+                    left: windup,
                 }
             };
+            fighter.counter = 0;
             events.push(CombatEvent::Started { who, action });
         }
         Order::Dodge { heading } => {
@@ -444,13 +536,13 @@ fn start_buffered(
                 return;
             }
             fighter.stamina -= dodge.stamina_cost;
-            fighter.cooldown = dodge.cooldown_seconds;
-            fighter.since_dodge = Some(Fixed32::ZERO);
-            fighter.phase = Phase::DodgeStartup {
-                heading,
-                left: dodge.startup_seconds,
-            };
+            fighter.cooldown = steps_for(dodge.cooldown_seconds, rate);
+            fighter.since_dodge = Some(0);
             events.push(CombatEvent::DodgeStarted { who });
+            fighter.phase = match steps_for(dodge.startup_seconds, rate) {
+                0 => invulnerable(who, heading, fighter, moveset, map, occupancy, rate),
+                left => Phase::DodgeStartup { heading, left },
+            };
         }
     }
 }
@@ -458,45 +550,43 @@ fn start_buffered(
 #[allow(clippy::too_many_arguments)]
 fn strike<T: Topology>(
     who: Handle,
-    action: ActionId,
-    facing: Turn,
-    fighters: &mut Column<Fighter>,
     moveset: &Moveset,
+    action: ActionId,
+    from: lockstep_spatial::Cell,
+    targets: Vec<(lockstep_spatial::Cell, Handle)>,
+    fighters: &mut Column<Fighter>,
+    movesets: &[Moveset],
     map: &GridMap<T>,
     occupancy: &mut Occupancy,
+    rate: u32,
     streams: &mut Streams,
     events: &mut Vec<CombatEvent>,
 ) {
-    let Some(from) = occupancy.cell_of(who) else {
-        return;
-    };
     let definition = &moveset.actions[action.0 as usize];
-    let mut reached = Vec::new();
-    hits(
-        definition.shape,
-        map,
-        occupancy,
-        who,
-        from,
-        facing,
-        &mut reached,
-    );
     let piercing = definition.damage.tags.contains(Tags::GRAB)
         || definition.damage.tags.contains(Tags::UNAVOIDABLE);
     let mut landed = Vec::new();
-    for (cell, target) in reached {
+    for (cell, target) in targets {
         let mut no_fighter = None;
         let fighter = match fighters.get_mut(target) {
             Some(fighter) => fighter,
-            None => no_fighter.insert(Fighter::new(Fixed32::ZERO, Defence::default())),
+            None => no_fighter.insert(Fighter::new(
+                MovesetId(0),
+                Fixed32::ZERO,
+                Defence::default(),
+            )),
         };
+        let theirs = movesets.get(fighter.moveset.0 as usize);
         if fighter.invulnerable() && !piercing {
-            let perfect = fighter
-                .since_dodge
-                .is_some_and(|since| since <= moveset.dodge.perfect_window_seconds);
+            let window = theirs.map(|set| set.dodge.perfect_window_seconds);
+            let perfect = matches!((fighter.since_dodge, window), (Some(since), Some(window)) if within(since, rate, window));
             if perfect {
-                fighter.stamina += moveset.dodge.stamina_cost;
-                fighter.counter = moveset.dodge.counter_seconds;
+                let dodge = &theirs.expect("a perfect window comes from a moveset").dodge;
+                // One refund per dodge: the window closes once used.
+                fighter.since_dodge = None;
+                fighter.stamina =
+                    (fighter.stamina + dodge.stamina_cost).min(fighter.maximum_stamina);
+                fighter.counter = steps_for(dodge.counter_seconds, rate);
                 events.push(CombatEvent::PerfectDodge {
                     who: target,
                     by: who,
@@ -517,15 +607,19 @@ fn strike<T: Topology>(
         );
         if result.staggered {
             match fighter.phase {
-                Phase::Windup { action: theirs, .. }
-                    if moveset.actions[theirs.0 as usize]
+                Phase::Windup {
+                    action: their_action,
+                    ..
+                } if theirs.is_some_and(|set| {
+                    set.actions[their_action.0 as usize]
                         .interruptible_by
-                        .contains(InterruptMask::STAGGER) =>
+                        .contains(InterruptMask::STAGGER)
+                }) =>
                 {
                     fighter.phase = Phase::Ready;
                     events.push(CombatEvent::Interrupted {
                         who: target,
-                        action: theirs,
+                        action: their_action,
                         by: who,
                     });
                 }

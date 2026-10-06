@@ -7,10 +7,15 @@ Status: decided and implemented in milestone M6.
 ## Decision
 
 Each fighter is a state machine with phases (ready, wind-up, active, recovery, dodge startup,
-dodge invulnerable) counted down in `Fixed32` seconds by the simulation's exact step length. The
-host animates to the phases; it never decides when a hit lands.
+dodge invulnerable) counted in whole steps: each duration in seconds becomes steps once, at the
+simulation's steps per second. Counting down a rounded step length instead drifts (1/60 rounds
+down in 16.16, which made a 0.2 second wind-up last 13 steps at 60 a second). The host animates to
+the phases; it never decides when a hit lands.
 
-- A strike happens on the first active step only, after every fighter has advanced, in handle order.
+- A strike happens on the first active step only, after every fighter has advanced. Every strike
+  reads its targets before any resolves, so the lower handle's knockback cannot dodge the other's
+  blow on the same step; the strikes then resolve in handle order.
+- A perfect dodge refunds once: the window closes when used, and stamina never passes the maximum.
 - A stagger interrupts a wind-up whose action allows it, never a recovery: committing is a real cost.
 - Invulnerability is checked at the strike: an overlapping hit is dodged unless it grabs or cannot
   be avoided. A dodge within the perfect window of its press refunds stamina and opens a counter.

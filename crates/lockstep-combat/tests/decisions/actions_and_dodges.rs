@@ -54,7 +54,7 @@ fn a_stagger_interrupts_a_windup_but_not_a_recovery() {
 fn dodge_before(action: lockstep_combat::ActionId, steps_before: u32) -> Vec<CombatEvent> {
     let mut duel = Duel::new();
     // Dodge in place, so only invulnerability decides the outcome.
-    duel.moveset.dodge.distance_cells = 0;
+    duel.dodge().distance_cells = 0;
     let (left, right) = (duel.left, duel.right);
     // Left's attack starts now; its first active step is 6 steps later.
     let mut events = duel.step(&[(left, attack_order(action, EAST))]);

@@ -118,7 +118,7 @@ fn an_order_sent_while_busy_for_too_long_expires() {
 #[test]
 fn a_perfect_dodge_opens_a_counter_that_skips_the_windup() {
     let mut duel = Duel::new();
-    duel.moveset.dodge.distance_cells = 0;
+    duel.dodge().distance_cells = 0;
     let (left, right) = (duel.left, duel.right);
     duel.step(&[(left, attack_order(JAB, EAST))]);
     duel.wait(2);
@@ -185,12 +185,153 @@ fn a_dodge_moves_its_distance_and_a_wall_shortens_it() {
 #[test]
 fn a_second_dodge_waits_for_the_cooldown() {
     let mut duel = Duel::new();
+    // A one second cooldown, far longer than the 17 steps a dodge takes.
+    duel.dodge().cooldown_seconds = lockstep_core::math::Fixed32::ONE;
     let right = duel.right;
     duel.step(&[(right, Order::Dodge { heading: 0 })]);
-    // Startup 2 steps, invulnerable 9, recovery 6: free after 17 steps; cooldown is 15 steps.
-    duel.wait(14);
+    duel.wait(17);
+    assert_eq!(
+        duel.fighter(right).phase,
+        Phase::Ready,
+        "free, but still cooling down"
+    );
+    // Pressed 2 steps before the cooldown ends (step 30): it waits in the buffer, then fires.
+    duel.wait(10);
+    let mut at = 28;
+    let mut events = duel.step(&[(right, Order::Dodge { heading: 0 })]);
+    while !events.contains(&CombatEvent::DodgeStarted { who: right }) {
+        at += 1;
+        assert!(at < 40, "the second dodge never started");
+        events = duel.step(&[]);
+    }
+    assert_eq!(at, 30, "the step the cooldown runs out");
+}
+
+#[test]
+fn a_perfect_dodge_refunds_once_whoever_strikes() {
+    let mut duel = Duel::new();
+    duel.dodge().distance_cells = 0;
+    let right = duel.right;
+    // A third fighter on the other side of right, so two attackers strike right together.
+    let mut store = lockstep_core::StableVector::new();
+    store.insert(());
+    store.insert(());
+    let third = store.insert(());
+    duel.occupancy.place(duel.map.index(7, 2), third).unwrap();
+    duel.fighters.set(
+        third,
+        lockstep_combat::Fighter::new(
+            lockstep_combat::MovesetId(0),
+            Fixed32::from_int(100),
+            Default::default(),
+        ),
+    );
+    let left = duel.left;
+    duel.step(&[
+        (left, attack_order(JAB, EAST)),
+        (third, attack_order(JAB, WEST)),
+    ]);
+    duel.wait(2);
+    let mut events = duel.step(&[(right, Order::Dodge { heading: 0 })]);
+    events.extend(duel.wait(3));
+    let perfect = events
+        .iter()
+        .filter(|event| matches!(event, CombatEvent::PerfectDodge { .. }))
+        .count();
+    let dodged = events
+        .iter()
+        .filter(|event| matches!(event, CombatEvent::Dodged { .. }))
+        .count();
+    assert_eq!((perfect, dodged), (1, 1), "{events:?}");
+    assert_eq!(
+        duel.fighter(right).stamina,
+        Fixed32::from_int(100),
+        "refunded once, never above the maximum"
+    );
+}
+
+#[test]
+fn a_same_step_trade_of_heavy_blows_lands_for_both() {
+    let mut duel = Duel::new();
+    let (left, right) = (duel.left, duel.right);
+    duel.step(&[
+        (left, attack_order(HEAVY, EAST)),
+        (right, attack_order(HEAVY, WEST)),
+    ]);
+    let events = duel.wait(6);
+    let landed: Vec<_> = events
+        .iter()
+        .filter_map(|event| match event {
+            CombatEvent::Landed { who, .. } => Some(*who),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(landed, [left, right]);
+}
+
+#[test]
+fn phases_last_whole_steps_at_any_step_rate() {
+    for (rate, windup_steps) in [(30, 6), (60, 12), (20, 4)] {
+        let mut duel = Duel::new();
+        duel.rate = rate;
+        let left = duel.left;
+        duel.step(&[(left, attack_order(JAB, EAST))]);
+        let mut steps = 0;
+        while !matches!(duel.fighter(left).phase, Phase::Active { .. }) {
+            duel.step(&[]);
+            steps += 1;
+            assert!(steps < 100);
+        }
+        assert_eq!(
+            steps, windup_steps,
+            "a 0.2 second wind-up at {rate} steps a second"
+        );
+    }
+}
+
+#[test]
+fn a_zero_length_recovery_costs_no_step() {
+    let mut duel = Duel::new();
+    duel.movesets[0].actions[0].recovery_seconds = Fixed32::ZERO;
+    let left = duel.left;
+    duel.step(&[(left, attack_order(JAB, EAST))]);
+    duel.wait(9); // wind-up 6, active 3
+    assert_eq!(duel.fighter(left).phase, Phase::Ready);
+}
+
+#[test]
+fn a_stagger_breaks_a_dodge_in_its_startup() {
+    let mut duel = Duel::new();
+    // A longer startup, so the heavy blow lands while right is still starting its dodge.
+    duel.dodge().startup_seconds = crate::duel::seconds(20);
+    let (left, right) = (duel.left, duel.right);
+    duel.step(&[(left, attack_order(HEAVY, EAST))]);
+    duel.wait(3);
+    let mut events = duel.step(&[(right, Order::Dodge { heading: 0 })]);
+    events.extend(duel.wait(3));
+    assert!(
+        events.contains(&CombatEvent::DodgeBroken {
+            who: right,
+            by: left
+        }),
+        "{events:?}"
+    );
+    assert_eq!(duel.fighter(right).phase, Phase::Ready);
+}
+
+#[test]
+fn a_dodge_cancels_a_windup() {
+    let mut duel = Duel::new();
+    let right = duel.right;
+    duel.step(&[(right, attack_order(JAB, WEST))]);
+    duel.wait(2);
+    assert!(matches!(duel.fighter(right).phase, Phase::Windup { .. }));
     let events = duel.step(&[(right, Order::Dodge { heading: 0 })]);
-    assert!(!events.contains(&CombatEvent::DodgeStarted { who: right }));
+    assert!(events.contains(&CombatEvent::DodgeStarted { who: right }));
+    assert!(matches!(
+        duel.fighter(right).phase,
+        Phase::DodgeStartup { .. }
+    ));
 }
 
 #[test]

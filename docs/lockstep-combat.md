@@ -58,10 +58,13 @@ moves through occupancy, and returns where the anchor ended, how far it moved, a
 
 ## Actions and dodges
 
-Each fighter is a state machine in a `Column<Fighter>`: its phase, facing, stamina and `Defence`,
-plus a buffered order, a dodge cooldown, a counter window and its evasion memory. A `Moveset` holds
-the shared `ActionDefinition`s and `DodgeDefinition`. Times are seconds in `Fixed32`, counted down
-by the step length the simulation passes (one thirtieth exactly).
+Each fighter is a state machine in a `Column<Fighter>`: its `MovesetId`, phase, facing, stamina
+(with a maximum) and `Defence`, plus a buffered order, a dodge cooldown, a counter window and its
+evasion memory. A `Moveset` holds a kind of fighter's `ActionDefinition`s and `DodgeDefinition`;
+`step_combat` takes every moveset, and each fighter names its own. Durations are seconds in
+`Fixed32`, turned once into whole steps at the simulation's steps per second (`steps_for`: nearest,
+ties up), so a 0.2 second wind-up is 6 steps at 30 a second and 12 at 60. Windows (the buffer, the
+perfect dodge) compare steps against seconds exactly, as integers.
 
 - An attack winds up (telegraphed, cancellable by a dodge or a stagger its mask allows), strikes on
   its first active step only, then recovers (locked out). It costs stamina when it starts; too
@@ -73,12 +76,15 @@ by the step length the simulation passes (one thirtieth exactly).
   expires. A newer order replaces the waiting one.
 - A strike on an invulnerable target is `Dodged`, unless it grabs or cannot be avoided. A dodge
   pressed at most `perfect_window_seconds` before the strike is a `PerfectDodge`: the stamina comes
-  back and, once the fighter is free, the next attack within `counter_seconds` skips its wind-up.
+  back (once per dodge, never above the maximum) and, once the fighter is free, the next attack
+  within `counter_seconds` skips its wind-up.
 - A staggering strike interrupts a wind-up whose action allows it, never a recovery.
 
-`step_combat(fighters, moveset, map, occupancy, orders, step_seconds, streams, events)` runs one
-step: orders replace the buffered ones, then each fighter in handle order advances and starts its
-buffered order if free, then every attack on its first active step strikes, in handle order. A body
+`step_combat(fighters, movesets, map, occupancy, orders, steps_per_second, streams, events)` runs
+one step: orders replace the buffered ones, then each fighter in handle order advances and starts
+its buffered order if free, then every attack on its first active step reads its targets (all
+before any resolves, so two fighters trading blows on the same step both land), then the strikes
+resolve in handle order. A phase that lasts no step is skipped. A body
 with no `Fighter` is still hit, with a default defence. `CombatEvent` names who did what; `Landed`
 carries each target's `DamageResult` and knockback, and the simulation applies the damage.
 

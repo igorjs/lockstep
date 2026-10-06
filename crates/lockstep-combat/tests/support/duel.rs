@@ -4,7 +4,7 @@
 
 use lockstep_combat::{
     step_combat, ActionDefinition, ActionId, CombatEvent, DamageKind, DamagePacket, Defence,
-    DodgeDefinition, Fighter, HitShape, InterruptMask, Moveset, Order, Tags,
+    DodgeDefinition, Fighter, HitShape, InterruptMask, Moveset, MovesetId, Order, Tags,
 };
 use lockstep_core::math::Fixed32;
 use lockstep_core::{Chance, Column, Handle, StableVector, Streams};
@@ -72,7 +72,9 @@ pub struct Duel {
     pub map: GridMap<Square8>,
     pub occupancy: Occupancy,
     pub fighters: Column<Fighter>,
-    pub moveset: Moveset,
+    pub movesets: Vec<Moveset>,
+    /// Steps a second.
+    pub rate: u32,
     pub streams: Streams,
     /// Facing east, on the left.
     pub left: Handle,
@@ -92,30 +94,31 @@ impl Duel {
         for who in [left, right] {
             fighters.set(
                 who,
-                Fighter::new(Fixed32::from_int(100), Defence::default()),
+                Fighter::new(MovesetId(0), Fixed32::from_int(100), Defence::default()),
             );
         }
         Duel {
             map,
             occupancy,
             fighters,
-            moveset: moveset(),
+            movesets: vec![moveset()],
+            rate: 30,
             streams: Streams::new(5),
             left,
             right,
         }
     }
 
-    /// One step at 30 a second with these orders.
+    /// One step at `rate` a second with these orders.
     pub fn step(&mut self, orders: &[(Handle, Order)]) -> Vec<CombatEvent> {
         let mut events = Vec::new();
         step_combat(
             &mut self.fighters,
-            &self.moveset,
+            &self.movesets,
             &self.map,
             &mut self.occupancy,
             orders,
-            Fixed32::from_ratio(1, 30),
+            self.rate,
             &mut self.streams,
             &mut events,
         );
@@ -134,4 +137,10 @@ impl Duel {
 
 pub fn attack_order(action: ActionId, facing: u16) -> Order {
     Order::Attack { action, facing }
+}
+
+impl Duel {
+    pub fn dodge(&mut self) -> &mut DodgeDefinition {
+        &mut self.movesets[0].dodge
+    }
 }
