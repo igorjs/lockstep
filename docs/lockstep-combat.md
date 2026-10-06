@@ -140,8 +140,9 @@ heard, in metres (6 on stone, 4 on grass, 9 on gravel in the reference).
   that keeps changing, the body paths again treating other bodies as walls (`Repathed`) until it
   arrives or stops.
 - A target another body holds is approached and the walker stops beside it (`Halted`).
-- Each step checks the map again, so a wall raised on the path is walked around (or the target
-  becomes `Unreachable`).
+- Each step checks the map and the body's cell again, so a wall raised on the path is walked
+  around (or the target becomes `Unreachable`), and a body that knockback or a dodge moved off
+  its path plans again from where it stands instead of jumping back.
 - The facing turns to the nearest of eight directions (`quantise_facing`).
 - An unreachable target is `Unreachable` and nothing moves; reaching it is `Arrived`, once, even
   while the order is held.
@@ -159,7 +160,8 @@ See decision 0016.
 - `tests/behaviour/fighter.rs`: phase timing, whiffs, refusals, buffer expiry, the counter, dodge
   movement and cooldown, knockback from a blow, and repeatable events.
 - `tests/behaviour/movement.rs`: speeds by gait, diagonal cost, held orders, sliding, finding a new
-  path, exhaustion and recovery, facings, unreachable targets, stopping.
+  path, exhaustion and recovery, facings, unreachable targets, stopping, and planning again after
+  being pushed off the path.
 - `tests/behaviour/projectiles.rs`: hitting the first body, walls, low walls, range and the map
   edge, landing, a scream that is heard but hurts nobody, and a dodge letting a projectile pass.
 - The hexagon cases run with the `hex` feature, natively and under WebAssembly.

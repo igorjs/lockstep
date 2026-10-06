@@ -17,6 +17,10 @@
 //!   a higher handle will vacate later in the step.
 //! - A rover that lands on an edge, a rock, or an occupied cell is wrecked: it never moves again and
 //!   does not hold a cell.
+//! - A ram (`X`) moves like `M`, except a rover in the way is first pushed one cell the way the
+//!   rammer faces, through `lockstep_combat::knock_back`. A rock, the edge, or a third rover beyond
+//!   it stops the push and the rammer stays put, and so does a rock on either side of a diagonal
+//!   push on `Square8`, which a body cannot cut past. Rams do not chain.
 
 use lockstep_core::{
     ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,
@@ -32,9 +36,12 @@ pub enum Instruction {
     Left,
     Right,
     Move,
+    /// Moves like `Move`, but a rover in the way is pushed one cell ahead first, when the cell
+    /// beyond it is free.
+    Ram,
 }
 
-/// Parses the kata's instruction letters: `L`, `R` and `M`.
+/// Parses the kata's instruction letters: `L`, `R` and `M`, and `X` to ram.
 pub fn instructions(letters: &str) -> Vec<Instruction> {
     letters
         .chars()
@@ -42,6 +49,7 @@ pub fn instructions(letters: &str) -> Vec<Instruction> {
             'L' => Instruction::Left,
             'R' => Instruction::Right,
             'M' => Instruction::Move,
+            'X' => Instruction::Ram,
             other => panic!("unknown instruction {other}"),
         })
         .collect()
@@ -79,10 +87,30 @@ pub enum Obstacle {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
 #[message(version = 1)]
 pub enum Event {
-    Landed { rover: Handle, x: u32, y: u32 },
-    Wrecked { rover: Handle, obstacle: Obstacle },
-    Moved { rover: Handle, x: u32, y: u32 },
-    Blocked { rover: Handle, obstacle: Obstacle },
+    Landed {
+        rover: Handle,
+        x: u32,
+        y: u32,
+    },
+    Wrecked {
+        rover: Handle,
+        obstacle: Obstacle,
+    },
+    Moved {
+        rover: Handle,
+        x: u32,
+        y: u32,
+    },
+    Blocked {
+        rover: Handle,
+        obstacle: Obstacle,
+    },
+    /// A rover rammed another: `pushed` when the other moved a cell and the rammer took its place.
+    Rammed {
+        rover: Handle,
+        other: Handle,
+        pushed: bool,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
@@ -219,13 +247,39 @@ impl<T: RoverTopology> MarsRovers<T> {
             Instruction::Right => {
                 self.world.headings.set(rover, (heading + quarter) % count);
             }
-            Instruction::Move => {
+            Instruction::Move | Instruction::Ram => {
                 let Some(from) = self.world.positions.get(rover).copied() else {
                     return;
                 };
                 let mut neighbours = Vec::new();
                 self.world.map.neighbours(from, &mut neighbours);
                 let target = neighbours[heading as usize];
+                if instruction == Instruction::Ram {
+                    if let Some(other) = self.occupancy.at(target) {
+                        // The push goes the way the rammer faces, through occupancy, and stops at
+                        // a rock, the edge or another rover.
+                        let way = lockstep_combat::direction(&self.world.map, from, target);
+                        let knocked = lockstep_combat::knock_back(
+                            &self.world.map,
+                            &mut self.occupancy,
+                            other,
+                            way,
+                            1,
+                        );
+                        let pushed = knocked.moved == 1;
+                        if let Some(at) = knocked.at {
+                            self.world.positions.set(other, at);
+                        }
+                        context.events.push(Event::Rammed {
+                            rover,
+                            other,
+                            pushed,
+                        });
+                        if !pushed {
+                            return;
+                        }
+                    }
+                }
                 match self.obstacle_at(target) {
                     None => {
                         self.occupancy

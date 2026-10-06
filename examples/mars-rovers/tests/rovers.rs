@@ -563,3 +563,124 @@ fn west_faces_east_on_every_topology() {
         "west on a hexagon, not south-west"
     );
 }
+
+// ------------------------------------------------------------------------------- ramming
+
+fn ramming<T: RoverTopology>() {
+    let centre = (4, 4);
+    for from in 0..T::NEIGHBOURS {
+        let rammer = approach::<T>(centre, from);
+        let heading = rammer.2 as usize;
+        let beyond = neighbour_of::<T>(centre, heading);
+
+        // Open ground: the other rover moves one cell the way the rammer faces, and the rammer
+        // takes its cell.
+        let mut runner = ready::<T>(
+            plateau(9, 9, &[]),
+            &[rammer, (centre.0, centre.1, 0)],
+            &[(0, "X")],
+        );
+        let (first, second) = (rover(&runner, 0), rover(&runner, 1));
+        let events = runner.step_once(&[]).events;
+        assert_eq!(
+            events[0],
+            Event::Rammed {
+                rover: first,
+                other: second,
+                pushed: true
+            },
+            "{} from {from}",
+            std::any::type_name::<T>()
+        );
+        assert_eq!(runner.simulation().position_of(first), Some(centre));
+        assert_eq!(runner.simulation().position_of(second), Some(beyond));
+
+        // A rock beyond: nobody moves.
+        let mut runner = ready::<T>(
+            plateau(9, 9, &[beyond]),
+            &[rammer, (centre.0, centre.1, 0)],
+            &[(0, "X")],
+        );
+        let (first, second) = (rover(&runner, 0), rover(&runner, 1));
+        let events = runner.step_once(&[]).events;
+        assert_eq!(
+            events,
+            vec![Event::Rammed {
+                rover: first,
+                other: second,
+                pushed: false
+            }],
+            "{} from {from}: a rock stops the push",
+            std::any::type_name::<T>()
+        );
+        assert_eq!(
+            runner.simulation().position_of(first),
+            Some((rammer.0, rammer.1))
+        );
+        assert_eq!(runner.simulation().position_of(second), Some(centre));
+
+        // A third rover beyond: rams do not chain.
+        let mut runner = ready::<T>(
+            plateau(9, 9, &[]),
+            &[rammer, (centre.0, centre.1, 0), (beyond.0, beyond.1, 0)],
+            &[(0, "X")],
+        );
+        let (second, third) = (rover(&runner, 1), rover(&runner, 2));
+        runner.step_once(&[]);
+        assert_eq!(runner.simulation().position_of(second), Some(centre));
+        assert_eq!(runner.simulation().position_of(third), Some(beyond));
+    }
+}
+
+#[test]
+fn a_ram_pushes_the_rover_ahead_one_cell_unless_something_is_beyond_it_on_every_topology() {
+    ramming::<Square4>();
+    ramming::<Square8>();
+    ramming::<Hex>();
+}
+
+#[test]
+fn a_ram_into_the_edge_pushes_nobody_and_a_ram_into_open_ground_is_a_move() {
+    let east = compass::east::<Square4>();
+    let mut runner = ready::<Square4>(plateau(4, 4, &[]), &[(2, 0, east), (3, 0, 0)], &[(0, "X")]);
+    let (first, second) = (rover(&runner, 0), rover(&runner, 1));
+    let events = runner.step_once(&[]).events;
+    assert_eq!(
+        events,
+        vec![Event::Rammed {
+            rover: first,
+            other: second,
+            pushed: false
+        }]
+    );
+    assert_eq!(runner.simulation().position_of(second), Some((3, 0)));
+
+    let mut runner = ready::<Square4>(plateau(4, 4, &[]), &[(0, 0, east)], &[(0, "XX")]);
+    let first = rover(&runner, 0);
+    let events = all_events(&mut runner, 2);
+    assert_eq!(
+        events,
+        vec![
+            Event::Moved {
+                rover: first,
+                x: 1,
+                y: 0
+            },
+            Event::Moved {
+                rover: first,
+                x: 2,
+                y: 0
+            },
+        ]
+    );
+    // And at the edge it is blocked like a move.
+    let mut runner = ready::<Square4>(plateau(4, 4, &[]), &[(3, 0, east)], &[(0, "X")]);
+    let first = rover(&runner, 0);
+    assert_eq!(
+        runner.step_once(&[]).events,
+        vec![Event::Blocked {
+            rover: first,
+            obstacle: Obstacle::Edge
+        }]
+    );
+}
