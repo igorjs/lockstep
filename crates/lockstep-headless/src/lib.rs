@@ -18,8 +18,8 @@ pub fn fixtures() -> Vec<Fixture> {
     vec![
         Fixture {
             name: "capsule",
-            default_seed: capsule::DEFAULT_SEED,
-            default_steps: capsule::DEFAULT_STEPS,
+            default_seed: capsule::default_seed(),
+            default_steps: capsule::default_steps(),
             run: capsule::fixture_hash,
         },
         Fixture {

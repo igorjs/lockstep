@@ -4,6 +4,8 @@
 //! cell every few steps. Needs drain with game time. When hunger reaches zero, health drains,
 //! and the survivor starves. Everything the survivor is lives in columns keyed by a handle.
 
+pub mod script;
+
 use lockstep_core::{
     hash_of, ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation,
     StableVector, StepConfiguration, Streams,
@@ -299,11 +301,6 @@ fn starvation_system(world: &mut World, context: &mut Context<'_, Capsule>) {
     }
 }
 
-pub const DEFAULT_SEED: u64 = 20_260_925;
-/// Five real minutes at thirty steps per second. With the rest multiplier from step 800,
-/// thirst empties near step 5,800 and the survivor dies near step 7,300.
-pub const DEFAULT_STEPS: u64 = 9_000;
-
 pub fn clock_configuration() -> ClockConfiguration {
     ClockConfiguration {
         day_length_real_minutes: 120.0,
@@ -325,38 +322,27 @@ pub fn runner(seed: u64) -> Runner<Capsule> {
     )
 }
 
-/// The scripted session the fixture hash covers: walk to a corner, run to another, wait,
-/// then rest at twenty times until the survivor starves. The script is the same on every
-/// platform because it depends only on the step number.
+/// The committed scripted session: `fixtures/capsule.intents`.
+pub const SCRIPT_TEXT: &str = include_str!("../fixtures/capsule.intents");
+
+fn committed_script() -> script::Script {
+    script::parse(SCRIPT_TEXT).expect("the committed script parses")
+}
+
+/// The seed in the committed script. The file is the single source of truth.
+pub fn default_seed() -> u64 {
+    committed_script().seed
+}
+
+/// The step count in the committed script.
+pub fn default_steps() -> u64 {
+    committed_script().steps
+}
+
+/// The session the fixture hash covers. The script is the same on every platform because it
+/// depends only on the step number.
 pub fn run_fixture(seed: u64, steps: u64) -> Runner<Capsule> {
-    let mut runner = runner(seed);
-    let Some(survivor) = runner.simulation().survivor() else {
-        return runner;
-    };
-    for step in 0..steps {
-        let mut intents = Vec::new();
-        match step {
-            10 => intents.push(Intent::MoveTo {
-                entity: survivor,
-                cell: Cell { x: 15, y: 15 },
-                run: false,
-            }),
-            400 => intents.push(Intent::MoveTo {
-                entity: survivor,
-                cell: Cell { x: 0, y: 3 },
-                run: true,
-            }),
-            700 => intents.push(Intent::MoveTo {
-                entity: survivor,
-                cell: Cell { x: 99, y: 99 },
-                run: true,
-            }),
-            800 => runner.set_clock_multiplier(20.0),
-            _ => {}
-        }
-        runner.step_once(&intents);
-    }
-    runner
+    script::run(&committed_script(), Some(seed), Some(steps))
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

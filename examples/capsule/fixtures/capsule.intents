@@ -1,0 +1,11 @@
+# The scripted capsule session. lockstep-headless runs this file and prints its state hash,
+# which must match the committed value on every platform.
+#
+# Lines: seed <number> | steps <number> | <step> move survivor <x> <y> walk|run
+#        <step> stop survivor | <step> multiplier <number>
+seed 20260925
+steps 9000
+10 move survivor 15 15 walk
+400 move survivor 0 3 run
+700 move survivor 99 99 run
+800 multiplier 20

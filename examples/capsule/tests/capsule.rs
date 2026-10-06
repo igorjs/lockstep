@@ -1,6 +1,6 @@
 use capsule::{
-    fixture_hash, run_fixture, runner, world_hash, Capsule, Cell, Event, Intent, DEFAULT_SEED,
-    DEFAULT_STEPS,
+    default_seed, default_steps, fixture_hash, run_fixture, runner, world_hash, Capsule, Cell,
+    Event, Intent,
 };
 use lockstep_core::Simulation;
 
@@ -24,7 +24,7 @@ fn collect_events(
 fn the_fixture_hash_matches_the_committed_value_natively_and_under_webassembly() {
     let committed = include_str!("../fixtures/capsule.hash").trim();
     assert_eq!(
-        format!("{:016x}", fixture_hash(DEFAULT_SEED, DEFAULT_STEPS)),
+        format!("{:016x}", fixture_hash(default_seed(), default_steps())),
         committed
     );
 }
@@ -127,11 +127,11 @@ fn a_move_outside_the_room_is_rejected_not_obeyed() {
 #[test]
 fn the_survivor_starves_in_order_and_leaves_no_orphaned_components() {
     // Thirst drains faster than hunger, so the survivor is starving before the hunger warning.
-    let mut resting = runner(DEFAULT_SEED);
+    let mut resting = runner(default_seed());
     let survivor = resting.simulation().survivor().unwrap();
     resting.set_clock_multiplier(20.0);
     let mut kinds = Vec::new();
-    for _ in 0..DEFAULT_STEPS {
+    for _ in 0..default_steps() {
         for event in resting.step_once(&[]).events {
             kinds.push(match event {
                 Event::Starving { .. } => "starving",
@@ -148,7 +148,7 @@ fn the_survivor_starves_in_order_and_leaves_no_orphaned_components() {
 
 #[test]
 fn the_scripted_session_ends_in_death_with_a_clean_world() {
-    let session = run_fixture(DEFAULT_SEED, DEFAULT_STEPS);
+    let session = run_fixture(default_seed(), default_steps());
     assert!(session.simulation().survivor().is_none());
     assert!(session.simulation().world().orphans().is_empty());
 }
@@ -189,7 +189,7 @@ fn needs_drain_with_game_time_so_a_rest_drains_them_twenty_times_faster() {
 
 #[test]
 fn a_snapshot_restores_to_an_identical_world() {
-    let session = run_fixture(DEFAULT_SEED, 1_000);
+    let session = run_fixture(default_seed(), 1_000);
     let snapshot = session.snapshot();
     let restored = Capsule::restore(snapshot.clone());
     assert_eq!(restored.world(), &snapshot);
