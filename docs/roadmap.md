@@ -16,7 +16,7 @@ items in a milestone are out of scope here.
 | M3 Grid and math | Done, two open items | `lockstep-spatial`: topologies, map, occupancy, A*, path batch, flow field, line of sight; `Fixed32`, `Vector2`, angles; benchmark; mars-rovers, crowd | Tie-breaking holds; isotropy holds for squares, not for hexagons (gap G1); baseline committed |
 | M4 Attributes | Done | `Chance` and three rolls; `lockstep-attributes`: registry from JSON, modifiers, thresholds, derived curves, effects with four stacking rules; exact game minutes; capsule needs, bleeding and prayer as data; drone-fleet | Met: stacking, crossing, frame-rate independence tests green |
 | M5 Timeline, replay, derive | Done, three deferrals (D1 to D3) | `#[derive(Message)]` and `Indexable`; recorder, replay, bisect; timeline with compaction; ledger journal; headless `record`, `replay`, `bisect`, `stats` | Met: a planted rule change is found at the right checkpoint |
-| M6 Combat and movement | In progress | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges | Pending: projectiles, movement, consumers, duel fixture hash, 200-fighter spike |
+| M6 Combat and movement | In progress | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges, projectiles | Pending: projectiles, movement, consumers, duel fixture hash, 200-fighter spike |
 | M7 Inventory | Not started | | |
 | M8 Agents | Not started | | |
 | M9 Knowledge | Not started | | |
