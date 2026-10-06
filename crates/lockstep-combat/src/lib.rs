@@ -5,6 +5,7 @@ mod damage;
 mod fighter;
 mod frame;
 mod knockback;
+mod projectile;
 mod shape;
 
 pub use damage::{resolve, DamageKind, DamagePacket, DamageResult, Defence, Tags};
@@ -13,4 +14,5 @@ pub use fighter::{
     DodgeDefinition, Fighter, Hit, InterruptMask, Moveset, MovesetId, Order, Phase, Refusal,
 };
 pub use knockback::{knock_back, Impact, Knocked};
+pub use projectile::{step_projectiles, Launch, Projectile, Stopped};
 pub use shape::{angle_between, direction, hits, HitShape};

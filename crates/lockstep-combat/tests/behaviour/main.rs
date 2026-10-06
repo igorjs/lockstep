@@ -9,4 +9,5 @@ mod duel;
 mod damage;
 mod fighter;
 mod knockback;
+mod projectiles;
 mod shapes;
