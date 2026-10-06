@@ -277,6 +277,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-knowledge"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-macros"
 version = "0.1.0"
 dependencies = [
