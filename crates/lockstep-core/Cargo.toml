@@ -1,0 +1,17 @@
+[package]
+name = "lockstep-core"
+description = "Deterministic, replayable simulation framework: core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+bincode = { workspace = true }
+rand = { workspace = true }
+rand_pcg = { workspace = true, features = ["serde1"] }
+xxhash-rust = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

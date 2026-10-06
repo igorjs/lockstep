@@ -1,0 +1,11 @@
+[package]
+name = "lockstep-headless"
+description = "Command line runner: fixture and verify"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+capsule = { path = "../../examples/capsule" }
+ledger = { path = "../../examples/ledger" }

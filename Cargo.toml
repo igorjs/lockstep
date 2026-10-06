@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = ["crates/*", "examples/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/igorjs/lockstep"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+bincode = "1"
+rand = { version = "0.8", default-features = false }
+rand_pcg = "0.3"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+wasm-bindgen-test = "0.3"
+
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1
+
+[profile.dev]
+overflow-checks = true

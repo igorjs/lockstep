@@ -1,0 +1,15 @@
+[package]
+name = "capsule"
+description = "Game-shaped consumer scenario: a survivor walks and starves"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+lockstep-core = { path = "../../crates/lockstep-core" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }
