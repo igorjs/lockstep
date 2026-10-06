@@ -28,30 +28,40 @@ fn within_gives_the_same_answer_whatever_the_placement_history() {
             straight.place(*cell, *handle).unwrap();
         }
 
-        // The same layout reached through churn: bodies wander, leave, and come back in another order.
+        // The same layout reached through churn: bodies land on detours outside the final layout,
+        // some leave and come back while others are still placed (so removals really swap slots),
+        // and the survivors walk to their final cells with move_to.
         let mut churned = Occupancy::new(&map);
         let mut order: Vec<usize> = (0..who.len()).collect();
         for index in (1..order.len()).rev() {
             order.swap(index, streams.pick("shuffle", index + 1));
         }
-        for index in &order {
-            let detour = map.index(
-                streams.range("x", 0, 30) as u32,
-                streams.range("y", 0, 30) as u32,
-            );
-            let _ = churned.place(detour, who[*index]);
-        }
-        for index in order.iter().rev() {
-            if streams.chance("leave", 0.5) {
-                churned.vacate(who[*index]);
+        let mut detour = || loop {
+            let cell = Cell(streams.range("detour", 0, 900) as u32);
+            if !target.contains(&cell) {
+                return cell;
             }
-        }
+        };
         for index in &order {
+            let _ = churned.place(detour(), who[*index]);
+        }
+        for index in order.iter().step_by(3) {
             churned.vacate(who[*index]);
         }
-        for index in &order {
-            churned.place(target[*index], who[*index]).unwrap();
+        for index in order.iter().step_by(3) {
+            let _ = churned.place(detour(), who[*index]);
         }
+        for index in &order {
+            if churned.cell_of(who[*index]).is_none() {
+                churned.place(target[*index], who[*index]).unwrap();
+            } else {
+                churned.move_to(who[*index], target[*index]).unwrap();
+            }
+        }
+        assert_eq!(
+            churned, straight,
+            "seed {seed}: the same bodies on the same cells"
+        );
 
         let (mut a, mut b) = (Vec::new(), Vec::new());
         for radius in [0, 14, 40, 100, 240] {

@@ -6,7 +6,7 @@
 //! zero changes).
 
 use lockstep_core::{Handle, StableVector};
-use lockstep_spatial::{Cell, GridMap, Occupancy, Occupied, Square8};
+use lockstep_spatial::{GridMap, Occupancy, Occupied, Square8};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
@@ -65,5 +65,4 @@ fn a_two_by_two_move_blocked_on_one_cell_changes_nothing() {
     for cell in start {
         assert_eq!(occupancy.at(cell), None);
     }
-    let _: Vec<Cell> = Vec::new();
 }

@@ -1,8 +1,9 @@
 # lockstep-spatial
 
 A deterministic spatial toolkit: cells as integer indices, a topology trait, and dense maps with
-elevation, and a packed occupancy set for bodies. Collision is not detection: it is occupancy,
-resolved in handle order. Pathfinding, flow fields and line of sight follow in the next part of
+elevation, and a packed occupancy set for bodies. Collision is not detection: it is occupancy.
+The first caller to claim a cell gets it, so a simulation resolves contested cells in handle order by
+applying its moves in handle order. Pathfinding, flow fields and line of sight follow in the next part of
 milestone M3.
 
 ## Cells and topologies
@@ -33,8 +34,11 @@ and a loaded map reports every chunk as changed.
 
 ## Occupancy
 
-A packed sparse set: cell to slot, a dense list of bodies, and a sorted handle index. `place`, `vacate`,
-`move_to`, `at` and `cell_of` are constant time or logarithmic. A body may hold several cells (a
+A packed sparse set: cell to slot, a dense list of bodies, and a sorted handle index. `at` is constant
+time, `cell_of` is logarithmic, and moving a placed body is constant time plus its footprint; placing a
+new body and `vacate` shift the sorted index, so they are linear in the number of bodies. It saves as
+the bodies sorted by handle, so equal occupancies save, compare and hash the same whatever their history,
+and a load checks every cell is inside the grid and held once. A body may hold several cells (a
 footprint): `move_footprint` is atomic, so a blocked move changes nothing. `within(map, centre,
 radius, out)` returns occupied cells inside a radius (in tenths), sorted by cell, whatever order the
 bodies were placed and moved in.

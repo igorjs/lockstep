@@ -2,6 +2,7 @@ use crate::cell::Cell;
 use crate::map::GridMap;
 use crate::topology::Topology;
 use lockstep_core::Handle;
+use serde::{Deserialize, Serialize};
 
 /// The handle that already holds a cell a body wanted.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -10,12 +11,22 @@ pub struct Occupied(pub Handle);
 const EMPTY: u32 = u32::MAX;
 
 /// Who stands where. A packed sparse set: cell to slot (`u32::MAX` for empty), a dense list of
-/// occupants, and a sorted handle-to-slot index. Place, vacate, move and lookup are constant time or
-/// logarithmic. Removal swaps the last occupant into the freed slot, so no query depends on slot
-/// order: every query returns its output sorted by cell.
+/// occupants, and a handle-to-slot index sorted by handle. Lookup by cell is constant time, lookup by
+/// handle is logarithmic, and moving a placed body is constant time plus its footprint. Placing a new
+/// body and vacating one shift the sorted index, so they are linear in the number of bodies. Removal
+/// swaps the last occupant into the freed slot, so no query depends on slot order: every query
+/// returns its output sorted by cell.
 ///
 /// A body may hold several cells (a footprint). Its first cell is its anchor.
-#[derive(Clone, Debug)]
+///
+/// The first caller to claim a cell gets it. A simulation that wants contested cells resolved in
+/// handle order applies its moves in handle order.
+///
+/// It saves as the list of bodies sorted by handle, so two occupancies holding the same bodies on
+/// the same cells save, compare and hash the same, whatever order they were placed in. A load checks
+/// that every cell is inside the grid and held once.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "SavedOccupancy", into = "SavedOccupancy")]
 pub struct Occupancy {
     width: u32,
     height: u32,
@@ -31,15 +42,87 @@ struct Body {
     cells: Vec<Cell>,
 }
 
+/// The saved form: the grid size and every body's cells, sorted by handle.
+#[derive(Clone, Serialize, Deserialize)]
+struct SavedOccupancy {
+    width: u32,
+    height: u32,
+    bodies: Vec<(Handle, Vec<Cell>)>,
+}
+
+impl From<Occupancy> for SavedOccupancy {
+    fn from(occupancy: Occupancy) -> Self {
+        let bodies = occupancy
+            .index
+            .iter()
+            .map(|(handle, slot)| (*handle, occupancy.occupants[*slot as usize].cells.clone()))
+            .collect();
+        SavedOccupancy {
+            width: occupancy.width,
+            height: occupancy.height,
+            bodies,
+        }
+    }
+}
+
+impl TryFrom<SavedOccupancy> for Occupancy {
+    type Error = String;
+
+    fn try_from(saved: SavedOccupancy) -> Result<Self, String> {
+        let cells = saved.width as u64 * saved.height as u64;
+        if saved.width == 0 || saved.height == 0 || cells > u32::MAX as u64 {
+            return Err("an occupancy needs a grid of at least one cell".into());
+        }
+        let mut occupancy = Occupancy::empty(saved.width, saved.height);
+        for (handle, footprint) in saved.bodies {
+            if footprint.is_empty() || footprint.iter().any(|cell| cell.0 as u64 >= cells) {
+                return Err(format!(
+                    "{handle:?} has an empty footprint or a cell outside the grid"
+                ));
+            }
+            if occupancy.cells_of(handle).is_some() {
+                return Err(format!("{handle:?} is saved twice"));
+            }
+            occupancy
+                .move_footprint(handle, &footprint)
+                .map_err(|Occupied(holder)| {
+                    format!("{handle:?} and {holder:?} hold the same cell")
+                })?;
+        }
+        Ok(occupancy)
+    }
+}
+
+impl PartialEq for Occupancy {
+    /// Equal when the same bodies hold the same cells. Slot order, which depends on history, is not
+    /// compared.
+    fn eq(&self, other: &Self) -> bool {
+        self.width == other.width
+            && self.height == other.height
+            && self.index.len() == other.index.len()
+            && self
+                .index
+                .iter()
+                .zip(&other.index)
+                .all(|((left, _), (right, _))| {
+                    left == right && self.cells_of(*left) == other.cells_of(*right)
+                })
+    }
+}
+
 impl Occupancy {
-    pub fn new<T: Topology>(map: &GridMap<T>) -> Self {
+    fn empty(width: u32, height: u32) -> Self {
         Self {
-            width: map.width(),
-            height: map.height(),
-            cell_slot: vec![EMPTY; map.cell_count()],
+            width,
+            height,
+            cell_slot: vec![EMPTY; (width * height) as usize],
             occupants: Vec::new(),
             index: Vec::new(),
         }
+    }
+
+    pub fn new<T: Topology>(map: &GridMap<T>) -> Self {
+        Self::empty(map.width(), map.height())
     }
 
     /// The number of bodies placed.
@@ -124,7 +207,8 @@ impl Occupancy {
         assert!(!cells.is_empty(), "a footprint needs at least one cell");
         let own_slot = self.slot_of(who);
         for cell in cells {
-            if let slot @ 0..=0xffff_fffe = self.cell_slot[cell.0 as usize] {
+            let slot = self.cell_slot[cell.0 as usize];
+            if slot != EMPTY {
                 let holder = self.occupants[slot as usize].handle;
                 if holder != who {
                     return Err(Occupied(holder));
@@ -136,7 +220,10 @@ impl Occupancy {
                 for cell in &self.occupants[slot as usize].cells {
                     self.cell_slot[cell.0 as usize] = EMPTY;
                 }
-                self.occupants[slot as usize].cells = cells.to_vec();
+                // Reuse the body's own list, so a move does not allocate.
+                let held = &mut self.occupants[slot as usize].cells;
+                held.clear();
+                held.extend_from_slice(cells);
                 for cell in cells {
                     self.cell_slot[cell.0 as usize] = slot;
                 }
@@ -169,6 +256,11 @@ impl Occupancy {
         radius: u32,
         out: &mut Vec<(Cell, Handle)>,
     ) {
+        debug_assert_eq!(
+            (map.width(), map.height()),
+            (self.width, self.height),
+            "the map is not this occupancy's grid"
+        );
         out.clear();
         let reach = radius.div_ceil(10) as i64 + 1;
         let (centre_x, centre_y) = (centre.0 % self.width, centre.0 / self.width);

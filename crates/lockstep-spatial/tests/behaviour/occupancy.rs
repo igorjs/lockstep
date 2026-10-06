@@ -1,5 +1,6 @@
-use lockstep_core::{Handle, StableVector, Streams};
-use lockstep_spatial::{Cell, GridMap, Occupancy, Occupied, Square8};
+use lockstep_core::{hash_of, Handle, StableVector, Streams};
+use lockstep_spatial::{Cell, GridMap, Occupancy, Occupied, Square4, Square8, Topology};
+use serde::Serialize;
 use std::collections::BTreeMap;
 
 #[cfg(target_arch = "wasm32")]
@@ -235,8 +236,13 @@ fn fuzz(seed: u64) {
                 "seed {seed}, cell {index}"
             );
         }
-        for (handle, held) in &model {
-            assert_eq!(occupancy.cells_of(*handle), Some(held.as_slice()));
+        for handle in &who {
+            // Every handle, placed or not, so a stale index entry shows up at the step it appears.
+            assert_eq!(
+                occupancy.cells_of(*handle),
+                model.get(handle).map(|held| held.as_slice()),
+                "seed {seed}"
+            );
         }
         assert_eq!(occupancy.len(), model.len());
     }
@@ -247,4 +253,127 @@ fn a_random_history_always_matches_a_plain_model() {
     for seed in 0..12 {
         fuzz(seed);
     }
+}
+
+/// `within` against a scan of every cell, so a window that is too small cannot hide.
+fn within_matches_a_full_scan<T: Topology>() {
+    let map: GridMap<T> = GridMap::new(23, 19);
+    let mut occupancy = Occupancy::new(&map);
+    let mut entities = StableVector::new();
+    let mut streams = Streams::new(7);
+    for _ in 0..120 {
+        let cell = Cell(streams.range("cell", 0, map.cell_count() as i32) as u32);
+        let _ = occupancy.place(cell, entities.insert(()));
+    }
+    let mut found = Vec::new();
+    for centre in [
+        map.index(0, 0),
+        map.index(11, 9),
+        map.index(22, 18),
+        map.index(3, 17),
+    ] {
+        for radius in [0, 9, 10, 14, 25, 61, 400] {
+            occupancy.within(&map, centre, radius, &mut found);
+            let expected: Vec<(Cell, Handle)> = (0..map.cell_count() as u32)
+                .map(Cell)
+                .filter(|cell| map.distance(centre, *cell) <= radius)
+                .filter_map(|cell| occupancy.at(cell).map(|handle| (cell, handle)))
+                .collect();
+            assert_eq!(found, expected, "centre {centre:?}, radius {radius}");
+        }
+    }
+}
+
+#[test]
+fn within_matches_a_full_scan_on_square8_and_square4() {
+    within_matches_a_full_scan::<Square8>();
+    within_matches_a_full_scan::<Square4>();
+}
+
+#[cfg(feature = "hex")]
+#[test]
+fn within_matches_a_full_scan_on_hex() {
+    within_matches_a_full_scan::<lockstep_spatial::Hex>();
+}
+
+#[test]
+fn equal_occupancies_save_compare_and_hash_the_same_whatever_their_history() {
+    let (map, mut straight, who) = setup();
+    let mut churned = Occupancy::new(&map);
+    let final_cells = [(3, 3), (9, 1), (14, 12), (0, 19)];
+    for (index, (x, y)) in final_cells.iter().enumerate() {
+        straight.place(map.index(*x, *y), who[index]).unwrap();
+    }
+    // Reach the same layout through detours, a body that leaves, and a different order.
+    for index in (0..final_cells.len()).rev() {
+        churned
+            .place(map.index(15 + index as u32, 15), who[index])
+            .unwrap();
+    }
+    churned.place(map.index(5, 5), who[6]).unwrap();
+    for (index, (x, y)) in final_cells.iter().enumerate() {
+        churned.move_to(who[index], map.index(*x, *y)).unwrap();
+    }
+    churned.vacate(who[6]);
+
+    assert_eq!(straight, churned);
+    assert_eq!(hash_of(&straight), hash_of(&churned));
+    let restored: Occupancy = bincode::deserialize(&bincode::serialize(&churned).unwrap()).unwrap();
+    assert_eq!(restored, straight);
+    for (index, (x, y)) in final_cells.iter().enumerate() {
+        assert_eq!(restored.at(map.index(*x, *y)), Some(who[index]));
+    }
+}
+
+/// The saved layout of an occupancy, written out by hand so a test can build broken saves.
+#[derive(Serialize)]
+struct Save {
+    width: u32,
+    height: u32,
+    bodies: Vec<(Handle, Vec<Cell>)>,
+}
+
+fn load(save: &Save) -> Result<Occupancy, bincode::Error> {
+    bincode::deserialize(&bincode::serialize(save).unwrap())
+}
+
+#[test]
+fn a_malformed_occupancy_save_is_refused_at_load() {
+    let (_, _, who) = setup();
+    let good = Save {
+        width: 4,
+        height: 4,
+        bodies: vec![(who[0], vec![Cell(1)]), (who[1], vec![Cell(2), Cell(3)])],
+    };
+    assert!(load(&good).is_ok());
+    let outside = Save {
+        width: 4,
+        height: 4,
+        bodies: vec![(who[0], vec![Cell(16)])],
+    };
+    assert!(load(&outside).is_err(), "a cell outside the grid");
+    let shared = Save {
+        width: 4,
+        height: 4,
+        bodies: vec![(who[0], vec![Cell(1)]), (who[1], vec![Cell(1)])],
+    };
+    assert!(load(&shared).is_err(), "two bodies on one cell");
+    let twice = Save {
+        width: 4,
+        height: 4,
+        bodies: vec![(who[0], vec![Cell(1)]), (who[0], vec![Cell(2)])],
+    };
+    assert!(load(&twice).is_err(), "one body saved twice");
+    let empty = Save {
+        width: 4,
+        height: 4,
+        bodies: vec![(who[0], vec![])],
+    };
+    assert!(load(&empty).is_err(), "an empty footprint");
+    let no_grid = Save {
+        width: 0,
+        height: 4,
+        bodies: vec![],
+    };
+    assert!(load(&no_grid).is_err(), "no cells");
 }
