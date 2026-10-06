@@ -17,7 +17,7 @@ items in a milestone are out of scope here.
 | M4 Attributes | Done | `Chance` and three rolls; `lockstep-attributes`: registry from JSON, modifiers, thresholds, derived curves, effects with four stacking rules; exact game minutes; capsule needs, bleeding and prayer as data; drone-fleet | Met: stacking, crossing, frame-rate independence tests green |
 | M5 Timeline, replay, derive | Done, three deferrals (D1 to D3) | `#[derive(Message)]` and `Indexable`; recorder, replay, bisect; timeline with compaction; ledger journal; headless `record`, `replay`, `bisect`, `stats` | Met: a planted rule change is found at the right checkpoint |
 | M6 Combat and movement | Done | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges, projectiles, movement; sparring; rovers ram | Met: the duel fixture hash is equal natively and under WebAssembly; 200 partners spar for 10,000 steps without sharing a cell or going below zero health |
-| M7 Inventory | Not started | | |
+| M7 Inventory | In progress | `lockstep-inventory`: the catalogue of kinds, slots, affixes and spoilage bands from JSON | Pending: the inventory itself, the cargo-bay consumer and its fixture hash |
 | M8 Agents | Not started | | |
 | M9 Knowledge | Not started | | |
 | M10 Progression | Not started | | |

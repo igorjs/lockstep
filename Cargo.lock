@@ -230,6 +230,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-inventory"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "lockstep-attributes",
+ "lockstep-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-macros"
 version = "0.1.0"
 dependencies = [

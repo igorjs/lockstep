@@ -35,6 +35,7 @@ determinism:
     wasm-pack test --node crates/lockstep-spatial
     wasm-pack test --node crates/lockstep-spatial --features hex
     wasm-pack test --node crates/lockstep-combat --features hex
+    wasm-pack test --node crates/lockstep-inventory
     wasm-pack test --node examples/capsule
     wasm-pack test --node examples/ledger
     wasm-pack test --node examples/mars-rovers
