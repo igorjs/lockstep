@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-use crate::shape::angle_between;
+use crate::frame::Frame;
 use lockstep_core::math::Turn;
 use lockstep_core::{Handle, Message};
 use lockstep_spatial::{Cell, GridMap, Occupancy, Topology};
@@ -15,18 +15,19 @@ pub enum Impact {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Knocked {
-    /// Where the body ended up.
-    pub at: Cell,
+    /// Where the body's anchor ended up; `None` when the body was not on the map.
+    pub at: Option<Cell>,
     pub moved: u8,
     /// Set when a wall, the map edge or a body stopped it before `cells`; the simulation decides
     /// whether that deals impact damage.
     pub impact: Option<Impact>,
 }
 
-/// Pushes `who` up to `cells` steps along `heading`, one neighbour at a time: each step takes the
-/// neighbour whose direction is nearest the heading (lowest cell on a tie), chosen as if the map
-/// had no edge, so a push into the edge stops there instead of sliding along it. It stops at the
-/// first wall, map edge or body. The body moves through occupancy, so collision stays occupancy.
+/// Pushes `who` up to `cells` steps along `heading`. The path is the line toward the cell `cells`
+/// steps ahead, chosen as if the map had no edge, so a push into the edge stops instead of sliding
+/// along it, and a push between two neighbours alternates instead of drifting. Every cell of the
+/// body takes the same step, so a body larger than one cell keeps its shape. It stops at the first
+/// wall, edge or other body, moving through occupancy. A body not on the map is left alone.
 pub fn knock_back<T: Topology>(
     map: &GridMap<T>,
     occupancy: &mut Occupancy,
@@ -34,48 +35,65 @@ pub fn knock_back<T: Topology>(
     heading: Turn,
     cells: u8,
 ) -> Knocked {
-    let mut at = occupancy.cell_of(who).expect("a body on the map");
-    for moved in 0..cells {
-        let impact = match next_cell(map, at, heading) {
-            None => Some(Impact::Wall),
-            Some(cell) if !map.can_step(at, cell) => Some(Impact::Wall),
-            Some(cell) => occupancy
-                .at(cell)
-                .filter(|body| *body != who)
-                .map(Impact::Body),
+    let Some(footprint) = occupancy.cells_of(who).map(<[Cell]>::to_vec) else {
+        return Knocked {
+            at: None,
+            moved: 0,
+            impact: None,
         };
-        if impact.is_some() {
-            return Knocked { at, moved, impact };
+    };
+    let anchor = footprint[0];
+    // Pad enough for the path and the body's size.
+    let size = footprint
+        .iter()
+        .map(|cell| map.steps(anchor, *cell))
+        .max()
+        .unwrap_or(0);
+    let frame = Frame::around(map, cells as u32 + size + 1);
+    let start = frame.to_frame(anchor);
+    let end = frame.ahead::<T>(start, heading, cells as u32);
+    let mut path = Vec::new();
+    frame.line::<T>(start, end, &mut path);
+
+    let mut body: Vec<Cell> = footprint.iter().map(|cell| frame.to_frame(*cell)).collect();
+    let mut moved = 0;
+    for step in path.windows(2) {
+        let Some(direction) = frame.direction_index::<T>(step[0], step[1]) else {
+            break;
+        };
+        let mut next = Vec::with_capacity(body.len());
+        let mut impact = None;
+        for (cell, frame_cell) in body.iter().map(|cell| (frame.to_map(*cell), *cell)) {
+            let target = frame
+                .neighbour_at::<T>(frame_cell, direction)
+                .and_then(|target| frame.to_map(target).map(|on_map| (target, on_map)));
+            match (cell, target) {
+                (Some(cell), Some((target, on_map))) if map.can_step(cell, on_map) => {
+                    if let Some(other) = occupancy.at(on_map).filter(|holder| *holder != who) {
+                        impact = Some(Impact::Body(other));
+                    }
+                    next.push((target, on_map));
+                }
+                _ => impact = impact.or(Some(Impact::Wall)),
+            }
         }
-        let cell = next_cell(map, at, heading).expect("checked above");
-        occupancy.move_to(who, cell).expect("the cell was free");
-        at = cell;
+        if impact.is_some() {
+            return Knocked {
+                at: occupancy.cell_of(who),
+                moved,
+                impact,
+            };
+        }
+        let targets: Vec<Cell> = next.iter().map(|(_, on_map)| *on_map).collect();
+        occupancy
+            .move_footprint(who, &targets)
+            .expect("every target was free or already this body's");
+        body = next.into_iter().map(|(target, _)| target).collect();
+        moved += 1;
     }
     Knocked {
-        at,
-        moved: cells,
+        at: occupancy.cell_of(who),
+        moved,
         impact: None,
     }
-}
-
-/// The neighbour of `at` nearest `heading` on a map with no edge, or `None` when it lies off the
-/// real map. The search runs on a copy of the grid two cells larger on every side; two keeps the
-/// row parity hexagons depend on.
-fn next_cell<T: Topology>(map: &GridMap<T>, at: Cell, heading: Turn) -> Option<Cell> {
-    let (x, y) = map.coordinates(at);
-    let (width, height) = (map.width() + 4, map.height() + 4);
-    let padded = Cell((y + 2) * width + x + 2);
-    let mut neighbours = Vec::new();
-    T::neighbours(padded, width, height, &mut neighbours);
-    let angle = |cell: Cell| {
-        let (a, b) = (T::centre(padded, width), T::centre(cell, width));
-        lockstep_core::math::atan2(a.y - b.y, b.x - a.x)
-    };
-    let best = neighbours
-        .into_iter()
-        .min_by_key(|cell| (angle_between(angle(*cell), heading), *cell))?;
-    let (best_x, best_y) = ((best.0 % width) as i64 - 2, (best.0 / width) as i64 - 2);
-    let inside =
-        best_x >= 0 && best_y >= 0 && best_x < map.width() as i64 && best_y < map.height() as i64;
-    inside.then(|| map.index(best_x as u32, best_y as u32))
 }

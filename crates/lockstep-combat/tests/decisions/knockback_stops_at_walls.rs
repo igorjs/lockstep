@@ -19,9 +19,9 @@ fn a_knockback_into_a_wall_stops_there_and_reports_the_impact() {
     arena.map.set_passable(wall, false);
     let body = arena.bodies[0].1;
     let knocked = knock_back(&arena.map, &mut arena.occupancy, body, EAST, 5);
-    assert_eq!(arena.map.coordinates(knocked.at), (3, 1));
+    assert_eq!(arena.map.coordinates(knocked.at.unwrap()), (3, 1));
     assert_eq!((knocked.moved, knocked.impact), (2, Some(Impact::Wall)));
-    assert_eq!(arena.occupancy.cell_of(body), Some(knocked.at));
+    assert_eq!(arena.occupancy.cell_of(body), knocked.at);
     // The simulation turns the impact into damage: here, ten per cell it did not travel.
     let impact_damage = 10 * (5 - knocked.moved as i32);
     assert_eq!(impact_damage, 30);

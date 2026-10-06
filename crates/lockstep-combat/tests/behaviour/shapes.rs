@@ -156,3 +156,82 @@ fn a_spear_reaches_past_empty_ground_to_the_first_body() {
     );
     assert!(out.is_empty(), "out of reach");
 }
+
+#[test]
+fn facing_off_the_map_reaches_nothing_instead_of_a_neighbour() {
+    let arena = crowded::<Square8>(7, 7, (3, 0));
+    let (from, attacker) = arena.bodies[0];
+    let mut out = Vec::new();
+    for shape in [
+        HitShape::Adjacent,
+        HitShape::Reach(3),
+        HitShape::Line { length: 3 },
+    ] {
+        hits(
+            shape,
+            &arena.map,
+            &arena.occupancy,
+            attacker,
+            from,
+            NORTH,
+            &mut out,
+        );
+        assert!(out.is_empty(), "{shape:?} facing the top edge");
+    }
+}
+
+#[test]
+fn a_spear_does_not_pass_through_a_wall_corner() {
+    let mut arena = arena::<Square8>(6, 6, &[(1, 4), (3, 2)]);
+    // Walls on both sides of the first diagonal step north-east.
+    arena.map.set_passable(arena.map.index(1, 3), false);
+    arena.map.set_passable(arena.map.index(2, 4), false);
+    let (from, attacker) = arena.bodies[0];
+    let mut out = Vec::new();
+    hits(
+        HitShape::Reach(3),
+        &arena.map,
+        &arena.occupancy,
+        attacker,
+        from,
+        8_192,
+        &mut out,
+    );
+    assert!(out.is_empty(), "the corner blocks the thrust");
+}
+
+#[test]
+fn a_long_attacker_strikes_along_its_own_body() {
+    let mut arena = arena::<Square8>(8, 3, &[(1, 1), (4, 1)]);
+    let attacker = arena.bodies[0].1;
+    let long = [arena.map.index(1, 1), arena.map.index(2, 1)];
+    arena.occupancy.move_footprint(attacker, &long).unwrap();
+    let mut out = Vec::new();
+    hits(
+        HitShape::Reach(4),
+        &arena.map,
+        &arena.occupancy,
+        attacker,
+        long[0],
+        EAST,
+        &mut out,
+    );
+    assert_eq!(out, [arena.bodies[1]]);
+}
+
+#[test]
+fn a_thrown_object_aimed_off_the_grid_hits_nobody() {
+    let arena = arena::<Square8>(5, 5, &[(2, 2)]);
+    let (from, attacker) = arena.bodies[0];
+    let mut out = Vec::new();
+    hits(
+        HitShape::Cell(Cell(1_000)),
+        &arena.map,
+        &arena.occupancy,
+        attacker,
+        from,
+        EAST,
+        &mut out,
+    );
+    assert!(out.is_empty());
+}

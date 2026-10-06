@@ -61,7 +61,8 @@ pub struct DamagePacket {
 pub struct Defence {
     /// Subtracted from every hit.
     pub armour: Fixed32,
-    /// The fraction of each kind taken away after armour: 0.5 halves it.
+    /// The fraction of each kind taken away after armour, from -1 to 1: 0.5 halves it, and -0.5
+    /// is a weakness that takes one and a half times.
     pub resistances: [Fixed32; DamageKind::COUNT],
     /// A hit staggers when its stagger is greater than this.
     pub poise: Fixed32,
@@ -132,7 +133,8 @@ pub fn resolve(
         amount = scale(amount, packet.critical_multiplier);
     }
     amount -= defence.armour.raw() as i64;
-    let resistance = defence.resistances[packet.kind.index()].clamp(Fixed32::ZERO, Fixed32::ONE);
+    // A negative resistance is a weakness: -0.5 takes one and a half times the damage.
+    let resistance = defence.resistances[packet.kind.index()].clamp(-Fixed32::ONE, Fixed32::ONE);
     amount = scale(amount, Fixed32::ONE - resistance);
     let dealt = Fixed32::from_raw(amount.clamp(0, i32::MAX as i64) as i32);
     let staggered = packet.stagger > defence.poise;

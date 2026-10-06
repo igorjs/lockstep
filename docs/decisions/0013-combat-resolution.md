@@ -22,7 +22,11 @@ Status: decided and implemented in milestone M6.
 - Resistance before armour: armour grows stronger against big hits, and armour plus resistance can
   cancel any hit.
 - Shapes as fixed cell offsets per topology: written again for every topology, and they drift.
-- Choosing the knockback cell among the neighbours on the map: at the edge it slides sideways.
+- Choosing cells among the neighbours on the map: at the edge a knockback slides sideways and a
+  strike facing outward hits a body beside the attacker. Shapes and knockback choose on a copy of
+  the grid padded on every side (by an even number of cells, which keeps hexagon rows aligned).
+- Choosing each knockback step on its own: a push between two neighbours always takes the same one
+  and drifts. A knockback walks the line toward the cell it is aimed at.
 
 ## Would change if
 

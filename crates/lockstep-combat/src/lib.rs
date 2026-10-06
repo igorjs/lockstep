@@ -2,6 +2,7 @@
 #![doc = include_str!("../README.md")]
 
 mod damage;
+mod frame;
 mod knockback;
 mod shape;
 

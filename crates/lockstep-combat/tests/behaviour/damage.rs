@@ -114,3 +114,16 @@ fn evasion_is_smoothed_per_target() {
     }
     assert!((900..=1_100).contains(&evaded), "{evaded}");
 }
+
+#[test]
+fn a_negative_resistance_is_a_weakness() {
+    let mut defence = Defence::default();
+    defence.resistances[DamageKind::Blunt.index()] = -Fixed32::HALF;
+    assert_eq!(hit(&packet(40), &defence).dealt, Fixed32::from_int(60));
+    defence.resistances[DamageKind::Blunt.index()] = Fixed32::from_int(-5);
+    assert_eq!(
+        hit(&packet(40), &defence).dealt,
+        Fixed32::from_int(80),
+        "held at double"
+    );
+}
