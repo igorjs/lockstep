@@ -264,8 +264,14 @@ pub fn run_fixture(seed: u64, steps: u64) -> Runner<Ledger> {
     runner
 }
 
-/// The same session, recorded with a checkpoint every `checkpoint_every` steps.
-pub fn record_fixture(seed: u64, steps: u64, checkpoint_every: u64) -> Recording<Intent> {
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
     let (configuration, step_configuration, clock_configuration) = settings();
     let mut recorder = Recorder::<Ledger>::new(
         SIMULATION_ID,
@@ -275,6 +281,9 @@ pub fn record_fixture(seed: u64, steps: u64, checkpoint_every: u64) -> Recording
         clock_configuration,
         checkpoint_every,
     );
+    if keep_snapshots {
+        recorder = recorder.keep_snapshots();
+    }
     let accounts = recorder.runner().simulation().books().accounts.handles();
     let mut script = script_streams(seed);
     for _ in 0..steps {

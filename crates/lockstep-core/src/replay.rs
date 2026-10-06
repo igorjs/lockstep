@@ -50,6 +50,25 @@ impl<I: Message> Recording<I> {
     }
 }
 
+/// The simulation id of a recording's bytes, read without knowing the simulation, so a tool can
+/// pick which simulation decodes the rest. It relies on `simulation_id` being the first field of
+/// `Recording`, written as a little-endian 64-bit length and that many bytes of text; a test pins
+/// the layout.
+pub fn recorded_simulation_id(bytes: &[u8]) -> Result<String, ReplayError> {
+    let refuse = |reason: &str| ReplayError::NotARecording(reason.to_string());
+    let length = bytes
+        .get(..8)
+        .map(|prefix| u64::from_le_bytes(prefix.try_into().expect("eight bytes")))
+        .ok_or_else(|| refuse("too short"))?;
+    let text = usize::try_from(length)
+        .ok()
+        .and_then(|length| bytes.get(8..8usize.checked_add(length)?))
+        .ok_or_else(|| refuse("the simulation id runs past the end"))?;
+    String::from_utf8(text.to_vec()).map_err(|_| refuse("the simulation id is not text"))
+}
+
+impl<I: Message> Recording<I> {}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReplayError {
     NotARecording(String),
@@ -312,6 +331,9 @@ pub struct Bisection {
     /// Lines of the recorded and replayed snapshots that differ at `first_bad_step`, as
     /// `- recorded` and `+ replayed`, when the recording kept snapshots.
     pub differences: Vec<String>,
+    /// Whether the recording kept a snapshot at `first_bad_step` to compare. Kept snapshots with no
+    /// differences mean the worlds look the same and only the hashes differ.
+    pub compared_snapshots: bool,
 }
 
 /// Replays a recording and names the checkpoints around the first divergence. `None` when the
@@ -328,11 +350,11 @@ pub fn bisect<S: Simulation>(
         .iter()
         .map(|(step, _)| *step)
         .rfind(|step| *step < at_step);
-    let differences = match recording
+    let kept = recording
         .snapshots
         .iter()
-        .find(|(step, _)| *step == at_step)
-    {
+        .find(|(step, _)| *step == at_step);
+    let differences = match kept {
         Some((_, bytes)) => {
             let recorded: S::Snapshot = decode(bytes).map_err(ReplayError::Snapshot)?;
             line_differences(&recorded, &runner.snapshot())
@@ -343,6 +365,7 @@ pub fn bisect<S: Simulation>(
         last_good_step,
         first_bad_step: at_step,
         differences,
+        compared_snapshots: kept.is_some(),
     }))
 }
 

@@ -14,7 +14,7 @@ const STEPS: u64 = 2_000;
 
 #[test]
 fn a_recorded_session_replays_to_the_fixture_hash() {
-    let recording = record_fixture(DEFAULT_SEED, STEPS, 250);
+    let recording = record_fixture(DEFAULT_SEED, STEPS, 250, false);
     assert_eq!(recording.simulation_id, SIMULATION_ID);
     assert_eq!(recording.steps.len() as u64, STEPS);
     // The recording survives its bytes, then replays to the same world as the plain fixture run.
@@ -27,7 +27,7 @@ fn a_recorded_session_replays_to_the_fixture_hash() {
 
 #[test]
 fn the_journal_of_a_replay_matches_the_live_session_line_for_line() {
-    let recording = record_fixture(DEFAULT_SEED, STEPS, 250);
+    let recording = record_fixture(DEFAULT_SEED, STEPS, 250, false);
     // Live: run the recorded inputs by hand and append each step's events.
     let mut runner = ledger::runner(DEFAULT_SEED);
     let mut live: Timeline<Event> = Timeline::new();
@@ -58,7 +58,7 @@ fn the_journal_of_a_replay_matches_the_live_session_line_for_line() {
 
 #[test]
 fn the_timeline_counts_agree_with_the_books() {
-    let recording = record_fixture(DEFAULT_SEED, STEPS, 250);
+    let recording = record_fixture(DEFAULT_SEED, STEPS, 250, false);
     let (runner, _) = replay::<Ledger>(&recording).unwrap();
     let books = runner.simulation().books();
     let (timeline, _) = Timeline::rebuild_from::<Ledger>(&recording).unwrap();
