@@ -89,7 +89,7 @@ fn a_recording_survives_its_bytes_and_bad_bytes_are_refused() {
     }
     let recording = recording.into_recording();
     assert_eq!(recording.snapshots.len(), recording.checkpoints.len());
-    let bytes = recording.to_bytes();
+    let bytes = recording.to_bytes().unwrap();
     let read = Recording::<Add>::from_bytes(&bytes).unwrap();
     assert_eq!(read, recording);
     assert!(matches!(
@@ -107,5 +107,33 @@ fn a_recording_survives_its_bytes_and_bad_bytes_are_refused() {
     assert!(matches!(
         replay::<Honest>(&wrong),
         Err(ReplayError::Configuration(_))
+    ));
+}
+
+#[test]
+fn checkpoints_that_could_never_be_compared_are_an_error() {
+    let mut recording = recorder(4, 10);
+    for step in 0..50 {
+        recording.step_once(&[Add(step)]);
+    }
+    let recording = recording.into_recording();
+    let mut past_the_end = recording.clone();
+    past_the_end.checkpoints.push((500, 1));
+    assert_eq!(
+        replay::<Honest>(&past_the_end).err(),
+        Some(ReplayError::Checkpoints { step: 500 })
+    );
+    let mut out_of_order = recording.clone();
+    out_of_order.checkpoints.swap(2, 3);
+    assert!(matches!(
+        replay::<Honest>(&out_of_order),
+        Err(ReplayError::Checkpoints { .. })
+    ));
+    let mut repeated = recording;
+    let first = repeated.checkpoints[1];
+    repeated.checkpoints.insert(1, first);
+    assert!(matches!(
+        replay::<Honest>(&repeated),
+        Err(ReplayError::Checkpoints { .. })
     ));
 }

@@ -46,12 +46,15 @@ fn bisect_finds_a_planted_divergence_at_the_first_checkpoint_after_it() {
         .unwrap()
         .expect("a divergence");
     // The planted step runs as step 1,234, so the runner first differs at step number 1,235.
-    assert_eq!((found.last_good_step, found.first_bad_step), (1_200, 1_300));
+    assert_eq!(
+        (found.last_good_step, found.first_bad_step),
+        (Some(1_200), 1_300)
+    );
     assert_eq!(
         found.differences,
         [
-            format!("- total: {},", recorded_total(&recording, 1_300)),
-            format!("+ total: {},", recorded_total(&recording, 1_300) + 66),
+            format!("-     total: {},", recorded_total(&recording, 1_300)),
+            format!("+     total: {},", recorded_total(&recording, 1_300) + 66),
         ]
     );
 }
@@ -63,7 +66,7 @@ fn checkpoints_every_step_name_the_exact_step() {
         .expect("a divergence");
     assert_eq!(
         (found.last_good_step, found.first_bad_step),
-        (PLANTED, PLANTED + 1)
+        (Some(PLANTED), PLANTED + 1)
     );
 }
 
@@ -76,4 +79,14 @@ fn recorded_total(recording: &Recording<Add>, step: u64) -> i64 {
     lockstep_core::decode::<crate::common::tally::State>(bytes)
         .unwrap()
         .total
+}
+
+#[test]
+fn a_change_in_create_is_found_at_step_zero_with_nothing_good_before_it() {
+    // A planted step of 0 changes the very first step, but the world at step 0 is the same, so use
+    // a recording whose starting total differs instead: the step 0 checkpoint itself differs.
+    let mut recording = record(100);
+    recording.configuration = lockstep_core::encode(&Start { total: 1 });
+    let found = bisect::<Honest>(&recording).unwrap().expect("a divergence");
+    assert_eq!((found.last_good_step, found.first_bad_step), (None, 0));
 }

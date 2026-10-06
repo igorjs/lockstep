@@ -2,7 +2,7 @@
 //! Record a session's inputs, replay them to the same hash, and find where a replay diverges.
 
 use crate::clock::ClockConfiguration;
-use crate::hashing::{decode, encode};
+use crate::hashing::{decode, encode, DECODE_LIMIT};
 use crate::message::Message;
 use crate::runner::{Advanced, Runner, StepConfiguration};
 use crate::simulation::Simulation;
@@ -36,8 +36,13 @@ pub struct Recording<I: Message> {
 }
 
 impl<I: Message> Recording<I> {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        encode(self)
+    /// The recording's bytes. Refuses a recording too large for `from_bytes` to read back.
+    pub fn to_bytes(&self) -> Result<Vec<u8>, ReplayError> {
+        let bytes = encode(self);
+        if bytes.len() as u64 > DECODE_LIMIT {
+            return Err(ReplayError::TooLarge(bytes.len() as u64));
+        }
+        Ok(bytes)
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ReplayError> {
@@ -50,6 +55,14 @@ pub enum ReplayError {
     NotARecording(String),
     /// The configuration bytes do not decode as this simulation's configuration.
     Configuration(String),
+    /// A checkpoint is out of order or past the last step, so it could never be compared.
+    Checkpoints {
+        step: u64,
+    },
+    /// A kept snapshot does not decode as this simulation's snapshot, as when the shape changed.
+    Snapshot(String),
+    /// The recording's bytes would pass `DECODE_LIMIT`.
+    TooLarge(u64),
 }
 
 impl std::fmt::Display for ReplayError {
@@ -59,6 +72,16 @@ impl std::fmt::Display for ReplayError {
             ReplayError::Configuration(reason) => {
                 write!(formatter, "the configuration does not decode: {reason}")
             }
+            ReplayError::Checkpoints { step } => {
+                write!(formatter, "the checkpoint at step {step} can never be compared")
+            }
+            ReplayError::Snapshot(reason) => {
+                write!(formatter, "a kept snapshot does not decode: {reason}")
+            }
+            ReplayError::TooLarge(bytes) => write!(
+                formatter,
+                "the recording is {bytes} bytes, over the {DECODE_LIMIT} bytes it could be read back with"
+            ),
         }
     }
 }
@@ -223,35 +246,43 @@ pub fn replay<S: Simulation>(
         recording.step_configuration,
         recording.clock_configuration,
     );
+    // Checkpoints must rise strictly; one at or below the last compared, or past the last step,
+    // would be skipped without a comparison, so it is an error rather than a silent pass.
     let mut checkpoints = recording.checkpoints.iter().peekable();
-    let mut check = |runner: &Runner<S>| -> Option<ReplayOutcome> {
+    let mut compared: Option<u64> = None;
+    let mut check = |runner: &Runner<S>| -> Result<Option<ReplayOutcome>, ReplayError> {
         while let Some((at_step, expected)) = checkpoints.peek().copied() {
             if *at_step > runner.step_number() {
                 break;
             }
             checkpoints.next();
-            if *at_step == runner.step_number() {
-                let actual = runner.hash();
-                if actual != *expected {
-                    return Some(ReplayOutcome::Diverged {
-                        at_step: *at_step,
-                        expected: *expected,
-                        actual,
-                    });
-                }
+            if *at_step != runner.step_number() || compared.is_some_and(|last| last >= *at_step) {
+                return Err(ReplayError::Checkpoints { step: *at_step });
+            }
+            compared = Some(*at_step);
+            let actual = runner.hash();
+            if actual != *expected {
+                return Ok(Some(ReplayOutcome::Diverged {
+                    at_step: *at_step,
+                    expected: *expected,
+                    actual,
+                }));
             }
         }
-        None
+        Ok(None)
     };
-    if let Some(outcome) = check(&runner) {
+    if let Some(outcome) = check(&runner)? {
         return Ok((runner, outcome));
     }
     for step in &recording.steps {
         runner.set_clock_multiplier(step.clock_multiplier);
         runner.step_once(&step.intents);
-        if let Some(outcome) = check(&runner) {
+        if let Some(outcome) = check(&runner)? {
             return Ok((runner, outcome));
         }
+    }
+    if let Some((step, _)) = checkpoints.next() {
+        return Err(ReplayError::Checkpoints { step: *step });
     }
     Ok((runner, ReplayOutcome::Identical))
 }
@@ -259,10 +290,11 @@ pub fn replay<S: Simulation>(
 /// Where a replay stopped matching, and what differs.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Bisection {
-    /// The last checkpoint whose hash still matched.
-    pub last_good_step: u64,
+    /// The last checkpoint whose hash still matched; `None` when the first one already differs,
+    /// as when `create` changed.
+    pub last_good_step: Option<u64>,
     /// The first checkpoint whose hash differs: the change is in the steps after `last_good_step`
-    /// up to and including this one.
+    /// up to and including this one, or in `create` when nothing matched.
     pub first_bad_step: u64,
     /// Lines of the recorded and replayed snapshots that differ at `first_bad_step`, as
     /// `- recorded` and `+ replayed`, when the recording kept snapshots.
@@ -282,15 +314,18 @@ pub fn bisect<S: Simulation>(
         .checkpoints
         .iter()
         .map(|(step, _)| *step)
-        .rfind(|step| *step < at_step)
-        .unwrap_or(0);
-    let differences = recording
+        .rfind(|step| *step < at_step);
+    let differences = match recording
         .snapshots
         .iter()
         .find(|(step, _)| *step == at_step)
-        .and_then(|(_, bytes)| decode::<S::Snapshot>(bytes).ok())
-        .map(|recorded| line_differences(&recorded, &runner.snapshot()))
-        .unwrap_or_default();
+    {
+        Some((_, bytes)) => {
+            let recorded: S::Snapshot = decode(bytes).map_err(ReplayError::Snapshot)?;
+            line_differences(&recorded, &runner.snapshot())
+        }
+        None => Vec::new(),
+    };
     Ok(Some(Bisection {
         last_good_step,
         first_bad_step: at_step,
@@ -298,24 +333,74 @@ pub fn bisect<S: Simulation>(
     }))
 }
 
-/// The lines of two values' pretty debug output that differ, paired by position: a structural
-/// diff that is enough when two snapshots have the same shape and different values.
+/// Past this many pairs of lines, the diff compares line by line instead of searching for the
+/// longest common run, to keep `bisect` fast on large snapshots.
+const DIFF_CELLS: usize = 4_000_000;
+
+/// The lines of two values' pretty debug output that differ, as `- recorded` and `+ replayed`,
+/// with their indentation kept so each line shows whose field it is. Lines both share are left out.
 fn line_differences<T: std::fmt::Debug>(recorded: &T, replayed: &T) -> Vec<String> {
     let recorded = format!("{recorded:#?}");
     let replayed = format!("{replayed:#?}");
-    let (recorded, replayed): (Vec<&str>, Vec<&str>) =
-        (recorded.lines().collect(), replayed.lines().collect());
+    let left: Vec<&str> = recorded.lines().collect();
+    let right: Vec<&str> = replayed.lines().collect();
+    // Shared lines at the start and end need no search.
+    let prefix = left.iter().zip(&right).take_while(|(a, b)| a == b).count();
+    let suffix = left[prefix..]
+        .iter()
+        .rev()
+        .zip(right[prefix..].iter().rev())
+        .take_while(|(a, b)| a == b)
+        .count();
+    let left = &left[prefix..left.len() - suffix];
+    let right = &right[prefix..right.len() - suffix];
     let mut differences = Vec::new();
-    for index in 0..recorded.len().max(replayed.len()) {
-        let (left, right) = (recorded.get(index), replayed.get(index));
-        if left != right {
-            if let Some(line) = left {
-                differences.push(format!("- {}", line.trim()));
-            }
-            if let Some(line) = right {
-                differences.push(format!("+ {}", line.trim()));
-            }
+    if left.len().saturating_mul(right.len()) > DIFF_CELLS {
+        differences.extend(left.iter().map(|line| format!("- {line}")));
+        differences.extend(right.iter().map(|line| format!("+ {line}")));
+        return differences;
+    }
+    // Longest common subsequence, then walk it to list what each side has alone.
+    let (rows, columns) = (left.len(), right.len());
+    let mut lengths = vec![0u32; (rows + 1) * (columns + 1)];
+    let at = |row: usize, column: usize| row * (columns + 1) + column;
+    for row in (0..rows).rev() {
+        for column in (0..columns).rev() {
+            lengths[at(row, column)] = if left[row] == right[column] {
+                lengths[at(row + 1, column + 1)] + 1
+            } else {
+                lengths[at(row + 1, column)].max(lengths[at(row, column + 1)])
+            };
+        }
+    }
+    let (mut row, mut column) = (0, 0);
+    while row < rows || column < columns {
+        if row < rows && column < columns && left[row] == right[column] {
+            row += 1;
+            column += 1;
+        } else if column == columns
+            || (row < rows && lengths[at(row + 1, column)] >= lengths[at(row, column + 1)])
+        {
+            differences.push(format!("- {}", left[row]));
+            row += 1;
+        } else {
+            differences.push(format!("+ {}", right[column]));
+            column += 1;
         }
     }
     differences
+}
+
+#[cfg(test)]
+mod tests {
+    use super::line_differences;
+
+    #[test]
+    fn one_inserted_entry_is_one_line_of_difference_with_its_indentation() {
+        let recorded = vec![1, 2, 3, 4, 5, 6];
+        let replayed = vec![1, 2, 99, 3, 4, 5, 6];
+        assert_eq!(line_differences(&recorded, &replayed), ["+     99,"]);
+        assert_eq!(line_differences(&replayed, &recorded), ["-     99,"]);
+        assert!(line_differences(&recorded, &recorded).is_empty());
+    }
 }

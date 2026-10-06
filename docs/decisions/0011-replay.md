@@ -21,6 +21,13 @@ at the checkpoints; `bisect` names the last matching and first differing checkpo
 - `bisect` narrows to the checkpoint, not the step: the recording has no hash between checkpoints.
   Checkpoints every step name the exact step, at a hash per step.
 
+- A recording's inputs are the intents and the clock multiplier, nothing else. Anything else that
+  changes what a step sees, such as daylight, must come from the simulation's own rules (the
+  calendar computes it from the day), never from a host call the recording cannot see.
+- A malformed recording fails loudly: a checkpoint out of order or past the last step is an error,
+  a kept snapshot that no longer decodes is an error, and `to_bytes` refuses a recording too large
+  to read back.
+
 ## Alternatives rejected
 
 - Recording every step's state: a ten hour session grows from megabytes to gigabytes.

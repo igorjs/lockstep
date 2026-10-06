@@ -65,11 +65,13 @@ the snapshot at each checkpoint, for `bisect`.
 
 - `replay::<S>(&recording)` runs it again and returns the runner and `Identical`, or
   `Diverged { at_step, expected, actual }` at the first checkpoint whose hash differs.
-- `bisect::<S>(&recording)` names the last checkpoint that matched and the first that differs, and,
-  when the recording kept snapshots, lists the lines of the two snapshots that differ. The change is
+- `bisect::<S>(&recording)` names the last checkpoint that matched (`None` when even step 0
+  differs) and the first that differs, and, when the recording kept snapshots, lists the lines of
+  the two snapshots that differ, with their indentation. The change is
   in the steps between the two checkpoints; record with `checkpoint_every` 1 to name the exact step.
-- `Recording::to_bytes` and `from_bytes` use the fixed-endian bytes `hash_of` hashes. Reading
-  refuses trailing bytes and anything over `DECODE_LIMIT` (256 MiB). `encode` and `decode` are the
+- `Recording::to_bytes` and `from_bytes` use the fixed-endian bytes `hash_of` hashes. Both refuse
+  anything over `DECODE_LIMIT` (256 MiB), and reading refuses trailing bytes. A checkpoint out of
+  order or past the last step is an error, not a pass. `encode` and `decode` are the
   same functions for any value.
 
 See decision 0011. Saving mid-session arrives with saves and migrations.
