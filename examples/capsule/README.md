@@ -2,7 +2,7 @@
 
 # capsule
 
-An example for [Lockstep](https://github.com/igorjs/lockstep). One survivor in a sixteen by sixteen room walks along A* paths around a wall, gets hungry, thirsty and anxious by the game minute, and starves if left alone. The game shaped consumer scenario.
+An example for [Lockstep](https://github.com/igorjs/lockstep). One survivor in a sixteen by sixteen room walks along A* paths around a wall. Health, hunger, thirst and sanity are attributes read from JSON, their decay is a set of effects, wounds bleed by a chance roll until bandaged, and prayer restores sanity up to a daily budget. Left alone, the survivor starves. The game shaped consumer scenario.
 
 Its fixture hash is committed in `fixtures/capsule.hash` and checked natively and under WebAssembly on
 every change.

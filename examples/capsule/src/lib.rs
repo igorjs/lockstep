@@ -2,14 +2,23 @@
 //! The capsule: a game-shaped consumer scenario.
 //!
 //! One survivor lives in a small room with a wall across the middle. The host clicks a cell and the
-//! survivor walks there along the cheapest path around the wall, one cell every few steps. Needs
-//! drain with game time. When hunger reaches zero, health drains, and the survivor starves.
-//! Everything the survivor is lives in columns keyed by a handle.
+//! survivor walks there along the cheapest path around the wall, one cell every few steps.
+//!
+//! Health, hunger, thirst and sanity are attributes read from `data/attributes.json`. Their decay is
+//! three effects that drain per game minute, with no system code. A wound may bleed (a roll), a
+//! bandage removes every bleed, and a prayer restores sanity up to a daily budget. When hunger or
+//! thirst runs out, starvation drains health, and at zero the survivor dies. Everything the
+//! survivor is lives in columns keyed by a handle.
 
 pub mod script;
 
+use lockstep_attributes::{
+    AttributeEvent, AttributeId, Attributes, Effect, EffectContext, EffectTag, Effects, Registry,
+    Stacking,
+};
+use lockstep_core::math::Fixed32;
 use lockstep_core::{
-    hash_of, ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation,
+    hash_of, Chance, ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation,
     StableVector, StepConfiguration, Streams,
 };
 use lockstep_spatial::{
@@ -26,26 +35,93 @@ pub const WALL_COLUMN: i32 = 8;
 pub const WALL_FIRST_ROW: i32 = 2;
 pub const WALL_LAST_ROW: i32 = 12;
 
-/// Drain per game minute. A survivor with full hunger starves in about sixteen game hours.
-const HUNGER_PER_MINUTE: f32 = 0.1;
-const THIRST_PER_MINUTE: f32 = 0.15;
-const SANITY_PER_MINUTE: f32 = 0.02;
-/// Health lost per game minute while hunger or thirst is empty.
-const STARVATION_PER_MINUTE: f32 = 0.5;
-const HUNGRY_BELOW: f32 = 25.0;
+/// The attributes, as data. A save holds the values; this file says what they are.
+pub const ATTRIBUTES_JSON: &str = include_str!("../data/attributes.json");
+
+/// The chance that a wound bleeds.
+pub const BLEED_CHANCE: Chance = Chance(6_000);
+
+pub fn registry() -> Registry {
+    Registry::from_json(ATTRIBUTES_JSON).expect("the committed attributes are valid")
+}
+
+/// The attribute ids the capsule uses, looked up once by name.
+#[derive(Clone, Copy, Debug)]
+pub struct Ids {
+    pub health: AttributeId,
+    pub hunger: AttributeId,
+    pub thirst: AttributeId,
+    pub sanity: AttributeId,
+}
+
+impl Ids {
+    pub fn of(registry: &Registry) -> Self {
+        let id = |name: &str| {
+            registry
+                .id(name)
+                .expect("the capsule's attributes are defined")
+        };
+        Ids {
+            health: id("health"),
+            hunger: id("hunger"),
+            thirst: id("thirst"),
+            sanity: id("sanity"),
+        }
+    }
+}
+
+fn drain(attribute: AttributeId, tag: &str, numerator: i32, denominator: i32) -> Effect {
+    Effect {
+        attribute,
+        modifier: None,
+        per_minute: Some(Fixed32::from_ratio(numerator, denominator)),
+        remaining_minutes: None,
+        tag: EffectTag::new(tag),
+        stacking: Stacking::Independent,
+    }
+}
+
+/// Needs decay: a survivor with full thirst runs dry in about eleven game hours, and with full
+/// hunger starts starving in about seventeen.
+pub fn decay(ids: Ids) -> [Effect; 3] {
+    [
+        drain(ids.hunger, "hunger", -1, 10),
+        drain(ids.thirst, "thirst", -3, 20),
+        drain(ids.sanity, "dread", -1, 50),
+    ]
+}
+
+/// Health lost while hunger or thirst is empty, until the survivor dies.
+pub fn starvation(ids: Ids) -> Effect {
+    Effect {
+        stacking: Stacking::RefreshDuration,
+        ..drain(ids.health, "starvation", -1, 2)
+    }
+}
+
+/// One bleeding wound: a point of health a minute for half an hour. Wounds stack.
+pub fn bleeding(ids: Ids) -> Effect {
+    Effect {
+        remaining_minutes: Some(Fixed32::from_int(30)),
+        ..drain(ids.health, "bleeding", -1, 1)
+    }
+}
+
+/// A prayer restores a point of sanity a minute for twenty minutes, but no more than ten a day.
+pub fn prayer(ids: Ids) -> Effect {
+    Effect {
+        remaining_minutes: Some(Fixed32::from_int(20)),
+        stacking: Stacking::DailyBudget {
+            cap_per_day: Fixed32::from_int(10),
+        },
+        ..drain(ids.sanity, "prayer", 1, 1)
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Cell {
     pub x: i32,
     pub y: i32,
-}
-
-/// Three numbers read together, so they live in one column.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Needs {
-    pub hunger: f32,
-    pub thirst: f32,
-    pub sanity: f32,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -76,23 +152,61 @@ pub enum Intent {
     Stop {
         entity: Handle,
     },
+    /// A wound, which bleeds or not by a roll.
+    Wound {
+        entity: Handle,
+    },
+    /// Removes every bleeding wound.
+    Bandage {
+        entity: Handle,
+    },
+    Pray {
+        entity: Handle,
+    },
 }
 
 impl Message for Intent {
-    const VERSION: u32 = 1;
+    const VERSION: u32 = 2;
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Event {
-    Arrived { entity: Handle, cell: Cell },
-    Hungry { entity: Handle },
-    Starving { entity: Handle },
-    Died { entity: Handle, day: u32 },
-    Rejected { entity: Handle },
+    Arrived {
+        entity: Handle,
+        cell: Cell,
+    },
+    Hungry {
+        entity: Handle,
+    },
+    Starving {
+        entity: Handle,
+    },
+    Died {
+        entity: Handle,
+        day: u32,
+    },
+    Rejected {
+        entity: Handle,
+    },
+    /// A wound that bleeds.
+    Bleeding {
+        entity: Handle,
+    },
+    /// A wound that does not.
+    Grazed {
+        entity: Handle,
+    },
+    Bandaged {
+        entity: Handle,
+        wounds: usize,
+    },
+    Prayed {
+        entity: Handle,
+    },
 }
 
 impl Message for Event {
-    const VERSION: u32 = 1;
+    const VERSION: u32 = 2;
 }
 
 /// The whole world. It is also the snapshot, so a save is exactly this value.
@@ -103,14 +217,12 @@ pub struct World {
     pub entities: StableVector<String>,
     pub positions: Column<Cell>,
     pub walks: Column<Walk>,
-    pub needs: Column<Needs>,
-    pub health: Column<f32>,
-    pub hungry: Column<()>,
-    pub starving: Column<()>,
+    pub attributes: Column<Attributes>,
+    pub effects: Effects,
 }
 
 impl Message for World {
-    const VERSION: u32 = 1;
+    const VERSION: u32 = 2;
 }
 
 impl World {
@@ -119,22 +231,17 @@ impl World {
         self.entities.remove(entity);
         self.positions.unset(entity);
         self.walks.unset(entity);
-        self.needs.unset(entity);
-        self.health.unset(entity);
-        self.hungry.unset(entity);
-        self.starving.unset(entity);
+        self.attributes.unset(entity);
+        self.effects.remove_entity(entity);
     }
 
     /// Every column entry must belong to a living entity.
     pub fn orphans(&self) -> Vec<Handle> {
         let mut found = Vec::new();
-        let columns: [Vec<Handle>; 6] = [
+        let columns: [Vec<Handle>; 3] = [
             self.positions.handles(),
             self.walks.handles(),
-            self.needs.handles(),
-            self.health.handles(),
-            self.hungry.handles(),
-            self.starving.handles(),
+            self.attributes.handles(),
         ];
         for handles in columns {
             for handle in handles {
@@ -144,6 +251,11 @@ impl World {
             }
         }
         found
+    }
+
+    /// A survivor's attribute value, if alive.
+    pub fn value(&self, entity: Handle, attribute: AttributeId) -> Option<Fixed32> {
+        Some(self.attributes.get(entity)?.get(attribute).current())
     }
 }
 
@@ -158,6 +270,9 @@ pub fn build_room() -> GridMap<Square8> {
 
 pub struct Capsule {
     world: World,
+    /// Configuration data, loaded again on restore; not part of the state.
+    registry: Registry,
+    ids: Ids,
     /// Search buffers, reused for every move. They are not part of the state.
     pathfinder: Pathfinder,
     path: Vec<GridCell>,
@@ -169,8 +284,12 @@ impl Capsule {
     fn with_world(world: World) -> Self {
         let pathfinder = Pathfinder::new(&world.room);
         let occupancy = Occupancy::new(&world.room);
+        let registry = registry();
+        let ids = Ids::of(&registry);
         Capsule {
             world,
+            registry,
+            ids,
             pathfinder,
             path: Vec::new(),
             occupancy,
@@ -179,6 +298,10 @@ impl Capsule {
 
     pub fn world(&self) -> &World {
         &self.world
+    }
+
+    pub fn ids(&self) -> Ids {
+        self.ids
     }
 
     /// The first (and only) survivor, if alive.
@@ -199,10 +322,8 @@ impl Simulation for Capsule {
             entities: StableVector::new(),
             positions: Column::new(),
             walks: Column::new(),
-            needs: Column::new(),
-            health: Column::new(),
-            hungry: Column::new(),
-            starving: Column::new(),
+            attributes: Column::new(),
+            effects: Effects::new(),
         };
         let survivor = world.entities.insert(configuration.survivor_name);
         // Spawn on open ground: draw again if the draw lands on the wall.
@@ -216,23 +337,28 @@ impl Simulation for Capsule {
             }
         };
         world.positions.set(survivor, spawn);
-        world.needs.set(
-            survivor,
-            Needs {
-                hunger: 100.0,
-                thirst: 100.0,
-                sanity: 100.0,
-            },
-        );
-        world.health.set(survivor, 100.0);
-        Capsule::with_world(world)
+        let mut capsule = Capsule::with_world(world);
+        let world = &mut capsule.world;
+        world
+            .attributes
+            .set(survivor, Attributes::from_registry(&capsule.registry));
+        let mut effect_context = EffectContext {
+            attributes: &mut world.attributes,
+            registry: &capsule.registry,
+            attribute_events: &mut Vec::new(),
+            effect_events: &mut Vec::new(),
+        };
+        for effect in decay(capsule.ids) {
+            world.effects.add(survivor, effect, &mut effect_context);
+        }
+        capsule
     }
 
     fn step(&mut self, context: &mut Context<'_, Self>, intents: &[Intent]) {
-        apply_intents(self, intents, context);
+        let mut attribute_events = Vec::new();
+        apply_intents(self, intents, context, &mut attribute_events);
         walking_system(&mut self.world, context);
-        needs_system(&mut self.world, context);
-        starvation_system(&mut self.world, context);
+        effects_system(self, context, &mut attribute_events);
     }
 
     fn snapshot(&self) -> World {
@@ -261,9 +387,16 @@ fn position_of_room_cell(room: &GridMap<Square8>, cell: GridCell) -> Cell {
     }
 }
 
-fn apply_intents(capsule: &mut Capsule, intents: &[Intent], context: &mut Context<'_, Capsule>) {
+fn apply_intents(
+    capsule: &mut Capsule,
+    intents: &[Intent],
+    context: &mut Context<'_, Capsule>,
+    attribute_events: &mut Vec<AttributeEvent>,
+) {
     let Capsule {
         world,
+        registry,
+        ids,
         pathfinder,
         path,
         occupancy,
@@ -313,6 +446,45 @@ fn apply_intents(capsule: &mut Capsule, intents: &[Intent], context: &mut Contex
             Intent::Stop { entity } => {
                 world.walks.unset(*entity);
             }
+            Intent::Wound { entity } | Intent::Bandage { entity } | Intent::Pray { entity } => {
+                if !world.entities.contains(*entity) {
+                    context.events.push(Event::Rejected { entity: *entity });
+                    continue;
+                }
+                let mut effect_context = EffectContext {
+                    attributes: &mut world.attributes,
+                    registry,
+                    attribute_events: &mut *attribute_events,
+                    effect_events: &mut Vec::new(),
+                };
+                let event = match intent {
+                    Intent::Wound { .. } => {
+                        if context.randomness.roll("wounds", BLEED_CHANCE) {
+                            world
+                                .effects
+                                .add(*entity, bleeding(*ids), &mut effect_context);
+                            Event::Bleeding { entity: *entity }
+                        } else {
+                            Event::Grazed { entity: *entity }
+                        }
+                    }
+                    Intent::Bandage { .. } => Event::Bandaged {
+                        entity: *entity,
+                        wounds: world.effects.remove_by_tag(
+                            *entity,
+                            &EffectTag::new("bleeding"),
+                            &mut effect_context,
+                        ),
+                    },
+                    _ => {
+                        world
+                            .effects
+                            .add(*entity, prayer(*ids), &mut effect_context);
+                        Event::Prayed { entity: *entity }
+                    }
+                };
+                context.events.push(event);
+            }
         }
     }
 }
@@ -345,32 +517,62 @@ fn walking_system(world: &mut World, context: &mut Context<'_, Capsule>) {
     }
 }
 
-fn needs_system(world: &mut World, context: &mut Context<'_, Capsule>) {
-    let minutes = context.elapsed_game_minutes;
-    for (entity, needs) in world.needs.iter_mut() {
-        needs.hunger = (needs.hunger - HUNGER_PER_MINUTE * minutes).max(0.0);
-        needs.thirst = (needs.thirst - THIRST_PER_MINUTE * minutes).max(0.0);
-        needs.sanity = (needs.sanity - SANITY_PER_MINUTE * minutes).max(0.0);
-        if needs.hunger < HUNGRY_BELOW && !world.hungry.has(entity) {
-            world.hungry.set(entity, ());
-            context.events.push(Event::Hungry { entity });
-        }
-        if (needs.hunger <= 0.0 || needs.thirst <= 0.0) && !world.starving.has(entity) {
-            world.starving.set(entity, ());
-            context.events.push(Event::Starving { entity });
-        }
-    }
-}
-
-fn starvation_system(world: &mut World, context: &mut Context<'_, Capsule>) {
-    let loss = STARVATION_PER_MINUTE * context.elapsed_game_minutes;
+/// Runs every effect for the step's game minutes, then turns what the attributes report into the
+/// capsule's events: the hunger warning, starvation when hunger or thirst runs out, and death.
+fn effects_system(
+    capsule: &mut Capsule,
+    context: &mut Context<'_, Capsule>,
+    attribute_events: &mut Vec<AttributeEvent>,
+) {
+    let Capsule {
+        world,
+        registry,
+        ids,
+        ..
+    } = capsule;
+    let mut effect_context = EffectContext {
+        attributes: &mut world.attributes,
+        registry,
+        attribute_events: &mut *attribute_events,
+        effect_events: &mut Vec::new(),
+    };
+    world.effects.tick(
+        context.elapsed_minutes,
+        context.clock.day(),
+        &mut effect_context,
+    );
     let mut dead = Vec::new();
-    for (entity, _) in world.starving.iter() {
-        if let Some(health) = world.health.get_mut(entity) {
-            *health -= loss;
-            if *health <= 0.0 {
-                dead.push(entity);
+    for event in attribute_events.drain(..) {
+        match event {
+            AttributeEvent::Crossed {
+                who,
+                threshold,
+                upward: false,
+                ..
+            } if threshold == "hungry" => context.events.push(Event::Hungry { entity: who }),
+            AttributeEvent::Emptied { who, attribute }
+                if attribute == ids.hunger || attribute == ids.thirst =>
+            {
+                let starving = EffectTag::new("starvation");
+                if !world.effects.has(who, &starving) && world.entities.contains(who) {
+                    let mut effect_context = EffectContext {
+                        attributes: &mut world.attributes,
+                        registry,
+                        attribute_events: &mut Vec::new(),
+                        effect_events: &mut Vec::new(),
+                    };
+                    world
+                        .effects
+                        .add(who, starvation(*ids), &mut effect_context);
+                    context.events.push(Event::Starving { entity: who });
+                }
             }
+            AttributeEvent::Emptied { who, attribute }
+                if attribute == ids.health && !dead.contains(&who) =>
+            {
+                dead.push(who);
+            }
+            _ => {}
         }
     }
     for entity in dead {

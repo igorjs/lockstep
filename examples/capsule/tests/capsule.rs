@@ -342,31 +342,23 @@ fn needs_drain_with_game_time_so_a_rest_drains_them_twenty_times_faster() {
     let mut fast = runner(9);
     fast.set_clock_multiplier(20.0);
     let survivor = slow.simulation().survivor().unwrap();
+    let hunger = slow.simulation().ids().hunger;
     for _ in 0..300 {
         slow.step_once(&[]);
         fast.step_once(&[]);
     }
-    let slow_loss = 100.0
-        - slow
-            .simulation()
-            .world()
-            .needs
-            .get(survivor)
-            .unwrap()
-            .hunger;
-    let fast_loss = 100.0
-        - fast
-            .simulation()
-            .world()
-            .needs
-            .get(survivor)
-            .unwrap()
-            .hunger;
-    // Needs sit near 100, where a 32-bit float has coarse steps, so allow about one percent.
+    let loss = |runner: &lockstep_core::Runner<Capsule>| {
+        let left = runner.simulation().world().value(survivor, hunger).unwrap();
+        (lockstep_core::math::Fixed32::from_int(100) - left).raw() as i64
+    };
+    // Exact fixed point: twenty times the minutes give twenty times the loss, to a raw unit or so
+    // of rounding in each drain.
+    assert!(loss(&slow) > 0);
     assert!(
-        (fast_loss / slow_loss - 20.0).abs() < 0.25,
-        "ratio {}",
-        fast_loss / slow_loss
+        (loss(&fast) - 20 * loss(&slow)).abs() <= 20,
+        "{} against 20 × {}",
+        loss(&fast),
+        loss(&slow)
     );
 }
 

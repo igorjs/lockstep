@@ -10,6 +10,7 @@ readme = "README.md"
 publish = false
 
 [dependencies]
+lockstep-attributes = { path = "../../crates/lockstep-attributes" }
 lockstep-core = { path = "../../crates/lockstep-core" }
 lockstep-spatial = { path = "../../crates/lockstep-spatial" }
 serde = { workspace = true }
