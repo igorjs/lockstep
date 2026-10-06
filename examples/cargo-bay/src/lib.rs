@@ -8,7 +8,7 @@
 //! its wearer and lowers the oxygen until it is repaired. Crew attributes come from
 //! `data/attributes.json`.
 
-use lockstep_attributes::{AttributeId, Attributes, Registry};
+use lockstep_attributes::{AttributeEvent, AttributeId, Attributes, Registry};
 use lockstep_core::math::Fixed32;
 use lockstep_core::{
     ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,
@@ -136,6 +136,13 @@ pub enum Event {
     Refused {
         reason: Refusal,
     },
+    /// A crew attribute passed a threshold, such as nourishment falling to `hungry`.
+    Crossed {
+        who: Handle,
+        attribute: String,
+        threshold: String,
+        upward: bool,
+    },
     /// The item is not food, or not known.
     NotFood {
         item: Handle,
@@ -250,7 +257,12 @@ impl CargoBay {
                 }
             }
             Intent::Move { item, to } => {
-                inventory.move_between(*item, *to, catalogue).map(|moved| {
+                // A loose item, such as gear just taken off, is stowed; a stored one moves.
+                let moved = match inventory.place(*item) {
+                    Some(Place::Loose) => inventory.put(*item, *to, catalogue),
+                    _ => inventory.move_between(*item, *to, catalogue),
+                };
+                moved.map(|moved| {
                     events.push(Event::Moved {
                         item: moved,
                         into: *to,
@@ -270,7 +282,7 @@ impl CargoBay {
                                 self.nourishment,
                                 Fixed32::from_int(change),
                                 &self.registry,
-                                &mut Vec::new(),
+                                wearers.events,
                             );
                             events.push(Event::Ate { who: *who, spoiled });
                         })
@@ -313,6 +325,22 @@ impl CargoBay {
         };
         if let Err(reason) = outcome {
             events.push(Event::Refused { reason });
+        }
+        for event in attribute_events {
+            if let AttributeEvent::Crossed {
+                who,
+                attribute,
+                threshold,
+                upward,
+            } = event
+            {
+                events.push(Event::Crossed {
+                    who,
+                    attribute: self.registry.name(attribute).to_string(),
+                    threshold,
+                    upward,
+                });
+            }
         }
     }
 }

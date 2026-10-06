@@ -176,6 +176,56 @@ fn a_fresh_ration_nourishes_and_a_spoiled_one_makes_the_crew_sick() {
 }
 
 #[test]
+fn spoiled_meals_cross_the_hungry_threshold() {
+    let mut runner = runner(bay(), 1, 30);
+    let (who, rack, _, _) = places(&runner);
+    let rations = deliver(&mut runner, "ration", 6, rack);
+    for _ in 0..360 * 30 {
+        runner.step_once(&[]);
+    }
+    // 60, then four spoiled meals: 50, 40, 30, then 20, below hungry at 30.
+    let mut events = Vec::new();
+    for _ in 0..4 {
+        events.extend(
+            runner
+                .step_once(&[Intent::Eat { who, item: rations }])
+                .events,
+        );
+    }
+    assert!(events.contains(&Event::Crossed {
+        who,
+        attribute: "nourishment".into(),
+        threshold: "hungry".into(),
+        upward: false,
+    }));
+}
+
+#[test]
+fn gear_taken_off_can_be_stowed_again() {
+    let mut runner = runner(bay(), 1, 30);
+    let (who, rack, cold, _) = places(&runner);
+    let drill = deliver(&mut runner, "drill", 1, rack);
+    runner.step_once(&[Intent::Equip { who, item: drill }]);
+    runner.step_once(&[Intent::Unequip {
+        who,
+        slot: SlotId(1),
+    }]);
+    let events = runner
+        .step_once(&[Intent::Move {
+            item: drill,
+            to: cold,
+        }])
+        .events;
+    assert_eq!(
+        events,
+        vec![Event::Moved {
+            item: drill,
+            into: cold
+        }]
+    );
+}
+
+#[test]
 fn a_faulty_seal_binds_a_suit_until_it_is_repaired() {
     let mut runner = runner(bay(), 1, 30);
     let (who, rack, _, _) = places(&runner);
@@ -283,7 +333,9 @@ fn a_restored_snapshot_continues_exactly_like_the_one_that_kept_running() {
         let intents: Vec<Intent> = order(&kept, &mut script).into_iter().collect();
         step(&mut kept, &mut clock, &mut randomness, &intents, number);
     }
-    let mut loaded = CargoBay::restore(kept.snapshot());
+    // Saved and loaded, so a field lost on save would show.
+    let saved = lockstep_core::encode(&kept.snapshot());
+    let mut loaded = CargoBay::restore(lockstep_core::decode(&saved).unwrap());
     let (mut loaded_clock, mut loaded_randomness) = (clock.clone(), randomness.clone());
     for number in 20_000..40_000 {
         let intents: Vec<Intent> = order(&kept, &mut script).into_iter().collect();

@@ -8,10 +8,11 @@ locker (4 slots, 40 weight, 30 degrees).
 
 - The catalogue (`data/catalogue.json`) has rations that stack to six and spoil after 360 game
   minutes at 100 percent, water, suits that add 50 to the wearer's oxygen maximum, and drills.
-  Spoilage runs at 20 percent below 5 degrees, 100 percent below 25, and 250 percent above.
-- The crew attributes (`data/attributes.json`) are oxygen and nourishment.
+  Spoilage runs at 20 percent below 5 degrees, 100 percent below 25, and 250 percent from 25 up.
+- The crew attributes (`data/attributes.json`) are oxygen and nourishment; nourishment falling
+  to `hungry` (30) or `weak` (10) is a `Crossed` event.
 - Orders: deliver new items into a store (refused deliveries leave nothing behind), move an item
-  between stores, eat a ration (25 nourishment fresh, minus 10 spoiled), wear and take off gear,
+  between stores (or stow a loose one, such as gear just taken off), eat a ration (25 nourishment fresh, minus 10 spoiled), wear and take off gear,
   a seal failing on a suit (an affix that binds the suit and takes 30 oxygen), a repair that
   removes it, throwing an item out, and a store's power going off or coming back
   (`set_temperature`).
