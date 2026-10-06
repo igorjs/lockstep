@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #![allow(dead_code)]
 
-use lockstep_attributes::{AttributeId, Registry};
+use lockstep_attributes::{AttributeEvent, AttributeId, Attributes, Registry};
 use lockstep_core::math::Fixed32;
+use lockstep_core::{Handle, StableVector};
 
 pub const REGISTRY: &str = r#"{
   "attributes": [
@@ -15,6 +16,7 @@ pub const REGISTRY: &str = r#"{
     { "name": "luck", "minimum": 0, "maximum": 20, "starting": 3,
       "on_maximum_change": "scale_current" },
     { "name": "critical_chance", "minimum": 0, "maximum": 100, "starting": 0,
+      "thresholds": [ { "at": 10, "name": "keen" } ],
       "derived": { "inputs": ["luck"], "curve": { "linear": { "per_point": "1", "offset": "5" } } } },
     { "name": "corruption", "minimum": 0, "maximum": 100, "starting": 0,
       "on_maximum_change": "ratchet",
@@ -33,4 +35,27 @@ pub fn id(registry: &Registry, name: &str) -> AttributeId {
 
 pub fn whole(value: i32) -> Fixed32 {
     Fixed32::from_int(value)
+}
+
+/// A live handle to stand for the entity.
+pub fn someone() -> Handle {
+    StableVector::new().insert(())
+}
+
+pub fn fresh() -> (Registry, Attributes, Handle) {
+    let registry = registry();
+    let attributes = Attributes::from_registry(&registry);
+    (registry, attributes, someone())
+}
+
+pub fn crossings(events: &[AttributeEvent]) -> Vec<(String, bool)> {
+    events
+        .iter()
+        .filter_map(|event| match event {
+            AttributeEvent::Crossed {
+                threshold, upward, ..
+            } => Some((threshold.clone(), *upward)),
+            _ => None,
+        })
+        .collect()
 }

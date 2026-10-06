@@ -18,7 +18,7 @@ Games are the first use, but the same machine runs a ledger, a fleet of rovers, 
 |---|---|
 | [`lockstep-core`](crates/lockstep-core) | The `Simulation` trait, the `Runner`, the game clock, entity storage, named random streams, chance rolls, hashing, and integer math. |
 | [`lockstep-spatial`](crates/lockstep-spatial) | Grids: topologies, maps with elevation, occupancy, A* paths, path batches on a thread pool, flow fields, line of sight. |
-| [`lockstep-attributes`](crates/lockstep-attributes) | Stats as data: a registry read from JSON, and curves for derived values. Modifiers, thresholds and effects are in progress. |
+| [`lockstep-attributes`](crates/lockstep-attributes) | Stats as data: a registry read from JSON, modifiers, thresholds that fire once per crossing, and derived values from curves. Timed effects are in progress. |
 | [`lockstep-headless`](crates/lockstep-headless) | A command line runner that prints and verifies fixture hashes. |
 
 The crates are not on crates.io yet. Depend on them from Git:
