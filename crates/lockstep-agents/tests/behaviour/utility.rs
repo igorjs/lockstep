@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-use lockstep_agents::{choose, evaluate_task, Choice, Consideration, Reason, Task, TaskResponse};
+use lockstep_agents::{choose, evaluate_task, Choice, Consideration, Task, TaskResponse};
 use lockstep_core::{Handle, StableVector};
 
 #[cfg(target_arch = "wasm32")]
@@ -47,6 +47,6 @@ fn a_task_with_no_considerations_scores_zero() {
     };
     assert_eq!(
         evaluate_task(agent, &task, &0),
-        TaskResponse::Refuse { reason: Reason(0) }
+        TaskResponse::Refuse { reason: None }
     );
 }

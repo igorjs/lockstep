@@ -31,7 +31,10 @@ impl<W: ?Sized> Choice<W> {
 
     /// The sum of the scores, in 64 bits, so it never wraps.
     pub fn total(&self, agent: Handle, world: &W) -> i64 {
-        self.scores(agent, world).into_iter().map(i64::from).sum()
+        self.considerations
+            .iter()
+            .map(|consideration| i64::from(consideration.score(agent, world)))
+            .sum()
     }
 }
 
@@ -51,8 +54,13 @@ pub struct Reason(pub u16);
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TaskResponse {
     Accept,
-    Delay { minutes: u16 },
-    Refuse { reason: Reason },
+    Delay {
+        minutes: u16,
+    },
+    /// Refused, naming the lowest-scoring consideration; `None` for a task with none.
+    Refuse {
+        reason: Option<Reason>,
+    },
 }
 
 /// A task one agent asks of another: considerations with the reason each stands for, and the
@@ -68,8 +76,8 @@ pub struct Task<W: ?Sized> {
 }
 
 /// Accepts, delays or refuses a task by its total score. A refusal names the consideration that
-/// scored lowest, the first listed on a tie, so the host can show why; with no considerations
-/// the reason is `Reason(0)`.
+/// scored lowest, the first listed on a tie, so the host can show why; a task with no
+/// considerations is refused with no reason.
 pub fn evaluate_task<W: ?Sized>(agent: Handle, task: &Task<W>, world: &W) -> TaskResponse {
     let scores: Vec<(Reason, i32)> = task
         .considerations
@@ -88,7 +96,7 @@ pub fn evaluate_task<W: ?Sized>(agent: Handle, task: &Task<W>, world: &W) -> Tas
             .iter()
             .enumerate()
             .min_by_key(|(index, (_, score))| (*score, *index))
-            .map_or(Reason(0), |(_, (reason, _))| *reason);
+            .map(|(_, (reason, _))| *reason);
         TaskResponse::Refuse { reason }
     }
 }

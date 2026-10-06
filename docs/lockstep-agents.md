@@ -99,7 +99,7 @@ Delegation is an intent an agent answers by score. A `Task` lists considerations
 `Reason` it stands for, and two thresholds. `evaluate_task(agent, task, world)` returns `Accept` at
 `accept_at` or above, `Delay { minutes }` at `delay_at` or above, and otherwise
 `Refuse { reason }`, naming the consideration that scored lowest (the first listed on a tie) so the
-host can show it. Relations and attributes feed the scores through the world the considerations
+host can show it; a task with no considerations is refused with no reason. Relations and attributes feed the scores through the world the considerations
 read.
 
 See decision 0021.

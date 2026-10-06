@@ -30,8 +30,12 @@ fn equal_totals_go_to_the_lowest_id() {
         considerations: vec![Box::new(move |_: Handle, _: &World| score)],
     };
     let world = World { trust: 0, fear: 0 };
-    let choices = vec![choice(7, 10), choice(3, 10), choice(5, 9)];
-    assert_eq!(choose(agent(), &choices, &world), Some(3));
+    // The lower id is listed first and the higher last, so neither the first nor the last of
+    // equal totals is the lowest id by accident in both orders.
+    let first = vec![choice(3, 10), choice(7, 10), choice(5, 9)];
+    let last = vec![choice(7, 10), choice(5, 9), choice(3, 10)];
+    assert_eq!(choose(agent(), &first, &world), Some(3));
+    assert_eq!(choose(agent(), &last, &world), Some(3));
 }
 
 #[test]
@@ -50,9 +54,27 @@ fn a_task_is_accepted_delayed_or_refused_for_its_weakest_reason() {
     };
     let answer = |trust, fear| evaluate_task(agent(), &task, &World { trust, fear });
     assert_eq!(answer(80, 10), TaskResponse::Accept);
+    assert_eq!(answer(60, 10), TaskResponse::Accept, "exactly at accept");
     assert_eq!(answer(40, 10), TaskResponse::Delay { minutes: 30 });
+    assert_eq!(
+        answer(30, 10),
+        TaskResponse::Delay { minutes: 30 },
+        "exactly at delay"
+    );
     // Too scared: fear scores lowest.
-    assert_eq!(answer(30, 40), TaskResponse::Refuse { reason: FEAR });
+    assert_eq!(answer(30, 40), TaskResponse::Refuse { reason: Some(FEAR) });
     // Too little trust: trust scores lowest.
-    assert_eq!(answer(-20, 0), TaskResponse::Refuse { reason: TRUST });
+    assert_eq!(
+        answer(-20, 0),
+        TaskResponse::Refuse {
+            reason: Some(TRUST)
+        }
+    );
+    // Both score -10: the first listed, trust, is named.
+    assert_eq!(
+        answer(-10, 10),
+        TaskResponse::Refuse {
+            reason: Some(TRUST)
+        }
+    );
 }
