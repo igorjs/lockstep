@@ -8,7 +8,7 @@
 //! Would change if: with 2 minutes to lose sight and 10 to forget, an agent turns Searching at
 //! any time but 2 minutes, or Idle at any time but 10.
 
-use crate::common::{metres, Floor};
+use crate::common::{minutes, Floor};
 use lockstep_agents::{Alertness, MindEvent, Stimulus};
 use lockstep_core::math::Fixed32;
 use lockstep_core::Column;
@@ -33,11 +33,11 @@ fn out_of_sight_for_two_minutes_searches_and_forgotten_at_ten_goes_idle() {
         floor.think(&mut minds, &leashes, &saw, Fixed32::ZERO, 8);
         assert_eq!(minds.get(agent).unwrap().alertness, Alertness::Alert);
         // A step's exact share of a minute; the shares of one minute add up to it exactly.
-        let per_step = metres(1).raw() / steps_per_minute;
+        let per_step = minutes(1).raw() / steps_per_minute;
         let mut changes = Vec::new();
         for step in 1..=(11 * steps_per_minute) {
             let raw = per_step
-                + i32::from((step - 1) % steps_per_minute < metres(1).raw() % steps_per_minute);
+                + i32::from((step - 1) % steps_per_minute < minutes(1).raw() % steps_per_minute);
             for event in floor.think(&mut minds, &leashes, &[], Fixed32::from_raw(raw), 8) {
                 if let MindEvent::Changed { to, .. } = event {
                     changes.push((to, step));

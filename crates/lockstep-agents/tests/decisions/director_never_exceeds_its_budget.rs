@@ -18,9 +18,10 @@ use wasm_bindgen_test::wasm_bindgen_test as test;
 
 #[test]
 fn twenty_agents_seeing_one_target_leave_the_eight_nearest_alert() {
-    // The target at (0, 10); agents at x = 1 to 20 along row 10, nearest first in x.
+    // The target at (0, 10); agents at x = 20 down to 1 along row 10, listed farthest first so
+    // the nearest get the highest handles and a ranking by handle would pick the wrong eight.
     let mut cells = vec![(0, 10)];
-    cells.extend((1..=20).map(|x| (x, 10)));
+    cells.extend((1..=20).rev().map(|x| (x, 10)));
     let floor = Floor::new(40, 20, &cells);
     let target = floor.bodies[0];
     let agents = &floor.bodies[1..];
@@ -49,13 +50,15 @@ fn twenty_agents_seeing_one_target_leave_the_eight_nearest_alert() {
             .copied()
             .collect();
         assert!(alert.len() <= 8, "step {step}: {} alert", alert.len());
+        let held = events
+            .iter()
+            .filter(|event| matches!(event, MindEvent::Held { .. }))
+            .count();
         if step == 0 {
-            assert_eq!(alert, agents[..8].to_vec(), "the eight nearest");
-            let held = events
-                .iter()
-                .filter(|event| matches!(event, MindEvent::Held { .. }))
-                .count();
+            assert_eq!(alert, agents[12..].to_vec(), "the eight nearest");
             assert_eq!(held, 12);
+        } else {
+            assert_eq!(held, 0, "step {step}: a hold is reported once");
         }
     }
 }

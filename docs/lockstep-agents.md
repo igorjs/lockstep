@@ -49,7 +49,8 @@ Each agent has a `Mind`: its `Alertness` (Idle, Curious, Searching, Alert), a `L
 been out of sight. An agent hunts its memory, not the target.
 
 `think(minds, leashes, stimuli, minutes, rules, director, surroundings, events)` runs one step in
-handle order:
+handle order. Each agent's stimuli apply first, in the order given; then, when it saw nothing this
+step, its memory ages, so a noise heard this step ages with it and a sighting starts fresh:
 
 - Each `Stimulus` outside the agent's `Leash` (a home cell and a radius) is ignored.
 - `Saw` sets a fresh memory at confidence 1 and makes the agent Alert.
@@ -59,8 +60,9 @@ handle order:
   started to zero at `forget_after_minutes`, computed from the age so it never drifts. Alert out of
   sight for `lose_sight_after_minutes` turns Searching; a forgotten memory turns the agent Idle.
 - The `Director` then grants Alert on each target to at most `alert_budget` agents: nearest the
-  target's last known position first, then those already Alert, then by handle. The rest turn
-  Curious and get a `Held` event.
+  target's freshest known position first (the youngest memory of it), then those already Alert,
+  then by handle. The rest turn Curious, with one `Held` event when the hold starts; the hold lasts
+  while the agent stays Curious about that target.
 - Every change is a `Changed` event, after the director has ruled.
 
 `Leash::allows` says whether a cell is within the leash, for steering too. The director's waves,

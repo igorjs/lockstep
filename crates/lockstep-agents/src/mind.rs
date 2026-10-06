@@ -33,6 +33,8 @@ pub struct Mind {
     pub memory: Option<LastKnown>,
     /// Game minutes since the target was last seen, while Alert.
     pub unseen_minutes: Fixed32,
+    /// The target the director is holding this agent back from, so `Held` fires once per hold.
+    pub held_from: Option<Handle>,
 }
 
 impl Default for Mind {
@@ -41,6 +43,7 @@ impl Default for Mind {
             alertness: Alertness::Idle,
             memory: None,
             unseen_minutes: Fixed32::ZERO,
+            held_from: None,
         }
     }
 }
@@ -102,12 +105,14 @@ pub struct Surroundings<'a, T: Topology> {
     pub cell_metres: Fixed32,
 }
 
-/// Ages every memory by `minutes`, then applies each agent's stimuli in order. Transitions:
-/// Idle hears a noise and turns Curious; any agent that sees turns Alert; Alert out of sight
-/// long enough turns Searching; an agent whose memory is forgotten turns Idle. A stimulus
-/// outside the agent's leash is ignored. Then the director grants Alert to at most its budget of
-/// agents per target, nearest the target first (then those already Alert, then by handle); the
-/// rest stay Curious (`Held`). Agents are taken in handle order.
+/// Applies each agent's stimuli in the order given, then, when the agent saw nothing this step,
+/// ages its memory by `minutes`, so a noise heard this step ages with it and a sighting starts
+/// fresh. Transitions: Idle hears a noise and turns Curious; any agent that sees turns Alert;
+/// Alert out of sight long enough turns Searching; an agent whose memory is forgotten turns
+/// Idle. A stimulus outside the agent's leash is ignored. Then the director grants Alert to at
+/// most its budget of agents per target, nearest the target's freshest known position first
+/// (then those already Alert, then by handle); the rest stay Curious, with one `Held` event when
+/// the hold starts. Agents are taken in handle order.
 #[allow(clippy::too_many_arguments)]
 pub fn think<T: Topology>(
     minds: &mut Column<Mind>,
@@ -121,11 +126,16 @@ pub fn think<T: Topology>(
 ) {
     let (map, cell_metres) = (surroundings.map, surroundings.cell_metres);
     let minutes = minutes.max(Fixed32::ZERO);
+    // Grouped by agent once, keeping each agent's stimuli in the order given.
+    let mut grouped = stimuli.to_vec();
+    grouped.sort_by_key(|(who, _)| *who);
     let mut before_of = Vec::new();
     for (agent, mind) in minds.iter_mut() {
         let before = mind.alertness;
         let mut saw = false;
-        for (_, stimulus) in stimuli.iter().filter(|(who, _)| *who == agent) {
+        let start = grouped.partition_point(|(who, _)| *who < agent);
+        let end = grouped.partition_point(|(who, _)| *who <= agent);
+        for (_, stimulus) in &grouped[start..end] {
             let at = match stimulus {
                 Stimulus::Heard { at, .. } | Stimulus::Saw { at, .. } => *at,
             };
@@ -177,8 +187,9 @@ pub fn think<T: Topology>(
     }
 }
 
-/// Keeps at most the budget Alert on each target: nearest the target first, then those already
-/// Alert before this step, then by handle. The rest turn Curious.
+/// Keeps at most the budget Alert on each target: nearest the target's freshest known position
+/// first (the youngest memory of it, lowest handle on a tie), then those already Alert before
+/// this step, then by handle. The rest turn Curious.
 fn hold_over_budget<T: Topology>(
     minds: &mut Column<Mind>,
     director: &Director,
@@ -186,30 +197,44 @@ fn hold_over_budget<T: Topology>(
     before_of: &[(Handle, Alertness)],
     events: &mut Vec<MindEvent>,
 ) {
+    // `before_of` was filled walking the same column, so it lines up with `minds.iter()`.
+    let alert: Vec<(Handle, Handle, LastKnown, bool)> = minds
+        .iter()
+        .zip(before_of)
+        .filter(|((_, mind), _)| mind.alertness == Alertness::Alert)
+        .filter_map(|((agent, mind), (_, before))| {
+            let memory = mind.memory?;
+            Some((agent, memory.target?, memory, *before == Alertness::Alert))
+        })
+        .collect();
+    // The freshest position per target: (target, age, agent, position), the first per target.
+    let mut freshest: Vec<(Handle, Fixed32, Handle, Cell)> = alert
+        .iter()
+        .map(|(agent, target, memory, _)| (*target, memory.age_minutes, *agent, memory.position))
+        .collect();
+    freshest.sort();
+    freshest.dedup_by_key(|(target, ..)| *target);
     // (target, distance, not already Alert, agent), sorted, so each target's best come first.
-    let mut wanting = Vec::new();
-    for (agent, mind) in minds.iter() {
-        let Some(target) = mind.memory.and_then(|memory| memory.target) else {
-            continue;
-        };
-        if mind.alertness != Alertness::Alert {
-            continue;
-        }
-        let distance = match (surroundings.occupancy.cell_of(agent), mind.memory) {
-            (Some(at), Some(memory)) => distance_metres(
-                surroundings.map,
-                at,
-                memory.position,
-                surroundings.cell_metres,
-            ),
-            _ => Fixed32::from_raw(i32::MAX),
-        };
-        let was_alert = before_of
-            .iter()
-            .any(|(who, before)| *who == agent && *before == Alertness::Alert);
-        wanting.push((target, distance, !was_alert, agent));
-    }
+    let mut wanting: Vec<(Handle, Fixed32, bool, Handle)> = alert
+        .iter()
+        .map(|(agent, target, _, was_alert)| {
+            let index = freshest
+                .binary_search_by_key(target, |(held, ..)| *held)
+                .expect("every target has a freshest position");
+            let distance = match surroundings.occupancy.cell_of(*agent) {
+                Some(at) => distance_metres(
+                    surroundings.map,
+                    at,
+                    freshest[index].3,
+                    surroundings.cell_metres,
+                ),
+                None => Fixed32::from_raw(i32::MAX),
+            };
+            (*target, distance, !*was_alert, *agent)
+        })
+        .collect();
     wanting.sort();
+    let mut held = Vec::new();
     let mut granted = 0;
     let mut current = None;
     for (target, _, _, agent) in wanting {
@@ -221,8 +246,29 @@ fn hold_over_budget<T: Topology>(
             granted += 1;
             continue;
         }
-        minds.get_mut(agent).expect("listed").alertness = Alertness::Curious;
-        events.push(MindEvent::Held { agent, target });
+        held.push((agent, target));
+    }
+    held.sort();
+    for (agent, mind) in minds.iter_mut() {
+        let hold = held
+            .binary_search_by_key(&agent, |(who, _)| *who)
+            .ok()
+            .map(|index| held[index].1);
+        if let Some(target) = hold {
+            mind.alertness = Alertness::Curious;
+            if mind.held_from != Some(target) {
+                events.push(MindEvent::Held { agent, target });
+            }
+            mind.held_from = hold;
+        } else {
+            // A hold lasts while the agent stays Curious about the same target, so a held agent
+            // that blinks out of sight for a step is not reported held again.
+            let still_held = mind.alertness == Alertness::Curious
+                && mind.memory.and_then(|memory| memory.target) == mind.held_from;
+            if !still_held {
+                mind.held_from = None;
+            }
+        }
     }
 }
 

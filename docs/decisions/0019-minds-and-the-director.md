@@ -12,7 +12,8 @@ Status: decided and implemented in milestone M8.
 - Alert turns Searching once the target has been out of sight for the rules' minutes, and any
   agent whose memory is forgotten turns Idle. A noise never pulls an Alert agent away.
 - The director grants Alert on one target to at most its budget of agents: nearest the target's
-  last known position first, then those already Alert, then by handle. The rest stay Curious.
+  freshest known position first, then those already Alert, then by handle. The rest stay Curious,
+  reported once when the hold starts.
 - A stimulus outside an agent's leash is ignored.
 
 ## Alternatives rejected
@@ -21,6 +22,8 @@ Status: decided and implemented in milestone M8.
 - Lowering confidence by a fraction each step: it drifts with the step rate.
 - First come first served for Alert: the agents that looked first would hold the budget while
   nearer ones wait.
+- Ranking each agent by its own last known position: an agent standing on a stale spot would
+  outrank one seeing the target now.
 
 ## Would change if
 

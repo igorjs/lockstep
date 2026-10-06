@@ -17,6 +17,10 @@ pub fn metres(whole: i32) -> Fixed32 {
     Fixed32::from_int(whole)
 }
 
+pub fn minutes(whole: i32) -> Fixed32 {
+    Fixed32::from_int(whole)
+}
+
 /// Facings, counter-clockwise from east.
 pub const EAST: u16 = 0;
 pub const NORTH: u16 = 16_384;
@@ -75,8 +79,8 @@ impl Floor {
 /// half.
 pub fn rules() -> MindRules {
     MindRules {
-        forget_after_minutes: metres(10),
-        lose_sight_after_minutes: metres(2),
+        forget_after_minutes: minutes(10),
+        lose_sight_after_minutes: minutes(2),
         heard_confidence: Fixed32::HALF,
     }
 }
@@ -91,9 +95,22 @@ impl Floor {
         minds
     }
 
-    /// One `think` of `minutes` with these stimuli, no leashes unless given.
+    /// One `think` of `minutes` with these stimuli, under the common rules.
     pub fn think(
         &self,
+        minds: &mut Column<Mind>,
+        leashes: &Column<Leash>,
+        stimuli: &[(Handle, Stimulus)],
+        minutes: Fixed32,
+        budget: u16,
+    ) -> Vec<MindEvent> {
+        self.think_with(&rules(), minds, leashes, stimuli, minutes, budget)
+    }
+
+    /// One `think` under the given rules.
+    pub fn think_with(
+        &self,
+        rules: &MindRules,
         minds: &mut Column<Mind>,
         leashes: &Column<Leash>,
         stimuli: &[(Handle, Stimulus)],
@@ -111,7 +128,7 @@ impl Floor {
             leashes,
             stimuli,
             minutes,
-            &rules(),
+            rules,
             &Director {
                 alert_budget: budget,
             },
