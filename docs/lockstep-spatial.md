@@ -59,7 +59,8 @@ one `(PathResult, path)` per request, in request order. With the `parallel` feat
 pool; without it (and on WebAssembly) it runs serially, and `find_paths_serially` always does. The
 answers are identical either way, so a simulation can call it inside a step and apply the answers in
 request order without affecting replay or the hash. It is the only place threads are allowed; see
-decision 0006.
+decision 0006. The crowd example (`docs/crowd.md`) is the consumer scenario: its fixture hash is the same
+with the feature on and off.
 
 ## Flow fields
 

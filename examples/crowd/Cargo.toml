@@ -1,0 +1,23 @@
+[package]
+name = "crowd"
+description = "Consumer scenario for the path batch: a crowd walks to a goal around walls"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[features]
+# Solve each step's paths on a thread pool. The fixture hash must not change.
+parallel = ["lockstep-spatial/parallel"]
+
+[dependencies]
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-spatial = { path = "../../crates/lockstep-spatial" }
+serde = { workspace = true }
+
+[dev-dependencies]
+bincode = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

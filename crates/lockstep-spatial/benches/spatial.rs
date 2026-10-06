@@ -13,7 +13,8 @@
 
 use lockstep_core::{Handle, StableVector, Streams};
 use lockstep_spatial::{
-    find_paths, Cell, FlowField, GridMap, Occupancy, PathOptions, PathRequest, Pathfinder, Square8,
+    find_paths, find_paths_serially, Cell, FlowField, GridMap, Occupancy, PathOptions, PathRequest,
+    Pathfinder, Square8,
 };
 use std::time::Instant;
 
@@ -80,7 +81,7 @@ fn main() {
     });
 
     // The same 500 paths as one batch: on a thread pool with the `parallel` feature, serially
-    // without it. The checksum must equal the serial one.
+    // without it. Its answers must equal the serial ones, in order.
     let batch: Vec<PathRequest> = pairs
         .iter()
         .map(|(from, to)| PathRequest {
@@ -95,6 +96,11 @@ fn main() {
             .sum()
     });
     assert_eq!(batch_check, path_check, "the batch walked different paths");
+    assert_eq!(
+        find_paths(&map, &occupancy, &batch, PathOptions::default()),
+        find_paths_serially(&map, &occupancy, &batch, PathOptions::default()),
+        "the batch answered in a different order"
+    );
 
     let mut crowd = Occupancy::new(&map);
     let mut entities = StableVector::new();

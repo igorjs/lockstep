@@ -8,5 +8,10 @@ repository.workspace = true
 
 [dependencies]
 capsule = { path = "../../examples/capsule" }
+crowd = { path = "../../examples/crowd" }
 ledger = { path = "../../examples/ledger" }
 mars-rovers = { path = "../../examples/mars-rovers" }
+
+[features]
+# Run the crowd's path batch on a thread pool. Its fixture hash must not change.
+parallel = ["crowd/parallel"]
