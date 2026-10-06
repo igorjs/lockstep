@@ -8,9 +8,12 @@
 mod common;
 #[path = "../support/duel.rs"]
 mod duel;
+#[path = "../support/walkers.rs"]
+mod walkers;
 
 mod actions_and_dodges;
 mod arc_cells_per_topology;
 mod armour_before_resistance;
 mod knockback_stops_at_walls;
+mod movement_feel;
 mod projectiles;

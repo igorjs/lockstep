@@ -5,9 +5,12 @@
 mod common;
 #[path = "../support/duel.rs"]
 mod duel;
+#[path = "../support/walkers.rs"]
+mod walkers;
 
 mod damage;
 mod fighter;
 mod knockback;
+mod movement;
 mod projectiles;
 mod shapes;
