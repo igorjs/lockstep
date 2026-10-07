@@ -20,7 +20,7 @@ items in a milestone are out of scope here.
 | M7 Inventory | Done | `lockstep-inventory`: catalogue from JSON, items as entities, containers, stacking, equipment with modifiers, binding affixes, spoilage by temperature; cargo-bay | Met: the same game minutes spoil on the same minute at 30 and 60 steps a second, natively and under WebAssembly |
 | M8 Agents | Done, one deferral (D5) | `lockstep-agents`: sight cones with line of sight, staggered checks, noise carried by the wind, hearing thresholds, psychic noise; memory that fades, alert states, the director's budget, leashes; steering by flow field with the shared sidestep; utility decisions and delegation; weather with drift, gusts and fronts; crater-survey; benchmark baseline for 1,000 agents | Met: the budget is never exceeded and leashed rovers never leave their crater over the crater-survey fixture; the wind ranges are exact; a day of weather from seed 42 hashes the same under WebAssembly |
 | M9 Knowledge | Done | `lockstep-knowledge`: facts from fragments of distinct sources, questions, rules over data predicates that fire once, event counts kept in state; audit | Met: the first question opens on its second fragment; nothing fires twice across a save; the predicate hash is equal natively and under WebAssembly |
-| M10 Progression | Not started | | |
+| M10 Progression | In progress | `lockstep-progression`: node graph from JSON with costs, requirements, exclusions both ways, attribute gates, keystones, refunds and modifiers; points by named triggers | Pending: the six-node consumer and its fixture hash |
 | M11 Relations | Not started | | |
 | M12 Crafting | Not started | | |
 | M13 Regions and calendar | Not started | | |

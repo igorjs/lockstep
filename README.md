@@ -22,6 +22,7 @@ Games are the first use, but the same machine runs a ledger, a fleet of rovers, 
 | [`lockstep-inventory`](crates/lockstep-inventory) | Items as entities, containers with slots and weight, stacking, equipment whose modifiers reach the wearer's attributes, binding affixes, and spoilage by temperature that ignores the step rate. |
 | [`lockstep-agents`](crates/lockstep-agents) | Local awareness: sight cones gated by line of sight, staggered checks, noise carried by the wind with exact ranges, memory that fades, alert states, a director that rations Alert, steering through occupancy that never lets two bodies share a cell, and integer utility decisions with delegation. |
 | [`lockstep-knowledge`](crates/lockstep-knowledge) | Facts learned from fragments of distinct sources, questions that open after enough evidence, and revelations, secrets and achievements as data predicates that fire once. |
+| [`lockstep-progression`](crates/lockstep-progression) | Node graphs bought with points from named triggers: requirements, exclusions that lock both ways, attribute gates, irreversible keystones, refunds and modifiers. |
 | [`lockstep-attributes`](crates/lockstep-attributes) | Stats as data: a registry read from JSON, modifiers, thresholds that fire once per crossing, derived values from curves, and timed effects with stacking rules. |
 | [`lockstep-macros`](crates/lockstep-macros) | `#[derive(Message)]`, re-exported by `lockstep-core`. |
 | [`lockstep-headless`](crates/lockstep-headless) | A command line runner that prints and verifies fixture hashes. |

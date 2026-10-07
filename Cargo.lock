@@ -307,6 +307,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-progression"
+version = "0.1.0"
+dependencies = [
+ "lockstep-attributes",
+ "lockstep-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-spatial"
 version = "0.1.0"
 dependencies = [
