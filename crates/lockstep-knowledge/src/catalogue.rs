@@ -98,6 +98,13 @@ pub enum CatalogueError {
     },
     /// A fact or question that needs no fragments would be known from the start.
     NoFragments(String),
+    /// A question with no facts never opens.
+    NoFacts(String),
+    /// A question naming a fact twice would count its fragments twice.
+    RepeatedFact {
+        question: String,
+        fact: String,
+    },
     /// Rules may only name rules listed before them, so firing has one order.
     RuleOrder {
         owner: String,
@@ -120,6 +127,13 @@ impl Catalogue {
         let file: file::CatalogueFile =
             serde_json::from_str(text).map_err(|error| CatalogueError::Json(error.to_string()))?;
         file.into_catalogue(event_kinds)
+    }
+
+    /// The catalogue's hash. Saved knowledge names facts, questions and rules by their place in
+    /// the catalogue, so store this with a save and check it at load: a catalogue edited since
+    /// needs the save converted first.
+    pub fn hash(&self) -> u64 {
+        lockstep_core::hash_of(self)
     }
 
     pub fn fact_id(&self, name: &str) -> Option<FactId> {
@@ -311,6 +325,16 @@ mod file {
                 .map(|question| {
                     if question.fragments == 0 {
                         return Err(CatalogueError::NoFragments(question.name));
+                    }
+                    if question.facts.is_empty() {
+                        return Err(CatalogueError::NoFacts(question.name));
+                    }
+                    let mut seen = BTreeSet::new();
+                    if let Some(repeat) = question.facts.iter().find(|fact| !seen.insert(*fact)) {
+                        return Err(CatalogueError::RepeatedFact {
+                            question: question.name.clone(),
+                            fact: repeat.clone(),
+                        });
                     }
                     let ids = question
                         .facts

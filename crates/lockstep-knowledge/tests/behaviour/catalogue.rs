@@ -84,6 +84,11 @@ fn a_bad_catalogue_is_refused_with_its_reason() {
             },
         ),
     ];
+    let cases = cases.into_iter().chain([
+        (r#"{ "facts": [ { "name": "a", "fragments": 1 } ], "questions": [ { "name": "q", "facts": ["a"], "fragments": 0 } ] }"#, CatalogueError::NoFragments("q".into())),
+        (r#"{ "facts": [], "questions": [ { "name": "q", "facts": [], "fragments": 1 } ] }"#, CatalogueError::NoFacts("q".into())),
+        (r#"{ "facts": [ { "name": "a", "fragments": 1 } ], "questions": [ { "name": "q", "facts": ["a", "a"], "fragments": 2 } ] }"#, CatalogueError::RepeatedFact { question: "q".into(), fact: "a".into() }),
+    ]);
     for (text, error) in cases {
         assert_eq!(read(text), Err(error), "{text}");
     }

@@ -13,6 +13,10 @@ Status: decided and implemented in milestone M9.
   has happened is part of the saved state, so a save and load never fires anything again.
 - A fact is known after fragments from distinct sources: the same source twice counts once.
 - A rule may name only rules listed before it, so one pass in rule order settles them all.
+- `happened` reads counts each knower keeps of the events that mentioned it, fed as they
+  happen, not the timeline, which sits outside saved state and may be compacted.
+- Only enrolled knowers learn, notice and fire, so a stale handle cannot start knowledge in a
+  live entity's slot.
 
 ## Alternatives rejected
 

@@ -10,7 +10,7 @@
 
 use crate::common::{catalogue, fragment, knower, rule};
 use lockstep_core::Column;
-use lockstep_knowledge::{evaluate, receive, Knowledge, KnowledgeEvent, NoHistory};
+use lockstep_knowledge::{evaluate, receive, Knowledge, KnowledgeEvent};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
@@ -20,6 +20,7 @@ fn a_rule_that_keeps_holding_fires_once_even_across_a_save() {
     let catalogue = catalogue();
     let who = knower();
     let mut knowledge = Column::new();
+    lockstep_knowledge::enrol(&mut knowledge, who);
     let mut events = Vec::new();
     for (name, source) in [
         ("round_amounts", 1),
@@ -36,11 +37,11 @@ fn a_rule_that_keeps_holding_fires_once_even_across_a_save() {
         );
     }
     for _ in 0..100 {
-        evaluate(&mut knowledge, &catalogue, &NoHistory, &mut events);
+        evaluate(&mut knowledge, &catalogue, &mut events);
     }
     let saved = lockstep_core::encode(&knowledge);
     let mut loaded: Column<Knowledge> = lockstep_core::decode(&saved).unwrap();
-    evaluate(&mut loaded, &catalogue, &NoHistory, &mut events);
+    evaluate(&mut loaded, &catalogue, &mut events);
     // A repeated fragment after the load opens and teaches nothing again.
     receive(
         &mut loaded,

@@ -17,6 +17,7 @@ fn the_same_source_twice_is_one_fragment() {
     let catalogue = catalogue();
     let who = knower();
     let mut knowledge = Column::new();
+    lockstep_knowledge::enrol(&mut knowledge, who);
     let mut events = Vec::new();
     let once = fragment(&catalogue, "round_amounts", 7);
     receive(&mut knowledge, who, once, &catalogue, &mut events);

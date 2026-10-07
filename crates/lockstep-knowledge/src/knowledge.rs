@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::catalogue::{Catalogue, FactId, Predicate, QuestionId, RuleId, RuleKind};
-use lockstep_core::{Column, Handle, Indexable, Message, Timeline};
+use lockstep_core::{Column, Handle, Indexable, Message};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// One piece of evidence for a fact, from a source: a document, a witness, an instrument. The
 /// same source twice counts once.
@@ -17,6 +17,8 @@ pub struct Fragment {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Knowledge {
     fragments: BTreeSet<Fragment>,
+    /// Events of each kind that mentioned the knower, for `happened`.
+    noticed: BTreeMap<u16, u32>,
     known: BTreeSet<FactId>,
     opened: BTreeSet<QuestionId>,
     fired: BTreeSet<RuleId>,
@@ -33,6 +35,11 @@ impl Knowledge {
 
     pub fn has_fired(&self, rule: RuleId) -> bool {
         self.fired.contains(&rule)
+    }
+
+    /// Events of a kind that have mentioned the knower.
+    pub fn noticed(&self, kind: u16) -> u32 {
+        self.noticed.get(&kind).copied().unwrap_or(0)
     }
 
     /// Fragments of a fact from distinct sources.
@@ -64,32 +71,37 @@ pub enum KnowledgeEvent {
     },
 }
 
-/// What happened before, for `Predicate::Happened`: how many events of a kind mention a knower.
-pub trait History {
-    fn happened(&self, kind: u16, who: Handle) -> u32;
-}
-
-/// A history with nothing in it.
-pub struct NoHistory;
-
-impl History for NoHistory {
-    fn happened(&self, _: u16, _: Handle) -> u32 {
-        0
+/// Makes an entity a knower, with nothing known yet. Only enrolled knowers receive fragments,
+/// notice events and have rules evaluated, so a stale handle never starts a knowledge of its own
+/// in another entity's slot. Enrolling a knower twice changes nothing.
+pub fn enrol(knowledge: &mut Column<Knowledge>, knower: Handle) {
+    if !knowledge.has(knower) {
+        knowledge.set(knower, Knowledge::default());
     }
 }
 
-impl<E: Message + Indexable> History for Timeline<E> {
-    fn happened(&self, kind: u16, who: Handle) -> u32 {
-        self.for_entity(who)
-            .filter(|entry| entry.event.kind() == kind)
-            .count()
-            .min(u32::MAX as usize) as u32
+/// Counts each event for every enrolled knower it mentions, by its kind, for `happened`. Feed it
+/// each step's events as they happen: the counts are saved with the knowledge, so compacting or
+/// dropping the timeline changes nothing.
+pub fn notice<E: Indexable>(knowledge: &mut Column<Knowledge>, events: &[E]) {
+    let mut mentioned = Vec::new();
+    for event in events {
+        mentioned.clear();
+        event.handles(&mut mentioned);
+        mentioned.sort();
+        mentioned.dedup();
+        for who in &mentioned {
+            if let Some(mind) = knowledge.get_mut(*who) {
+                let count = mind.noticed.entry(event.kind()).or_insert(0);
+                *count = count.saturating_add(1);
+            }
+        }
     }
 }
 
-/// Gives a knower a fragment. A new fragment can make its fact known and open questions, each
-/// once; a fragment from a source already counted for that fact changes nothing. A knower with
-/// no knowledge yet starts with an empty one. A fact the catalogue lacks is ignored.
+/// Gives an enrolled knower a fragment. A new fragment can make its fact known and open
+/// questions, each once; a fragment from a source already counted for that fact changes nothing.
+/// A knower not enrolled, or a fact the catalogue lacks, is ignored.
 pub fn receive(
     knowledge: &mut Column<Knowledge>,
     knower: Handle,
@@ -100,10 +112,9 @@ pub fn receive(
     let Some(fact) = catalogue.facts.get(fragment.fact.0 as usize) else {
         return;
     };
-    if !knowledge.has(knower) {
-        knowledge.set(knower, Knowledge::default());
-    }
-    let mind = knowledge.get_mut(knower).expect("just set");
+    let Some(mind) = knowledge.get_mut(knower) else {
+        return;
+    };
     if !mind.fragments.insert(fragment) {
         return;
     }
@@ -135,37 +146,31 @@ pub fn receive(
 }
 
 /// Whether a predicate holds for a knower now.
-pub fn holds(
-    predicate: &Predicate,
-    knower: Handle,
-    mind: &Knowledge,
-    history: &dyn History,
-) -> bool {
+pub fn holds(predicate: &Predicate, mind: &Knowledge) -> bool {
     match predicate {
         Predicate::Known(fact) => mind.knows(*fact),
         Predicate::Fragments { fact, at_least } => mind.fragments_of(*fact) >= *at_least,
         Predicate::Opened(question) => mind.has_opened(*question),
         Predicate::Fired(rule) => mind.has_fired(*rule),
-        Predicate::Happened { kind, at_least } => history.happened(*kind, knower) >= *at_least,
-        Predicate::All(parts) => parts.iter().all(|part| holds(part, knower, mind, history)),
-        Predicate::Any(parts) => parts.iter().any(|part| holds(part, knower, mind, history)),
-        Predicate::Not(part) => !holds(part, knower, mind, history),
+        Predicate::Happened { kind, at_least } => mind.noticed(*kind) >= *at_least,
+        Predicate::All(parts) => parts.iter().all(|part| holds(part, mind)),
+        Predicate::Any(parts) => parts.iter().any(|part| holds(part, mind)),
+        Predicate::Not(part) => !holds(part, mind),
     }
 }
 
-/// Fires every rule whose predicate holds for each knower, each at most once per knower, in
-/// handle order and then rule order. A rule that names an earlier rule sees it fired in the same
-/// pass.
+/// Fires every rule whose predicate holds for each enrolled knower, each at most once per knower,
+/// in handle order and then rule order. A rule that names an earlier rule sees it fired in the
+/// same pass.
 pub fn evaluate(
     knowledge: &mut Column<Knowledge>,
     catalogue: &Catalogue,
-    history: &dyn History,
     events: &mut Vec<KnowledgeEvent>,
 ) {
     for (knower, mind) in knowledge.iter_mut() {
         for (index, rule) in catalogue.rules.iter().enumerate() {
             let id = RuleId(index as u16);
-            if mind.fired.contains(&id) || !holds(&rule.when, knower, mind, history) {
+            if mind.fired.contains(&id) || !holds(&rule.when, mind) {
                 continue;
             }
             mind.fired.insert(id);
