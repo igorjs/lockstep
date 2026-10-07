@@ -12,7 +12,8 @@ Status: decided and implemented in milestone M10.
   falls later takes nothing away.
 - A keystone is never refunded, and the nodes it requires stay because it requires them.
 - A refund returns the node's percent of its cost, rounded down, and removes its modifiers.
-- Requirements may not loop, and a node may not require what it excludes; the graph is refused.
+- Requirements may not loop, and a node no owner could take is refused: one whose full
+  requirements hold two nodes that exclude each other, or a node it excludes.
 
 ## Alternatives rejected
 

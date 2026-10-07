@@ -101,3 +101,50 @@ fn progress_saves_and_loads_to_an_equal_one() {
     let loaded: Column<lockstep_progression::Progress> = lockstep_core::decode(&saved).unwrap();
     assert_eq!(loaded, crew.progress);
 }
+
+#[test]
+fn why_not_checks_exclusions_then_gates_then_points() {
+    let mut crew = Crew::new(4);
+    crew.unlock("basics").unwrap();
+    crew.unlock("diagnostics").unwrap();
+    // No points left and only 10 experience: the gate is named before the points.
+    crew.set("experience", 10);
+    let senior = crew.node("senior");
+    let experience = crew.registry.id("experience").unwrap();
+    assert_eq!(
+        why_not(
+            &crew.progress,
+            crew.who,
+            senior,
+            &crew.graph,
+            &crew.attributes
+        ),
+        Some(Refusal::Gate(experience))
+    );
+    crew.set("experience", 60);
+    assert_eq!(
+        why_not(
+            &crew.progress,
+            crew.who,
+            senior,
+            &crew.graph,
+            &crew.attributes
+        ),
+        Some(Refusal::Points { needed: 3, have: 0 })
+    );
+    // With electrical refused by mechanical and no points either, the exclusion comes first.
+    let mut other = Crew::new(3);
+    other.unlock("basics").unwrap();
+    other.unlock("mechanical").unwrap();
+    let (electrical, mechanical) = (other.node("electrical"), other.node("mechanical"));
+    assert_eq!(
+        why_not(
+            &other.progress,
+            other.who,
+            electrical,
+            &other.graph,
+            &other.attributes
+        ),
+        Some(Refusal::ExcludedBy(mechanical))
+    );
+}

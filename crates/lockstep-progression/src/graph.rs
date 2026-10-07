@@ -2,7 +2,7 @@
 use lockstep_attributes::{AttributeId, Modifier, Registry};
 use lockstep_core::math::Fixed32;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Serialize, Deserialize)]
 pub struct NodeId(pub u16);
@@ -101,32 +101,78 @@ impl Graph {
         .map(TriggerId)
     }
 
+    /// Refuses requirements that loop, and nodes no owner could ever take: a node whose full set
+    /// of requirements (theirs included) holds two nodes that exclude each other, or a node it
+    /// excludes. Iterative, so a long chain cannot overflow the stack.
     fn check(&self) -> Result<(), GraphError> {
-        // Requirements must not loop: a depth-first walk in node order, marking finished nodes.
-        let mut finished = vec![false; self.nodes.len()];
-        let mut on_path = vec![false; self.nodes.len()];
-        fn visit(
-            graph: &Graph,
-            node: usize,
-            finished: &mut [bool],
-            on_path: &mut [bool],
-        ) -> Result<(), GraphError> {
-            if finished[node] {
-                return Ok(());
+        let count = self.nodes.len();
+        // Kahn's order: a node comes after everything it requires.
+        let mut waiting: Vec<usize> = self.nodes.iter().map(|node| node.requires.len()).collect();
+        let mut required_by = vec![Vec::new(); count];
+        for (index, node) in self.nodes.iter().enumerate() {
+            for required in &node.requires {
+                required_by[required.0 as usize].push(index);
             }
-            if on_path[node] {
-                return Err(GraphError::Cycle(graph.nodes[node].name.clone()));
-            }
-            on_path[node] = true;
-            for required in &graph.nodes[node].requires {
-                visit(graph, required.0 as usize, finished, on_path)?;
-            }
-            on_path[node] = false;
-            finished[node] = true;
-            Ok(())
         }
-        for node in 0..self.nodes.len() {
-            visit(self, node, &mut finished, &mut on_path)?;
+        let mut ready: Vec<usize> = (0..count)
+            .rev()
+            .filter(|index| waiting[*index] == 0)
+            .collect();
+        let mut order = Vec::with_capacity(count);
+        while let Some(index) = ready.pop() {
+            order.push(index);
+            for dependant in required_by[index].iter().rev() {
+                waiting[*dependant] -= 1;
+                if waiting[*dependant] == 0 {
+                    ready.push(*dependant);
+                }
+            }
+        }
+        if order.len() < count {
+            let looped = (0..count)
+                .find(|index| waiting[*index] > 0)
+                .expect("a node left over");
+            return Err(GraphError::Cycle(self.nodes[looped].name.clone()));
+        }
+        // For each node that takes part in an exclusion, every node that requires it, directly or
+        // not: a walk forward over `required_by`. Graphs have few exclusions, so this stays
+        // linear in the nodes for each one.
+        let mut excluded_nodes: BTreeSet<usize> = BTreeSet::new();
+        for node in &self.nodes {
+            excluded_nodes.extend(node.excludes.iter().map(|excluded| excluded.0 as usize));
+        }
+        let mut needs: BTreeMap<usize, Vec<bool>> = BTreeMap::new();
+        for start in excluded_nodes {
+            let mut reached = vec![false; count];
+            let mut stack = required_by[start].clone();
+            while let Some(index) = stack.pop() {
+                if !reached[index] {
+                    reached[index] = true;
+                    stack.extend(required_by[index].iter().copied());
+                }
+            }
+            needs.insert(start, reached);
+        }
+        let requires = |node: usize, of: usize| needs.get(&of).is_some_and(|reached| reached[node]);
+        let excluders: Vec<usize> = (0..count)
+            .filter(|index| !self.nodes[*index].excludes.is_empty())
+            .collect();
+        for (index, node) in self.nodes.iter().enumerate() {
+            // A node excluding something it needs, or needing both sides of an exclusion.
+            let clash = node
+                .excludes
+                .iter()
+                .any(|excluded| requires(index, excluded.0 as usize))
+                || excluders.iter().any(|other| {
+                    requires(index, *other)
+                        && self.nodes[*other]
+                            .excludes
+                            .iter()
+                            .any(|excluded| requires(index, excluded.0 as usize))
+                });
+            if clash {
+                return Err(GraphError::Contradiction(node.name.clone()));
+            }
         }
         Ok(())
     }
@@ -241,9 +287,16 @@ mod file {
                     return Err(GraphError::DuplicateName(repeat.to_string()));
                 }
             }
-            let names: Vec<String> = self.nodes.iter().map(|node| node.name.clone()).collect();
+            let names: BTreeMap<String, u16> = self
+                .nodes
+                .iter()
+                .enumerate()
+                .map(|(index, node)| (node.name.clone(), index as u16))
+                .collect();
             let node = |owner: &str, name: &str| {
-                position(names.iter().map(String::as_str), name)
+                names
+                    .get(name)
+                    .copied()
                     .map(NodeId)
                     .ok_or_else(|| GraphError::UnknownNode {
                         owner: owner.to_string(),
@@ -325,13 +378,6 @@ mod file {
             }
             for node in &mut nodes {
                 node.excludes.sort();
-            }
-            if let Some(contradiction) = nodes.iter().find(|node| {
-                node.requires
-                    .iter()
-                    .any(|required| node.excludes.contains(required))
-            }) {
-                return Err(GraphError::Contradiction(contradiction.name.clone()));
             }
             let graph = Graph {
                 nodes,

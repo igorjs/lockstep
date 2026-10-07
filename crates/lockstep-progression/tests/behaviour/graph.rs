@@ -78,8 +78,40 @@ fn a_bad_graph_is_refused_with_its_reason() {
             r#"{ "name": "a", "cost": 1, "refund_percent": 101 }"#,
             GraphError::RefundOver100("a".into()),
         ),
+        // Requiring both sides of an exclusion: no owner could ever take it.
+        (
+            r#"{ "name": "a", "cost": 1, "excludes": ["b"] }, { "name": "b", "cost": 1 }, { "name": "c", "cost": 1, "requires": ["a", "b"] }"#,
+            GraphError::Contradiction("c".into()),
+        ),
+        // Excluding something two links down its own chain.
+        (
+            r#"{ "name": "a", "cost": 1 }, { "name": "b", "cost": 1, "requires": ["a"] }, { "name": "c", "cost": 1, "requires": ["b"], "excludes": ["a"] }"#,
+            GraphError::Contradiction("c".into()),
+        ),
     ];
     for (nodes, error) in cases {
         assert_eq!(read(nodes), Err(error), "{nodes}");
     }
+}
+
+#[test]
+fn a_long_requirement_chain_loads_without_running_out_of_stack() {
+    let registry = registry();
+    let nodes: Vec<String> = (0..20_000)
+        .map(|index| {
+            if index == 0 {
+                r#"{ "name": "n0", "cost": 1 }"#.to_string()
+            } else {
+                format!(
+                    r#"{{ "name": "n{index}", "cost": 1, "requires": ["n{}"] }}"#,
+                    index - 1
+                )
+            }
+        })
+        .collect();
+    let text = format!(r#"{{ "nodes": [ {} ] }}"#, nodes.join(", "));
+    assert_eq!(
+        Graph::from_json(&text, &registry).map(|graph| graph.nodes.len()),
+        Ok(20_000)
+    );
 }

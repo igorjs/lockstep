@@ -31,9 +31,10 @@ Numbers in gates and modifiers are whole numbers or decimal strings, as in the a
   unless it sets its own), and modifiers for its owner's attributes while taken.
 - An exclusion written on one node holds both ways: it is added to the other node too.
 - A trigger is a name and the points it earns.
-- Refused with a reason: repeated names, an unknown node or attribute, a node requiring or
-  excluding itself or requiring a node it excludes (`Contradiction`), requirements that loop
-  (`Cycle`), and a refund over 100 percent.
+- Refused with a reason: repeated names, an unknown node or attribute, requirements that loop
+  (`Cycle`), a refund over 100 percent, and a node no owner could ever take (`Contradiction`): one
+  requiring or excluding itself, or whose full requirements, theirs included, hold two nodes
+  that exclude each other or a node it excludes. The checks are iterative, so a long chain loads.
 
 ## Progress
 
@@ -56,8 +57,10 @@ See decision 0024.
 
 ## Tests
 
-- `tests/behaviour/graph.rs`: every field read, exclusions on both sides, and each refusal.
+- `tests/behaviour/graph.rs`: every field read, exclusions on both sides, each refusal including
+  nodes that could never be taken, and a 20,000-node chain.
 - `tests/behaviour/progress.rs`: points from triggers, requirements, refunds rounded down with
-  their modifiers removed, `why_not`'s first reason, an owner not enrolled, and a save and load.
+  their modifiers removed, `why_not`'s order (requirement, exclusion, gate, points), an owner not
+  enrolled, and a save and load.
 - `tests/decisions`: exclusions lock both ways, gates enforce when taken and not after, and
   keystones never refund (decision 0024).
