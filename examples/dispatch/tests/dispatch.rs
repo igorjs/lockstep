@@ -34,16 +34,16 @@ fn the_fixture_hash_matches_the_committed_value_natively_and_under_webassembly()
     );
 }
 
-/// The gate: across the session, every refusal that names trust comes while the driver's trust
-/// in the dispatcher is below the threshold, and there are such refusals.
+/// The gate: across the session, a route offered to a driver whose trust in the dispatcher is
+/// below 10 is refused naming trust, and a refusal naming trust comes only below 10; both happen.
 #[test]
-fn a_refusal_naming_trust_comes_only_below_the_threshold() {
+fn a_driver_refuses_below_the_trust_threshold_and_says_so() {
     let mut runner = runner(depot(), DEFAULT_SEED);
     let mut streams = Streams::new(DEFAULT_SEED ^ 0x0064_6973_7061);
-    let mut refusals = 0;
+    let (mut below, mut above) = (0, 0);
     for step in 0..DEFAULT_STEPS {
         let intents = script(runner.simulation(), &mut streams);
-        // Trust as the driver weighs it: before this step's intents.
+        // Trust as the driver weighs it: before this step's intents (at most one a step).
         let before: Vec<(Handle, Fixed32)> = runner
             .simulation()
             .drivers()
@@ -51,26 +51,71 @@ fn a_refusal_naming_trust_comes_only_below_the_threshold() {
             .map(|driver| (driver, runner.simulation().trust_in_dispatcher(driver)))
             .collect();
         for event in runner.step_once(&intents).events {
-            if let Event::Answered {
-                driver,
-                response:
-                    TaskResponse::Refuse {
-                        reason: Some(reason),
-                    },
-            } = event
-            {
-                if reason == TRUST {
-                    refusals += 1;
-                    let trust = before.iter().find(|(who, _)| *who == driver).unwrap().1;
-                    assert!(
-                        trust < Fixed32::from_int(TRUST_NEEDED),
-                        "step {step}: refused for trust at {trust:?}"
-                    );
-                }
+            let Event::Answered { driver, response } = event else {
+                continue;
+            };
+            let trust = before.iter().find(|(who, _)| *who == driver).unwrap().1;
+            let refused_for_trust = response
+                == TaskResponse::Refuse {
+                    reason: Some(TRUST),
+                };
+            if trust < Fixed32::from_int(TRUST_NEEDED) {
+                below += 1;
+                assert!(refused_for_trust, "step {step}: {response:?} at {trust:?}");
+            } else {
+                above += 1;
+                assert!(
+                    !refused_for_trust,
+                    "step {step}: refused for trust at {trust:?}"
+                );
             }
         }
     }
-    assert!(refusals > 0, "trust refused some routes");
+    assert!(
+        below > 0 && above > 0,
+        "routes offered both sides: {below} below, {above} above"
+    );
+}
+
+#[test]
+fn ten_is_the_line() {
+    let mut runner = runner(depot(), 1);
+    let ama = drivers(&runner)[0];
+    // Two late pays from 20: 20 less 24 is -4; then on-time pays climb back by 4.
+    pay(&mut runner, ama, false);
+    pay(&mut runner, ama, false);
+    let mut answers = Vec::new();
+    for _ in 0..5 {
+        pay(&mut runner, ama, true);
+        let trust = runner.simulation().trust_in_dispatcher(ama);
+        answers.push((
+            trust >= Fixed32::from_int(TRUST_NEEDED),
+            assign(&mut runner, ama),
+        ));
+    }
+    for (at_or_above, answer) in answers {
+        let refused_for_trust = answer
+            == TaskResponse::Refuse {
+                reason: Some(TRUST),
+            };
+        assert_eq!(refused_for_trust, !at_or_above, "{answer:?}");
+    }
+}
+
+#[test]
+fn an_order_for_the_dispatcher_or_a_stranger_is_unknown() {
+    let mut runner = runner(depot(), 1);
+    let dispatcher = runner.simulation().dispatcher();
+    let events = runner
+        .step_once(&[
+            Intent::Assign { driver: dispatcher },
+            Intent::Pay {
+                driver: dispatcher,
+                on_time: true,
+            },
+        ])
+        .events;
+    assert_eq!(events, vec![Event::Unknown, Event::Unknown]);
 }
 
 #[test]
@@ -94,7 +139,7 @@ fn a_driver_paid_late_too_often_refuses_and_says_it_is_trust() {
 fn a_tired_driver_delays_then_refuses_for_fatigue() {
     let mut runner = runner(depot(), 1);
     let bix = drivers(&runner)[1];
-    // Trust 20 counts 10 for; each route today counts 5 against: two routes, then delays.
+    // Trust 20 counts 10 for; each route today counts 5 against: three routes, then delays.
     assert_eq!(assign(&mut runner, bix), TaskResponse::Accept);
     assert_eq!(assign(&mut runner, bix), TaskResponse::Accept);
     assert_eq!(assign(&mut runner, bix), TaskResponse::Accept);
@@ -104,9 +149,10 @@ fn a_tired_driver_delays_then_refuses_for_fatigue() {
             minutes: DELAY_MINUTES
         }
     );
-    // A delay adds no route, so the answer holds at a delay. Trust pushed to 60 lets bix take
-    // routes up to ten; two late payments then bring trust to 36, so ten routes count 50 against
-    // 26 for, and the refusal names fatigue, the weaker reason.
+    // A delay adds no route, so the answer holds at a delay. Ten on-time pays push trust just
+    // under 60 (a step of drift each time), read as 59, so bix takes ten routes; two late
+    // payments then read as 35, so ten routes count 50 against 25 for, and the refusal names
+    // fatigue, the weaker reason.
     for _ in 0..10 {
         pay(&mut runner, bix, true);
     }

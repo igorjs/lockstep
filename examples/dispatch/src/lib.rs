@@ -3,8 +3,9 @@
 //!
 //! A dispatcher assigns routes to drivers on the day and night shifts. Each driver answers an
 //! assignment as a delegated task: its trust in the dispatcher (from `data/relations.json`, the
-//! pair standing plus the dispatcher's shift group) against the routes it has driven today. It
-//! accepts, delays, or refuses naming the weaker reason. Pay on time raises the driver's trust,
+//! pair standing plus the dispatcher's shift group) against the routes it has driven today. Below
+//! a trust of 10 it refuses outright, naming trust; above it, it accepts, delays, or refuses
+//! naming the weaker reason. Pay on time raises the driver's trust,
 //! late pay lowers it more and sours its shift mates on the dispatcher's shift, and trust drifts
 //! back toward its rest a little each day.
 
@@ -22,8 +23,10 @@ pub const RELATIONS_JSON: &str = include_str!("../data/relations.json");
 /// Why a driver refuses.
 pub const TRUST: Reason = Reason(1);
 pub const FATIGUE: Reason = Reason(2);
-/// Below this trust a driver counts against the dispatcher.
+/// Below this trust a driver refuses outright, naming trust.
 pub const TRUST_NEEDED: i32 = 10;
+/// What trust below the threshold scores: low enough to refuse whatever else counts.
+pub const DISTRUST: i32 = -100;
 /// Each route already driven today counts this much against another.
 pub const ROUTE_WEIGHT: i32 = 5;
 /// Accepted at or above, delayed at or above, refused below.
@@ -173,7 +176,14 @@ impl Dispatch {
             considerations: vec![
                 (
                     TRUST,
-                    Box::new(|_: Handle, (trust, _): &(i32, i32)| trust - TRUST_NEEDED),
+                    // Below the threshold trust is a hard no; above it, how far above counts for.
+                    Box::new(|_: Handle, (trust, _): &(i32, i32)| {
+                        if *trust < TRUST_NEEDED {
+                            DISTRUST
+                        } else {
+                            trust - TRUST_NEEDED
+                        }
+                    }),
                 ),
                 (
                     FATIGUE,
