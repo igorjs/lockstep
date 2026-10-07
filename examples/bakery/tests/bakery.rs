@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 use bakery::{
     catalogue, fixture_hash, recipes, runner, script, shop, Bakery, Event, Intent, Place,
-    DEFAULT_SEED, DEFAULT_STEPS, ROOM,
+    DEFAULT_SEED, DEFAULT_STEPS, DELIVERED_KINDS, ROOM,
 };
 use lockstep_core::math::Fixed32;
 use lockstep_core::{hash_of, Clock, Context, Runner, Simulation, StableVector, Streams};
-use lockstep_crafting::{Crafting, CraftingEvent};
-use lockstep_inventory::{Container, Inventory};
+use lockstep_crafting::{Crafting, CraftingEvent, Refusal};
+use lockstep_inventory::{Container, Inventory, KindId};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
@@ -48,12 +48,19 @@ fn the_pantry_changes_only_by_deliveries_and_whole_recipes() {
     let mut streams = script_streams();
     let catalogue = catalogue();
     let dough = recipes(&catalogue).recipe_id("dough").unwrap();
-    let mut refused = 0;
+    let pantry = runner.simulation().place(Place::Pantry);
+    let index = |kind: KindId| {
+        DELIVERED_KINDS
+            .iter()
+            .position(|known| *known == catalogue.kind(kind).name)
+    };
+    // Mixes refused for water or yeast: inputs are checked in recipe order, so the two flour
+    // were there, and a mix taking inputs one by one would have taken them.
+    let mut refused_with_flour = 0;
     for step in 0..DEFAULT_STEPS {
         let intents = script(runner.simulation(), &mut streams);
         let units = |runner: &Runner<Bakery>| {
-            ["flour", "water", "yeast"]
-                .map(|name| all_units(runner.simulation(), name, Place::Pantry))
+            DELIVERED_KINDS.map(|name| all_units(runner.simulation(), name, Place::Pantry))
         };
         let before = units(&runner);
         let events = runner.step_once(&intents).events;
@@ -62,25 +69,28 @@ fn the_pantry_changes_only_by_deliveries_and_whole_recipes() {
         for event in &events {
             match event {
                 Event::Delivered { kind, count } => {
-                    let name = catalogue.kind(*kind).name.as_str();
-                    let index = ["flour", "water", "yeast"]
-                        .iter()
-                        .position(|known| *known == name)
-                        .unwrap();
-                    expected[index] += *count as i64;
+                    expected[index(*kind).unwrap()] += *count as i64;
+                }
+                Event::Discarded { from, kind, count } if *from == pantry => {
+                    expected[index(*kind).unwrap()] -= *count as i64;
                 }
                 Event::Crafting(CraftingEvent::Started { recipe, .. }) if *recipe == dough => {
                     expected[0] -= 2;
                     expected[1] -= 1;
                     expected[2] -= 1;
                 }
-                Event::Refused { .. } => refused += 1,
+                Event::Refused {
+                    reason: Refusal::Missing { kind, .. },
+                } if index(*kind).is_some_and(|index| index > 0) => refused_with_flour += 1,
                 _ => {}
             }
         }
         assert_eq!(after.map(|units| units as i64), expected, "step {step}");
     }
-    assert!(refused > 0, "some jobs were refused");
+    assert!(
+        refused_with_flour > 0,
+        "a mix was refused with its flour in the pantry"
+    );
 }
 
 /// The gate, convergence: 2,000 bakes with the committed bread recipe land within 3 percent of
@@ -157,16 +167,51 @@ fn bread_comes_from_dough_from_the_pantry() {
         runner.step_once(&[]);
     }
     let bakery = runner.simulation();
+    // Seed 1 draws a risen dough and a good bake.
+    assert_eq!(made_dough, 1);
     assert_eq!(bakery.units("flour", Place::Pantry), 0);
-    if made_dough == 1 {
-        let baked = bakery.units("bread", Place::Oven) + bakery.units("charcoal", Place::Oven);
-        assert!(baked <= 2);
-        assert_eq!(
-            bakery.units("dough", Place::Mixer),
-            0,
-            "the dough went in the oven"
+    assert_eq!(bakery.units("dough", Place::Mixer), 0, "the dough went in");
+    assert_eq!(bakery.units("bread", Place::Oven), 2);
+    assert_eq!(bakery.units("charcoal", Place::Oven), 0);
+}
+
+#[test]
+fn spoiled_dough_is_thrown_out_of_the_mixer() {
+    let mut runner = runner(shop(), 1);
+    let kind = |name: &str| runner.simulation().catalogue().kind_id(name).unwrap();
+    let (flour, water, yeast) = (kind("flour"), kind("water"), kind("yeast"));
+    for (kind, count) in [(flour, 2), (water, 1), (yeast, 1)] {
+        runner.step_once(&[Intent::Deliver { kind, count }]);
+    }
+    runner.step_once(&[Intent::Mix]);
+    let mut thrown = Vec::new();
+    // Dough spoils in four game hours, 7,200 steps, after 300 steps of mixing.
+    for _ in 0..7_600 {
+        thrown.extend(
+            runner
+                .step_once(&[])
+                .events
+                .into_iter()
+                .filter(|event| matches!(event, Event::Discarded { .. })),
         );
     }
+    let bakery = runner.simulation();
+    assert_eq!(
+        thrown,
+        vec![Event::Discarded {
+            from: bakery.place(Place::Mixer),
+            kind: bakery.catalogue().kind_id("dough").unwrap(),
+            count: 1
+        }]
+    );
+    let mixer = bakery.place(Place::Mixer);
+    assert!(bakery
+        .world()
+        .inventory
+        .container(mixer)
+        .unwrap()
+        .items()
+        .is_empty());
 }
 
 #[test]
@@ -184,6 +229,15 @@ fn selling_needs_a_loaf_and_a_bad_delivery_is_turned_away() {
         }])
         .events;
     assert_eq!(events, vec![Event::Turned { kind: flour }]);
+    // Only flour, water and yeast are delivered.
+    let dough = runner.simulation().catalogue().kind_id("dough").unwrap();
+    let events = runner
+        .step_once(&[Intent::Deliver {
+            kind: dough,
+            count: 1,
+        }])
+        .events;
+    assert_eq!(events, vec![Event::Turned { kind: dough }]);
 }
 
 /// Steps a simulation outside a runner, the way the runner does.

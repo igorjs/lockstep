@@ -20,6 +20,8 @@ pub const RECIPES_JSON: &str = include_str!("../data/recipes.json");
 
 /// The bakery's temperature, in whole degrees.
 pub const ROOM: i32 = 22;
+/// The kinds a delivery may bring.
+pub const DELIVERED_KINDS: [&str; 3] = ["flour", "water", "yeast"];
 
 pub fn catalogue() -> Catalogue {
     let registry = Registry::from_json(r#"{ "attributes": [] }"#).expect("an empty registry");
@@ -56,7 +58,7 @@ pub enum Event {
         kind: KindId,
         count: u16,
     },
-    /// The pantry had no room for a delivery.
+    /// The pantry had no room for a delivery, or it was not flour, water or yeast.
     Turned {
         kind: KindId,
     },
@@ -65,6 +67,12 @@ pub enum Event {
         reason: Refusal,
     },
     Inventory(InventoryEvent),
+    /// A spoiled item was thrown out of a place's container.
+    Discarded {
+        from: Handle,
+        kind: KindId,
+        count: u16,
+    },
     Sold,
     NothingToSell,
 }
@@ -189,6 +197,7 @@ impl Simulation for Bakery {
             match *intent {
                 Intent::Deliver { kind, count } => {
                     let valid = (kind.0 as usize) < self.catalogue.kind_count()
+                        && DELIVERED_KINDS.contains(&self.catalogue.kind(kind).name.as_str())
                         && count >= 1
                         && count <= self.catalogue.kind(kind).stack;
                     if !valid {
@@ -236,6 +245,23 @@ impl Simulation for Bakery {
             .inventory
             .spoil(context.elapsed_minutes, ROOM, &self.catalogue, &mut spoiled);
         events.extend(spoiled.into_iter().map(Event::Inventory));
+        // Spoiled items are thrown out, or they would fill the slots for good.
+        let thrown: Vec<(Handle, Handle, KindId, u16)> = self
+            .world
+            .inventory
+            .items()
+            .filter(|(_, item)| item.spoiled)
+            .filter_map(|(handle, item)| match self.world.inventory.place(handle) {
+                Some(lockstep_inventory::Place::In(from)) => {
+                    Some((handle, from, item.kind, item.count))
+                }
+                _ => None,
+            })
+            .collect();
+        for (item, from, kind, count) in thrown {
+            self.world.inventory.destroy(item).expect("a held item");
+            events.push(Event::Discarded { from, kind, count });
+        }
         let mut crafting_events = Vec::new();
         self.world.crafting.tick(
             &mut self.world.inventory,
