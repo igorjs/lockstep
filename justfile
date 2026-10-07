@@ -43,6 +43,7 @@ determinism:
     wasm-pack test --node crates/lockstep-agents
     wasm-pack test --node crates/lockstep-knowledge
     wasm-pack test --node crates/lockstep-progression
+    wasm-pack test --node crates/lockstep-relations
     wasm-pack test --node examples/capsule
     wasm-pack test --node examples/ledger
     wasm-pack test --node examples/mars-rovers
