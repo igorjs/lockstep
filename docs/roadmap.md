@@ -22,7 +22,7 @@ items in a milestone are out of scope here.
 | M9 Knowledge | Done | `lockstep-knowledge`: facts from fragments of distinct sources, questions, rules over data predicates that fire once, event counts kept in state; audit | Met: the first question opens on its second fragment; nothing fires twice across a save; the predicate hash is equal natively and under WebAssembly |
 | M10 Progression | Done | `lockstep-progression`: node graph from JSON with costs, requirements, exclusions both ways, attribute gates, keystones, refunds and modifiers; points by named triggers; training | Met: across the training session no technician holds both sides of an exclusion, every gated node was taken with its gate met, and the keystone never comes back |
 | M11 Relations | Done | `lockstep-relations`: directional standings toward entities and groups, bounds, thresholds crossed in passing order, exact decay toward rest; dispatch | Met: across the dispatch session every refusal naming trust comes while trust is below the threshold, and a driver who has lost trust refuses saying so |
-| M12 Crafting | In progress | `lockstep-crafting`: recipes from JSON with stations, inputs, minutes and weighted outcome tables with failure branches; atomic consumption; outcomes from a named stream | Pending: the consumer and its fixture hash |
+| M12 Crafting | Done | `lockstep-crafting`: recipes from JSON with stations, inputs, minutes and weighted outcome tables with failure branches; atomic consumption; outcomes from a named stream; bakery | Met: across the bakery session the pantry changes only by deliveries and whole recipes; 2,000 bakes land within 3 percent of the outcome table |
 | M13 Regions and calendar | Not started | | |
 | M14 Structures and procedural generation | Not started | | |
 | M15 Meta, lineage, templates | Not started | | |
@@ -72,3 +72,4 @@ items in a milestone are out of scope here.
 | P20 | The reference's knowledge consumer (a question ledger in the survivor's world) is a non-game `audit` example; and `happened` counts events the simulation feeds as they happen, not the timeline, which sits outside saved state | `docs/audit.md`, decision 0023 |
 | P21 | The reference's progression consumer (a six-node web with one keystone in the survivor's world) is a non-game `training` example | `docs/training.md` |
 | P22 | The reference's relations consumer (a companion refusing a task below a trust threshold) is a non-game `dispatch` example, using the delegation from `lockstep-agents` | `docs/dispatch.md` |
+| P23 | The reference's crafting consumer (an altar reforge with a gamble) is a non-game `bakery` example | `docs/bakery.md` |

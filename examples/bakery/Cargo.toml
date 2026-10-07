@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "bakery"
+description = "Non-game consumer scenario for lockstep-crafting: a mixer and an oven turn deliveries into bread, with failures from an outcome table"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-attributes = { path = "../../crates/lockstep-attributes" }
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-crafting = { path = "../../crates/lockstep-crafting" }
+lockstep-inventory = { path = "../../crates/lockstep-inventory" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

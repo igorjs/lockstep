@@ -52,6 +52,7 @@ WebAssembly on every change.
 | [`audit`](examples/audit) | An auditor reviews transfers as they happen and gathers fragments (round amounts, small-hours transfers, shared receivers) until questions open and findings fire, once, from data. Not a game. |
 | [`training`](examples/training) | Technicians earn points at work and study a six-node web: an exclusive specialisation, gates on experience, and an irreversible chief keystone. Not a game. |
 | [`dispatch`](examples/dispatch) | Drivers accept, delay or refuse routes by their trust in the dispatcher against their fatigue, and say why; late pay sours a whole shift. Not a game. |
+| [`bakery`](examples/bakery) | A mixer and an oven turn deliveries into bread through recipes that consume all or nothing, with flat dough, burnt loaves and collapses from an outcome table. Not a game. |
 | [`sparring`](examples/sparring) | Partners spar in pairs: strikes, sweeps that knock back, dodges, thrown balls, walking and running on one stamina pool, and a 200-partner spike. |
 | [`crowd`](examples/crowd) | Sixty bodies route to one goal, solving each step's paths as one batch, with the same hash on one thread or many. |
 

@@ -1,0 +1,17 @@
+{
+  "stations": ["mixer", "oven"],
+  "recipes": [
+    { "name": "dough", "station": "mixer", "minutes": 10,
+      "inputs": [ { "kind": "flour", "count": 2 }, { "kind": "water", "count": 1 },
+                  { "kind": "yeast", "count": 1 } ],
+      "outcomes": [
+        { "name": "risen", "weight": 95, "outputs": [ { "kind": "dough", "count": 1 } ] },
+        { "name": "flat", "weight": 5 } ] },
+    { "name": "bread", "station": "oven", "minutes": 30,
+      "inputs": [ { "kind": "dough", "count": 1 } ],
+      "outcomes": [
+        { "name": "good", "weight": 85, "outputs": [ { "kind": "bread", "count": 2 } ] },
+        { "name": "burnt", "weight": 10, "outputs": [ { "kind": "charcoal", "count": 1 } ] },
+        { "name": "collapsed", "weight": 5 } ] }
+  ]
+}
