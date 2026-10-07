@@ -1,0 +1,11 @@
+{
+  "spoilage": [ { "below": 8, "percent": 30 }, { "percent": 100 } ],
+  "kinds": [
+    { "name": "flour", "tags": ["dry"], "weight": 1, "stack": 10, "spoils_after_minutes": 4320 },
+    { "name": "water", "tags": ["wet"], "weight": 1, "stack": 10 },
+    { "name": "yeast", "tags": ["live"], "weight": "0.1", "stack": 10, "spoils_after_minutes": 1440 },
+    { "name": "dough", "tags": ["unbaked"], "weight": 1, "stack": 4, "spoils_after_minutes": 240 },
+    { "name": "bread", "tags": ["baked"], "weight": 1, "stack": 8, "spoils_after_minutes": 1440 },
+    { "name": "charcoal", "tags": ["waste"], "weight": 1, "stack": 8 }
+  ]
+}
