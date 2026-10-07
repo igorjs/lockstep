@@ -25,8 +25,8 @@ pub const ATTRIBUTES_JSON: &str = include_str!("../data/attributes.json");
 pub const TRAINING_JSON: &str = include_str!("../data/training.json");
 
 /// Experience a shift and an incident add.
-pub const SHIFT_EXPERIENCE: i32 = 2;
-pub const INCIDENT_EXPERIENCE: i32 = 5;
+pub const SHIFT_EXPERIENCE: i32 = 1;
+pub const INCIDENT_EXPERIENCE: i32 = 2;
 
 pub fn registry() -> Registry {
     Registry::from_json(ATTRIBUTES_JSON).expect("the committed attributes are valid")

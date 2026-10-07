@@ -5,7 +5,8 @@
 The consumer scenario for `lockstep-progression`, and not a game. Four workshop technicians earn
 points and experience at work and spend the points on a six-node web.
 
-- Triggers: a shift earns 1 point and 2 experience; an incident 3 points and 5 experience.
+- Triggers: a shift earns 1 point and 1 experience; an incident 3 points and 2 experience, so
+  technicians often ask for senior or chief before their experience allows it.
 - The web, in `data/training.json`: basics (1 point); electrical or mechanical (2 each, each
   excluding the other; repair or safety +10); diagnostics (3, refunded in full; repair +5);
   senior (4, experience at least 50; safety times 1.2); and chief (6, experience at least 80;

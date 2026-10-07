@@ -122,7 +122,7 @@ fn a_technician_meets_the_exclusion_and_the_gate_with_their_reasons() {
         }]
     );
     study(&mut runner, ana, "diagnostics");
-    // Four incidents gave 20 experience; senior wants 50.
+    // Six incidents give 12 experience; senior wants 50.
     let experience = runner.simulation().registry().id("experience").unwrap();
     work(&mut runner, ana, "incident", 2);
     assert_eq!(
@@ -132,7 +132,8 @@ fn a_technician_meets_the_exclusion_and_the_gate_with_their_reasons() {
             reason: Refusal::Gate(experience)
         }]
     );
-    work(&mut runner, ana, "incident", 4);
+    // Nineteen more make 50.
+    work(&mut runner, ana, "incident", 19);
     let events = study(&mut runner, ana, "senior");
     assert!(matches!(
         events[0],
@@ -196,7 +197,8 @@ fn experience_marks_are_events() {
     let ana = first(&runner);
     let trigger = runner.simulation().graph().trigger_id("incident").unwrap();
     let mut events = Vec::new();
-    for _ in 0..16 {
+    // Forty incidents at 2 experience each pass both 50 and 80.
+    for _ in 0..40 {
         events.extend(act(
             &mut runner,
             Intent::Work {
