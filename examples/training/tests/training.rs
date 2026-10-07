@@ -63,7 +63,7 @@ fn exclusions_lock_and_gates_enforce_across_the_session() {
         id("senior"),
         id("chief"),
     );
-    let mut chiefs = 0;
+    let (mut chiefs, mut excluded, mut gated) = (0, 0, 0);
     for step in 0..DEFAULT_STEPS {
         let intents = script(runner.simulation(), &mut streams);
         let events = runner.step_once(&intents).events;
@@ -78,6 +78,14 @@ fn exclusions_lock_and_gates_enforce_across_the_session() {
                     assert!(experience >= Fixed32::from_int(needed), "step {step}");
                     chiefs += usize::from(*node == chief);
                 }
+                Event::Refused {
+                    reason: Refusal::ExcludedBy(_),
+                    ..
+                } => excluded += 1,
+                Event::Refused {
+                    reason: Refusal::Gate(_),
+                    ..
+                } => gated += 1,
                 Event::Progress(ProgressEvent::Refunded { node, .. }) => {
                     assert_ne!(*node, chief, "step {step}: the keystone came back");
                 }
@@ -93,6 +101,9 @@ fn exclusions_lock_and_gates_enforce_across_the_session() {
         }
     }
     assert!(chiefs > 0, "someone reached the keystone");
+    // The session asks for locked and gated nodes too, so both rules are really exercised.
+    assert!(excluded > 0, "an exclusion refused a study");
+    assert!(gated > 0, "a gate refused a study");
 }
 
 #[test]
@@ -185,7 +196,7 @@ fn experience_marks_are_events() {
     let ana = first(&runner);
     let trigger = runner.simulation().graph().trigger_id("incident").unwrap();
     let mut events = Vec::new();
-    for _ in 0..10 {
+    for _ in 0..16 {
         events.extend(act(
             &mut runner,
             Intent::Work {
@@ -194,10 +205,12 @@ fn experience_marks_are_events() {
             },
         ));
     }
-    assert!(events.contains(&Event::Mark {
-        technician: ana,
-        mark: "seasoned".into()
-    }));
+    for mark in ["seasoned", "veteran"] {
+        assert!(events.contains(&Event::Mark {
+            technician: ana,
+            mark: mark.into()
+        }));
+    }
 }
 
 /// Steps a simulation outside a runner, the way the runner does.

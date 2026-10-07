@@ -4,9 +4,10 @@
 //! Workshop technicians earn points by working shifts and handling incidents, and gain
 //! experience as they do. They spend points on a six-node web in `data/training.json`: basics,
 //! then electrical or mechanical (each excludes the other), diagnostics, senior (experience at
-//! least 50) and chief, a keystone (experience at least 80). Each node raises an attribute from
-//! `data/attributes.json`. A technician may unlearn a node for half its cost back, but never the
-//! keystone or a node another one needs.
+//! least 50) and chief, a keystone (experience at least 80). Every node but basics raises the
+//! maximum of an attribute from `data/attributes.json`. A technician may unlearn a node for its
+//! refund (half its cost, all of it for diagnostics), but never the keystone or a node another
+//! one needs.
 
 use lockstep_attributes::{AttributeEvent, AttributeId, Attributes, Registry};
 use lockstep_core::math::Fixed32;
@@ -301,8 +302,8 @@ pub fn runner(configuration: Configuration, seed: u64) -> Runner<Training> {
 }
 
 /// The scripted session the fixture hash covers. Now and then a random technician works a
-/// shift (or, one time in five, an incident), studies a random node it can take, or, rarely,
-/// unlearns a random node it holds.
+/// shift (or, one time in five, an incident), asks to study any node of the web, whether it can
+/// take it or not, or, rarely, unlearns a random node it holds.
 pub fn script(training: &Training, script: &mut Streams) -> Vec<Intent> {
     if script.range("act", 0, 30) != 0 {
         return Vec::new();
@@ -322,16 +323,11 @@ pub fn script(training: &Training, script: &mut Streams) -> Vec<Intent> {
                 trigger: graph.trigger_id(name).expect("defined"),
             }]
         }
-        12..=18 => {
-            let available = training.available(technician);
-            if available.is_empty() {
-                return Vec::new();
-            }
-            vec![Intent::Study {
-                technician,
-                node: available[script.pick("node", available.len())],
-            }]
-        }
+        // Any node, taken or locked or gated as it may be: the refusals are part of the session.
+        12..=18 => vec![Intent::Study {
+            technician,
+            node: NodeId(script.pick("node", graph.nodes.len()) as u16),
+        }],
         _ => {
             let held: Vec<NodeId> = training
                 .world()
