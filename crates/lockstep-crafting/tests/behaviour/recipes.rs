@@ -48,6 +48,10 @@ fn bad_recipes_are_refused_with_their_reason() {
         (r#"{ "name": "r", "station": "oven", "minutes": 1, "inputs": [], "outcomes": [ { "name": "a", "weight": 0 } ] }"#.to_string(), RecipesError::Weights("r".into())),
         (format!(r#"{{ "name": "r", "station": "oven", "minutes": 1, "inputs": [], {good_outcome} }}, {{ "name": "r", "station": "oven", "minutes": 1, "inputs": [], {good_outcome} }}"#), RecipesError::DuplicateName("r".into())),
     ];
+    let cases = cases.into_iter().chain([
+        (r#"{ "name": "r", "station": "oven", "minutes": 1, "inputs": [], "outcomes": [ { "name": "a", "weight": 1000001 } ] }"#.to_string(), RecipesError::Weights("r".into())),
+        (format!(r#"{{ "name": "r", "station": "oven", "minutes": 32768, "inputs": [], {good_outcome} }}"#), RecipesError::TooLong("r".into())),
+    ]);
     for (recipe, error) in cases {
         assert_eq!(read(&recipe), Err(error), "{recipe}");
     }

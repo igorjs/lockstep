@@ -28,7 +28,10 @@ pub const RECIPES: &str = r#"{
       "outcomes": [
         { "name": "good", "weight": 85, "outputs": [ { "kind": "bread", "count": 2 } ] },
         { "name": "burnt", "weight": 10, "outputs": [ { "kind": "charcoal", "count": 1 } ] },
-        { "name": "collapsed", "weight": 5 } ] }
+        { "name": "collapsed", "weight": 5 } ] },
+    { "name": "double", "station": "mixer", "minutes": 5,
+      "inputs": [ { "kind": "flour", "count": 1 }, { "kind": "flour", "count": 1 } ],
+      "outcomes": [ { "name": "mixed", "weight": 1, "outputs": [ { "kind": "dough", "count": 1 } ] } ] }
   ]
 }"#;
 

@@ -5,4 +5,7 @@ mod crafting;
 mod recipes;
 
 pub use crafting::{roll, Crafting, CraftingEvent, Job, Refusal, STREAM};
-pub use recipes::{Amount, Outcome, Recipe, RecipeId, Recipes, RecipesError, StationId};
+pub use recipes::{
+    Amount, Outcome, Recipe, RecipeId, Recipes, RecipesError, StationId, MAXIMUM_MINUTES,
+    MAXIMUM_TOTAL_WEIGHT,
+};

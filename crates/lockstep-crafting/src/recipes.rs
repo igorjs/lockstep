@@ -41,12 +41,20 @@ impl Recipe {
     }
 }
 
-/// Every station kind and recipe, in a stable order. Build it with `Recipes::from_json`.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// Every station kind and recipe, in a stable order. The only way to build one is
+/// `Recipes::from_json`, which checks it, so a job never meets a recipe it cannot finish.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Recipes {
-    pub stations: Vec<String>,
-    pub recipes: Vec<Recipe>,
+    stations: Vec<String>,
+    recipes: Vec<Recipe>,
 }
+
+/// The largest total weight of an outcome table: small enough that the draw's skew stays under
+/// three hundredths of a percent.
+pub const MAXIMUM_TOTAL_WEIGHT: u32 = 1_000_000;
+
+/// The longest recipe, in whole game minutes: what a job's remaining time can report.
+pub const MAXIMUM_MINUTES: u32 = 32_767;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RecipesError {
@@ -68,8 +76,10 @@ pub enum RecipesError {
         recipe: String,
         kind: String,
     },
-    /// No outcomes, or weights that add to nothing or past four billion.
+    /// No outcomes, or weights that add to nothing or past `MAXIMUM_TOTAL_WEIGHT`.
     Weights(String),
+    /// Longer than `MAXIMUM_MINUTES`.
+    TooLong(String),
 }
 
 impl std::fmt::Display for RecipesError {
@@ -87,6 +97,14 @@ impl Recipes {
         let file: file::RecipesFile =
             serde_json::from_str(text).map_err(|error| RecipesError::Json(error.to_string()))?;
         file.into_recipes(catalogue)
+    }
+
+    pub fn recipes(&self) -> &[Recipe] {
+        &self.recipes
+    }
+
+    pub fn stations(&self) -> &[String] {
+        &self.stations
     }
 
     pub fn recipe(&self, id: RecipeId) -> Option<&Recipe> {
@@ -214,8 +232,11 @@ mod file {
                     })
                     .collect::<Result<Vec<_>, RecipesError>>()?;
                 let total: u64 = outcomes.iter().map(|outcome| outcome.weight as u64).sum();
-                if total == 0 || total > i32::MAX as u64 {
+                if total == 0 || total > MAXIMUM_TOTAL_WEIGHT as u64 {
                     return Err(RecipesError::Weights(file.name));
+                }
+                if file.minutes > MAXIMUM_MINUTES {
+                    return Err(RecipesError::TooLong(file.name));
                 }
                 recipes.push(Recipe {
                     name: file.name,

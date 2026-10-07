@@ -27,8 +27,10 @@ an outcome drawn from a table, with failure branches. It builds on `lockstep-inv
   outcome table: rows with a name, a weight and outputs. A row yielding less, or nothing, is a
   failure branch.
 - Refused with a reason: repeated names, an unknown station or kind, an input or output of no
-  units, an output larger than one item of its kind holds, and a table with no rows or weights
-  that add to nothing.
+  units, an output larger than one item of its kind holds, a table with no rows or weights that
+  add to nothing or past a million (`MAXIMUM_TOTAL_WEIGHT`, which keeps the draw's skew under
+  three hundredths of a percent), and a recipe longer than 32,767 minutes.
+- `Recipes` can only be built by `from_json`, so a job never meets a recipe it cannot finish.
 
 ## Stations and jobs
 
@@ -54,7 +56,8 @@ See decision 0026.
 
 - `tests/behaviour/recipes.rs`: recipes read, and each refusal.
 - `tests/behaviour/jobs.rs`: a job taking its minutes and putting its outcome in the station,
-  refusals for the wrong recipe, a busy station and a stranger, an output left loose, and the same
-  seed baking the same with a save and load.
-- `tests/decisions`: consumption is atomic across stacks and leaves spoiled units out, and
+  refusals for the wrong recipe, a busy station and a stranger, an output left loose, the same
+  seed baking the same, and a job saved halfway finishing the same.
+- `tests/decisions`: consumption is atomic (a later short input leaves an earlier one alone),
+  works across stacks, adds up a kind listed twice and leaves spoiled units out, and
   100,000 draws converge within half a percent of each weight (decision 0026).

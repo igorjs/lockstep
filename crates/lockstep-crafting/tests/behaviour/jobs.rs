@@ -208,3 +208,60 @@ fn the_same_seed_bakes_the_same_and_a_workshop_saves_and_loads() {
     let loaded: lockstep_crafting::Crafting = lockstep_core::decode(&saved).unwrap();
     assert_eq!(loaded, crafting);
 }
+
+#[test]
+fn a_job_halfway_through_saves_and_finishes_the_same() {
+    let mut bakery = Bakery::new(4);
+    bakery.stock("dough", 1, bakery.pantry);
+    let bread = bakery.recipes.recipe_id("bread").unwrap();
+    let mut events = Vec::new();
+    bakery
+        .crafting
+        .start(
+            &mut bakery.inventory,
+            &bakery.recipes,
+            bakery.oven,
+            bread,
+            bakery.pantry,
+            &mut events,
+        )
+        .unwrap();
+    let mut streams = Streams::new(4);
+    bakery.crafting.tick(
+        &mut bakery.inventory,
+        &bakery.catalogue,
+        &bakery.recipes,
+        minutes(10),
+        &mut streams,
+        &mut events,
+    );
+    let saved = lockstep_core::encode(&bakery.crafting);
+    let mut loaded: lockstep_crafting::Crafting = lockstep_core::decode(&saved).unwrap();
+    assert_eq!(loaded, bakery.crafting);
+    assert_eq!(
+        loaded.job(bakery.oven).unwrap().remaining_minutes(),
+        minutes(20)
+    );
+    let (mut kept_inventory, mut loaded_inventory) =
+        (bakery.inventory.clone(), bakery.inventory.clone());
+    let (mut kept_streams, mut loaded_streams) = (streams.clone(), streams);
+    let (mut kept_events, mut loaded_events) = (Vec::new(), Vec::new());
+    bakery.crafting.tick(
+        &mut kept_inventory,
+        &bakery.catalogue,
+        &bakery.recipes,
+        minutes(20),
+        &mut kept_streams,
+        &mut kept_events,
+    );
+    loaded.tick(
+        &mut loaded_inventory,
+        &bakery.catalogue,
+        &bakery.recipes,
+        minutes(20),
+        &mut loaded_streams,
+        &mut loaded_events,
+    );
+    assert_eq!(kept_events, loaded_events);
+    assert!(!kept_events.is_empty());
+}
