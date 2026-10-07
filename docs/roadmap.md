@@ -19,7 +19,7 @@ items in a milestone are out of scope here.
 | M6 Combat and movement | Done | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges, projectiles, movement; sparring; rovers ram | Met: the duel fixture hash is equal natively and under WebAssembly; 200 partners spar for 10,000 steps without sharing a cell or going below zero health |
 | M7 Inventory | Done | `lockstep-inventory`: catalogue from JSON, items as entities, containers, stacking, equipment with modifiers, binding affixes, spoilage by temperature; cargo-bay | Met: the same game minutes spoil on the same minute at 30 and 60 steps a second, natively and under WebAssembly |
 | M8 Agents | Done, one deferral (D5) | `lockstep-agents`: sight cones with line of sight, staggered checks, noise carried by the wind, hearing thresholds, psychic noise; memory that fades, alert states, the director's budget, leashes; steering by flow field with the shared sidestep; utility decisions and delegation; weather with drift, gusts and fronts; crater-survey; benchmark baseline for 1,000 agents | Met: the budget is never exceeded and leashed rovers never leave their crater over the crater-survey fixture; the wind ranges are exact; a day of weather from seed 42 hashes the same under WebAssembly |
-| M9 Knowledge | Not started | | |
+| M9 Knowledge | In progress | `lockstep-knowledge`: facts from fragments of distinct sources, questions, rules over data predicates that fire once, history from the timeline | Pending: the consumer and its fixture hash |
 | M10 Progression | Not started | | |
 | M11 Relations | Not started | | |
 | M12 Crafting | Not started | | |
