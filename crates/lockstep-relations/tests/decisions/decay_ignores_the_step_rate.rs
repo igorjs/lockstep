@@ -43,7 +43,7 @@ fn run(steps_per_second: u32) -> (Fixed32, Vec<u64>) {
             .any(|event| matches!(event, RelationEvent::Crossed { upward: false, .. }))
         {
             // The game minute it crossed on.
-            crossed_at.push(step * 60 / (60 * steps_per_second as u64));
+            crossed_at.push(step / steps_per_second as u64);
         }
     }
     (

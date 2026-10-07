@@ -176,3 +176,80 @@ fn forgetting_an_entity_drops_its_standings_both_ways() {
     let loaded: Relations = lockstep_core::decode(&saved).unwrap();
     assert_eq!(loaded, relations);
 }
+
+#[test]
+fn an_untouched_group_adds_nothing_even_when_the_starting_value_is_not_zero() {
+    let kinds = kinds();
+    let reputation = kinds.relation_id("reputation").unwrap();
+    let night = kinds.group_id("night_shift").unwrap();
+    let (a, b, _) = three();
+    let mut relations = Relations::new();
+    // Reputation starts at 50: one group, untouched, leaves it at 50.
+    assert_eq!(
+        relations.toward(&kinds, reputation, a, b, &[night]),
+        whole(50)
+    );
+    relations.change(
+        &kinds,
+        reputation,
+        a,
+        Target::Group(night),
+        whole(-20),
+        &mut Vec::new(),
+    );
+    assert_eq!(
+        relations.toward(&kinds, reputation, a, b, &[night]),
+        whole(30)
+    );
+}
+
+#[test]
+fn an_untouched_standing_stays_at_its_starting_value_until_a_change() {
+    let kinds = kinds();
+    let reputation = kinds.relation_id("reputation").unwrap();
+    let (a, b, _) = three();
+    let mut relations = Relations::new();
+    relations.tick(&kinds, whole(1_440) * whole(10), &mut Vec::new());
+    assert_eq!(
+        relations.get(&kinds, reputation, a, Target::Entity(b)),
+        whole(50)
+    );
+}
+
+#[test]
+fn equal_thresholds_fire_in_definition_order_both_ways() {
+    let kinds = lockstep_relations::Kinds::from_json(
+        r#"{ "relations": [ { "name": "r", "minimum": 0, "maximum": 10, "starting": 0,
+             "thresholds": [ { "at": 5, "name": "first" }, { "at": 5, "name": "second" } ] } ] }"#,
+    )
+    .unwrap();
+    let relation = kinds.relation_id("r").unwrap();
+    let (a, b, _) = three();
+    let mut relations = Relations::new();
+    let names = |events: &[RelationEvent]| -> Vec<String> {
+        events
+            .iter()
+            .map(|RelationEvent::Crossed { threshold, .. }| threshold.clone())
+            .collect()
+    };
+    let mut events = Vec::new();
+    relations.change(
+        &kinds,
+        relation,
+        a,
+        Target::Entity(b),
+        whole(8),
+        &mut events,
+    );
+    assert_eq!(names(&events), vec!["first", "second"]);
+    events.clear();
+    relations.change(
+        &kinds,
+        relation,
+        a,
+        Target::Entity(b),
+        whole(-8),
+        &mut events,
+    );
+    assert_eq!(names(&events), vec!["first", "second"]);
+}

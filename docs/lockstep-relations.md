@@ -40,10 +40,14 @@ another entity or a group. How the other stands back is a standing of its own.
 - `tick(kinds, minutes, events)` lets game time pass. Each standing drifts toward its rest by the
   relation's decay a day, computed afresh from its value at the last change and the exact game
   minutes since, so the same game time decays it the same at any step rate and it never passes
-  its rest. A change restarts the drift from the new value.
+  its rest. A change restarts the drift from the new value. A standing nobody has changed stays
+  at the starting value: drift begins with the first change, so a first impression holds until
+  something happens.
+- Thresholds at the same value fire in definition order, rising or falling.
 - `toward(kinds, relation, from, to, groups_of_to)` is how `from` stands toward an entity all
-  told: the pair standing plus the standing toward each group it belongs to, held within the
-  bounds. This is what an agent's considerations read.
+  told: the pair standing plus, for each group it belongs to, how far the standing toward that
+  group has moved from the starting value, held within the bounds. An untouched group adds
+  nothing. This is what an agent's considerations read.
 - `forget(who)` drops every standing from or toward an entity that has left.
 
 See decision 0025.

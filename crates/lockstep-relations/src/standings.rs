@@ -69,8 +69,9 @@ impl Relations {
             .map_or(definition.starting, |standing| standing.value)
     }
 
-    /// How `from` stands toward an entity all told: the pair standing plus the standing toward
-    /// each group the entity belongs to, held within the relation's bounds.
+    /// How `from` stands toward an entity all told: the pair standing plus, for each group the
+    /// entity belongs to, how far the standing toward that group has moved from the starting
+    /// value, held within the relation's bounds. An untouched group adds nothing.
     pub fn toward(
         &self,
         kinds: &Kinds,
@@ -84,7 +85,8 @@ impl Relations {
         };
         let mut total = self.get(kinds, relation, from, Target::Entity(to)).raw() as i64;
         for group in groups_of_to {
-            total += self.get(kinds, relation, from, Target::Group(*group)).raw() as i64;
+            let group = self.get(kinds, relation, from, Target::Group(*group)).raw() as i64;
+            total += group - definition.starting.raw() as i64;
         }
         let clamped = total.clamp(
             definition.minimum.raw() as i64,
@@ -128,9 +130,10 @@ impl Relations {
         crossed(definition, key, before, after, events);
     }
 
-    /// Lets `minutes` of game time pass: every standing drifts toward its relation's rest by its
-    /// decay a day, computed from the exact minutes since its last change, and emits the
-    /// thresholds it crosses.
+    /// Lets `minutes` of game time pass: every standing that has been changed drifts toward its
+    /// relation's rest by its decay a day, computed from the exact minutes since its last change,
+    /// and emits the thresholds it crosses. A standing nobody has changed stays at the starting
+    /// value: drift begins with the first change.
     pub fn tick(&mut self, kinds: &Kinds, minutes: Fixed32, events: &mut Vec<RelationEvent>) {
         let minutes = minutes.raw().max(0) as u64;
         for (key, standing) in self.standings.iter_mut() {
@@ -184,10 +187,15 @@ fn crossed(
             }
         }
     } else if after < before {
-        for threshold in definition.thresholds.iter().rev() {
-            if after < threshold.at && threshold.at <= before {
-                events.push(event(&threshold.name, false));
-            }
+        // Highest first, keeping definition order among equal ones, as attributes do.
+        let mut falling: Vec<&crate::kinds::Threshold> = definition
+            .thresholds
+            .iter()
+            .filter(|threshold| after < threshold.at && threshold.at <= before)
+            .collect();
+        falling.sort_by_key(|threshold| std::cmp::Reverse(threshold.at));
+        for threshold in falling {
+            events.push(event(&threshold.name, false));
         }
     }
 }

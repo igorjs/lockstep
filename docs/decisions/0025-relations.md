@@ -12,8 +12,9 @@ Status: decided and implemented in milestone M11.
   same at any step rate. A change restarts the drift.
 - Thresholds fire once per crossing, in passing order; reaching a threshold from below counts as
   crossing it upward, and falling below it as crossing it downward.
-- How an entity stands toward another all told is the pair standing plus its standings toward
-  the groups the other belongs to, held within the bounds.
+- How an entity stands toward another all told is the pair standing plus how far its standing
+  toward each of the other's groups has moved from the starting value, held within the bounds.
+- A standing nobody has changed stays at the starting value; drift begins with the first change.
 
 ## Alternatives rejected
 
