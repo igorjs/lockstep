@@ -67,6 +67,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: audit::fixture_hash,
         },
         Fixture {
+            name: "training",
+            default_seed: training::DEFAULT_SEED,
+            default_steps: training::DEFAULT_STEPS,
+            run: training::fixture_hash,
+        },
+        Fixture {
             name: "sparring",
             default_seed: sparring::DEFAULT_SEED,
             default_steps: sparring::DEFAULT_STEPS,

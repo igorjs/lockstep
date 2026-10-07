@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "training"
+description = "Non-game consumer scenario for lockstep-progression: technicians earn points at work and study a six-node web with one keystone"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-attributes = { path = "../../crates/lockstep-attributes" }
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-progression = { path = "../../crates/lockstep-progression" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

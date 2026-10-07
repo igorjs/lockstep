@@ -1,0 +1,19 @@
+{
+  "refund_percent": 50,
+  "triggers": [ { "name": "shift", "points": 1 }, { "name": "incident", "points": 3 } ],
+  "nodes": [
+    { "name": "basics", "cost": 1 },
+    { "name": "electrical", "cost": 2, "requires": ["basics"], "excludes": ["mechanical"],
+      "modifiers": [ { "attribute": "repair", "modifier": { "add": 10 } } ] },
+    { "name": "mechanical", "cost": 2, "requires": ["basics"],
+      "modifiers": [ { "attribute": "safety", "modifier": { "add": 10 } } ] },
+    { "name": "diagnostics", "cost": 3, "requires": ["basics"], "refund_percent": 100,
+      "modifiers": [ { "attribute": "repair", "modifier": { "add": 5 } } ] },
+    { "name": "senior", "cost": 4, "requires": ["diagnostics"],
+      "gates": [ { "attribute": "experience", "at_least": 50 } ],
+      "modifiers": [ { "attribute": "safety", "modifier": { "multiply": "1.2" } } ] },
+    { "name": "chief", "cost": 6, "requires": ["senior"], "keystone": true,
+      "gates": [ { "attribute": "experience", "at_least": 80 } ],
+      "modifiers": [ { "attribute": "repair", "modifier": { "multiply": "1.5" } } ] }
+  ]
+}
