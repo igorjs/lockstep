@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "audit"
+description = "Non-game consumer scenario for lockstep-knowledge: an auditor gathers fragments from transfers until questions open and findings fire"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-knowledge = { path = "../../crates/lockstep-knowledge" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }
