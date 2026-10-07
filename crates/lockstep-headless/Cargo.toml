@@ -18,6 +18,7 @@ cargo-bay = { path = "../../examples/cargo-bay" }
 crater-survey = { path = "../../examples/crater-survey" }
 audit = { path = "../../examples/audit" }
 training = { path = "../../examples/training" }
+dispatch = { path = "../../examples/dispatch" }
 ledger = { path = "../../examples/ledger" }
 mars-rovers = { path = "../../examples/mars-rovers" }
 

@@ -136,6 +136,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dispatch"
+version = "0.1.0"
+dependencies = [
+ "lockstep-agents",
+ "lockstep-core",
+ "lockstep-relations",
+ "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "drone-fleet"
 version = "0.1.0"
 dependencies = [
@@ -268,6 +279,7 @@ dependencies = [
  "cargo-bay",
  "crater-survey",
  "crowd",
+ "dispatch",
  "drone-fleet",
  "ledger",
  "lockstep-core",

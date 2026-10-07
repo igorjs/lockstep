@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "dispatch"
+description = "Non-game consumer scenario for lockstep-relations: drivers accept, delay or refuse routes by their trust in the dispatcher, with the reason"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-agents = { path = "../../crates/lockstep-agents" }
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-relations = { path = "../../crates/lockstep-relations" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

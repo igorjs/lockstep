@@ -33,6 +33,7 @@ determinism:
     cargo run -p lockstep-headless -- verify crater-survey --expect examples/crater-survey/fixtures/crater-survey.hash
     cargo run -p lockstep-headless -- verify audit --expect examples/audit/fixtures/audit.hash
     cargo run -p lockstep-headless -- verify training --expect examples/training/fixtures/training.hash
+    cargo run -p lockstep-headless -- verify dispatch --expect examples/dispatch/fixtures/dispatch.hash
     cargo run -p lockstep-headless --features parallel -- verify crowd --expect examples/crowd/fixtures/crowd.hash
     wasm-pack test --node crates/lockstep-core
     wasm-pack test --node crates/lockstep-attributes
@@ -54,6 +55,7 @@ determinism:
     wasm-pack test --node examples/crater-survey
     wasm-pack test --node examples/audit
     wasm-pack test --node examples/training
+    wasm-pack test --node examples/dispatch
 
 bench:
     cargo bench -p lockstep-spatial --features parallel
