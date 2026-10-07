@@ -16,6 +16,7 @@ drone-fleet = { path = "../../examples/drone-fleet" }
 sparring = { path = "../../examples/sparring" }
 cargo-bay = { path = "../../examples/cargo-bay" }
 crater-survey = { path = "../../examples/crater-survey" }
+audit = { path = "../../examples/audit" }
 ledger = { path = "../../examples/ledger" }
 mars-rovers = { path = "../../examples/mars-rovers" }
 

@@ -14,6 +14,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "audit"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "lockstep-knowledge",
+ "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -253,6 +263,7 @@ dependencies = [
 name = "lockstep-headless"
 version = "0.1.0"
 dependencies = [
+ "audit",
  "capsule",
  "cargo-bay",
  "crater-survey",

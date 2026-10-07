@@ -1,0 +1,22 @@
+{
+  "facts": [
+    { "name": "round_amounts", "fragments": 2 },
+    { "name": "night_transfers", "fragments": 2 },
+    { "name": "shared_receiver", "fragments": 2 }
+  ],
+  "questions": [
+    { "name": "who_is_behind_it", "facts": ["round_amounts", "night_transfers", "shared_receiver"],
+      "fragments": 2 }
+  ],
+  "rules": [
+    { "name": "suspicion", "kind": "revelation",
+      "when": { "all": [ { "known": "round_amounts" }, { "known": "night_transfers" } ] } },
+    { "name": "ring", "kind": "secret",
+      "when": { "all": [ { "fired": "suspicion" }, { "known": "shared_receiver" } ] } },
+    { "name": "thorough", "kind": "achievement",
+      "when": { "happened": { "event": "reviewed", "at_least": 100 } } },
+    { "name": "nothing_to_see", "kind": "achievement",
+      "when": { "all": [ { "happened": { "event": "reviewed", "at_least": 20 } },
+                         { "not": { "opened": "who_is_behind_it" } } ] } }
+  ]
+}
