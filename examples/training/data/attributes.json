@@ -1,0 +1,8 @@
+{
+  "attributes": [
+    { "name": "experience", "minimum": 0, "maximum": 100, "starting": 0,
+      "thresholds": [ { "at": 50, "name": "seasoned" }, { "at": 80, "name": "veteran" } ] },
+    { "name": "repair", "minimum": 0, "maximum": 100, "starting": 50 },
+    { "name": "safety", "minimum": 0, "maximum": 100, "starting": 50 }
+  ]
+}
