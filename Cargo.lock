@@ -271,6 +271,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-crafting"
+version = "0.1.0"
+dependencies = [
+ "lockstep-attributes",
+ "lockstep-core",
+ "lockstep-inventory",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-headless"
 version = "0.1.0"
 dependencies = [

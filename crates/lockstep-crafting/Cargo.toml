@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "lockstep-crafting"
+description = "Deterministic crafting for lockstep: recipes that consume inputs atomically, take time at a station, and roll outcomes from a table"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+lockstep-core = { path = "../lockstep-core" }
+lockstep-inventory = { path = "../lockstep-inventory" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+lockstep-attributes = { path = "../lockstep-attributes" }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }
