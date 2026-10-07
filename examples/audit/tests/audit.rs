@@ -99,8 +99,14 @@ fn nothing_fires_twice_across_a_save() {
         loaded.step(&mut context, &intents);
         count(&events, &mut fired);
     }
-    assert!(fired.len() >= 3, "the findings fired: {fired:?}");
-    assert!(fired.values().all(|times| *times == 1), "{fired:?}");
+    // The question opens early in this session, so `nothing_to_see` never fires here (it has its
+    // own test); the other three fire exactly once each.
+    let catalogue = audit::catalogue();
+    let expected: BTreeMap<u16, u32> = ["suspicion", "ring", "thorough"]
+        .iter()
+        .map(|name| (catalogue.rule_id(name).unwrap().0, 1))
+        .collect();
+    assert_eq!(fired, expected);
 }
 
 #[test]
@@ -169,10 +175,17 @@ fn a_transfer_to_oneself_or_from_the_auditor_is_refused() {
 }
 
 #[test]
-#[should_panic(expected = "another catalogue")]
 fn a_save_from_another_catalogue_is_refused_at_load() {
     let audit = Audit::create(books(), &mut Streams::new(1));
     let mut world = audit.world().clone();
+    let current = world.catalogue_hash;
     world.catalogue_hash ^= 1;
-    Audit::restore(world);
+    assert_eq!(
+        Audit::load(world).err(),
+        Some(audit::OtherCatalogue {
+            saved: current ^ 1,
+            current
+        })
+    );
+    assert!(Audit::load(audit.world().clone()).is_ok());
 }

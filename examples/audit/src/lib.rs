@@ -91,7 +91,27 @@ pub struct Audit {
     catalogue: Catalogue,
 }
 
+/// A save made with a catalogue other than the committed one: its fact, question and rule ids
+/// would point at different entries.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct OtherCatalogue {
+    pub saved: u64,
+    pub current: u64,
+}
+
 impl Audit {
+    /// Loads a saved world, refusing one made with another catalogue.
+    pub fn load(world: World) -> Result<Self, OtherCatalogue> {
+        let catalogue = catalogue();
+        if world.catalogue_hash != catalogue.hash() {
+            return Err(OtherCatalogue {
+                saved: world.catalogue_hash,
+                current: catalogue.hash(),
+            });
+        }
+        Ok(Audit { world, catalogue })
+    }
+
     pub fn world(&self) -> &World {
         &self.world
     }
@@ -228,19 +248,10 @@ impl Simulation for Audit {
         self.world.clone()
     }
 
-    /// Panics when the save was made with another catalogue: its fact, question and rule ids
-    /// would point at different entries.
+    /// Panics when the save was made with another catalogue; a host that wants to show the
+    /// refusal calls `Audit::load` instead.
     fn restore(snapshot: World) -> Self {
-        let catalogue = catalogue();
-        assert_eq!(
-            snapshot.catalogue_hash,
-            catalogue.hash(),
-            "the save was made with another catalogue"
-        );
-        Audit {
-            world: snapshot,
-            catalogue,
-        }
+        Audit::load(snapshot).expect("the save was made with another catalogue")
     }
 }
 
