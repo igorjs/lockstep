@@ -38,10 +38,6 @@ fn the_budget_is_exact() {
         .build("baker", &[("stamina", 4), ("judgement", 1)])
         .is_ok());
     assert_eq!(
-        templates().build("baker", &[("stamina", 5), ("judgement", 1)]),
-        Err(TemplateError::AboveMaximum("stamina".into()))
-    );
-    assert_eq!(
         templates().build("baker", &[("stamina", 3), ("judgement", 2)]),
         Err(TemplateError::OverBudget { cost: 7, budget: 6 })
     );

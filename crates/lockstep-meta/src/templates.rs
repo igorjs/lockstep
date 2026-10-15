@@ -47,7 +47,7 @@ impl std::fmt::Display for TemplateError {
 impl std::error::Error for TemplateError {}
 
 /// Archetypes and a point-buy budget. Build it with `Templates::from_json`.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Templates {
     pub budget: u32,
     pub attributes: Vec<AttributeRule>,
@@ -81,6 +81,9 @@ impl Templates {
         let archetype = self
             .archetype(archetype)
             .ok_or_else(|| TemplateError::UnknownArchetype(archetype.to_string()))?;
+        if archetype.base.len() != self.attributes.len() {
+            return Err(TemplateError::Archetype(archetype.name.clone()));
+        }
         let mut values = archetype.base.clone();
         let mut cost: u64 = 0;
         for (name, points) in purchases {

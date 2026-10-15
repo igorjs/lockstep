@@ -27,3 +27,13 @@ fn the_envelope_carries_the_message_version_and_refuses_another() {
         })
     );
 }
+
+#[test]
+fn a_damaged_save_is_refused() {
+    let mut chronicle = Chronicle::new();
+    chronicle.begin_run();
+    let mut bytes = seal(&chronicle);
+    let last = bytes.len() - 1;
+    bytes[last] ^= 1;
+    assert_eq!(open::<Chronicle>(&bytes), Err(EnvelopeError::Corrupt));
+}
