@@ -23,7 +23,8 @@ a contagion) that spreads across the graph.
   percent of the spread's chance that takes hold here.
 - Links run both ways. A link written twice counts once.
 - Refused with a reason: bad JSON, repeated names, a link naming an unknown region, a region
-  linked to itself, a receptiveness above 100, and an anchor outside the 16.16 range.
+  linked to itself, a receptiveness above 100, and an anchor more than 16,000 metres from the origin (so any two anchors differ by less than the
+  16.16 range).
 - `neighbours(id)` lists the linked regions, lowest first. `hops(from, to)` counts the fewest
   links, or nothing when no chain of links joins them. `nearest(point)` is the region whose
   anchor is nearest a point (the lowest wins a tie): how an entity's position becomes a region.
@@ -39,7 +40,7 @@ spent region neither spreads nor takes hold again.
 |---|---|
 | `base_permille` | Chance in a thousand, each interval, that an active region starts one clear neighbour in still air at full pace |
 | `interval_minutes` | Game minutes between tries, at least one |
-| `active_intervals` | Intervals a region stays active before it is spent |
+| `active_intervals` | Intervals a region stays active before it is spent, at least one |
 | `wind_percent_per_metre` | Percent added for each metre a second of wind blowing straight from the active region toward its neighbour, and taken off for wind blowing the other way |
 
 - `start(region, rules, events)` starts a clear region from outside.

@@ -393,6 +393,7 @@ dependencies = [
 name = "lockstep-regions"
 version = "0.1.0"
 dependencies = [
+ "lockstep-agents",
  "lockstep-core",
  "serde",
  "serde_json",

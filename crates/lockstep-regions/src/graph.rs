@@ -26,7 +26,8 @@ pub enum RegionsError {
     SelfLink(String),
     /// A receptiveness above 100 percent.
     Receptive(String),
-    /// An anchor outside the 16.16 range.
+    /// An anchor more than 16,000 metres from the origin, so any two anchors differ by less than
+    /// the 16.16 range.
     Anchor(String),
 }
 
@@ -39,8 +40,8 @@ impl std::fmt::Display for RegionsError {
 impl std::error::Error for RegionsError {}
 
 /// Every region and the links between them, which run both ways. Build it with
-/// `Regions::from_json`.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// `Regions::from_json`; it is saved but not loaded back, so its checks cannot be skipped.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Regions {
     regions: Vec<Region>,
     /// Sorted neighbours of each region.
@@ -66,7 +67,7 @@ impl Regions {
                 return Err(RegionsError::Receptive(entry.name));
             }
             let metres = |value: i32| {
-                (-32_768..=32_767)
+                (-16_000..=16_000)
                     .contains(&value)
                     .then(|| Fixed32::from_int(value))
                     .ok_or_else(|| RegionsError::Anchor(entry.name.clone()))

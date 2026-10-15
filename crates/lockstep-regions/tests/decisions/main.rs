@@ -10,3 +10,4 @@ mod common;
 mod spread_from_seed_42;
 mod spread_ignores_the_step_rate;
 mod spread_rate_follows_the_chance;
+mod weather_stays_with_agents;

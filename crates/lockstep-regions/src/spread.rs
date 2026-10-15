@@ -13,14 +13,15 @@ pub struct SpreadRules {
     pub base_permille: u32,
     /// Game minutes between tries. At least one.
     pub interval_minutes: u32,
-    /// Intervals a region stays active before it is spent.
+    /// Intervals a region stays active before it is spent. At least one.
     pub active_intervals: u32,
     /// Percent added to the chance for each metre a second of wind blowing straight from the
     /// active region toward its neighbour, and taken off for wind blowing the other way.
     pub wind_percent_per_metre: u32,
 }
 
-/// The wind, as the spread needs it. `lockstep-agents` weather makes one with `wind()`.
+/// The wind, as the spread needs it. `docs/lockstep-regions.md` shows the conversion from the
+/// `lockstep-agents` weather.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Breeze {
     /// The way the wind blows toward, 0 east, counter-clockwise.
@@ -106,7 +107,7 @@ impl Spread {
             return false;
         }
         *condition = Condition::Active {
-            intervals_left: rules.active_intervals,
+            intervals_left: rules.active_intervals.max(1),
         };
         events.push(SpreadEvent::Started { region, from: None });
         true
@@ -168,7 +169,7 @@ impl Spread {
                 let chance = chance_permille(regions, rules, breeze, pace_percent, from, to);
                 if streams.range("spread", 0, 1_000) < chance {
                     self.conditions[to.0 as usize] = Condition::Active {
-                        intervals_left: rules.active_intervals,
+                        intervals_left: rules.active_intervals.max(1),
                     };
                     events.push(SpreadEvent::Started {
                         region: to,
@@ -210,13 +211,14 @@ fn chance_permille(
     let along = (target.anchor - source.anchor)
         .normalised()
         .dot(unit(breeze.direction));
-    let wind_percent =
-        (along.raw() as i64 * breeze.strength.raw() as i64 * rules.wind_percent_per_metre as i64)
-            >> 32;
-    let chance = rules.base_permille as i64
+    let wind_percent = (along.raw() as i128
+        * breeze.strength.raw() as i128
+        * rules.wind_percent_per_metre as i128)
+        >> 32;
+    let chance = rules.base_permille as i128
         * (100 + wind_percent).max(0)
-        * target.receptive_percent as i64
-        * pace_percent as i64
+        * target.receptive_percent as i128
+        * pace_percent as i128
         / 1_000_000;
     chance.clamp(0, 1_000) as i32
 }

@@ -81,7 +81,7 @@ fn each_refusal_names_its_reason() {
         Err(RegionsError::Receptive("branch".into()))
     );
     assert_eq!(
-        with("\"x\": 1000", "\"x\": 40000"),
+        with("\"x\": 1000", "\"x\": 16001"),
         Err(RegionsError::Anchor("island".into()))
     );
 }

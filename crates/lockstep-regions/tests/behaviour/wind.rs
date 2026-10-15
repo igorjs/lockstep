@@ -84,3 +84,17 @@ fn a_half_receptive_region_takes_hold_half_as_often() {
     );
     assert!(half.abs_diff(full / 2) < 70, "{half} {full}");
 }
+
+#[test]
+fn the_wind_direction_holds_between_anchors_far_apart() {
+    let far = Regions::from_json(
+        r#"{"regions":[{"name":"west","x":-16000,"y":0},{"name":"east","x":16000,"y":0}],
+            "links":[["west","east"]]}"#,
+    )
+    .unwrap();
+    let (downwind, upwind) = (
+        reached(&far, "west", "east", gale(EAST)),
+        reached(&far, "west", "east", gale(WEST)),
+    );
+    assert!(downwind > upwind, "{downwind} {upwind}");
+}

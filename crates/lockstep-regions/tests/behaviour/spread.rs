@@ -90,7 +90,7 @@ fn starting_names_the_source_and_only_a_clear_known_region_starts() {
 }
 
 #[test]
-fn a_pace_of_nothing_stops_the_spread_and_part_of_a_receptive_region_slows_it() {
+fn a_pace_of_nothing_stops_the_spread() {
     let regions = regions();
     let rules = sure();
     let mut spread = Spread::new(&regions);
@@ -178,4 +178,20 @@ fn a_spread_made_for_other_regions_does_nothing_instead_of_panicking() {
     );
     assert!(events.is_empty());
     assert_eq!(spread.active_count(), 1);
+}
+
+#[test]
+fn zero_active_intervals_count_as_one() {
+    let regions = regions();
+    let rules = lockstep_regions::SpreadRules {
+        active_intervals: 0,
+        ..sure()
+    };
+    let mut spread = Spread::new(&regions);
+    let a = id(&regions, "a");
+    spread.start(a, &rules, &mut Vec::new());
+    assert_eq!(
+        spread.condition(a),
+        Some(Condition::Active { intervals_left: 1 })
+    );
 }
