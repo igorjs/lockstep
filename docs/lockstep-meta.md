@@ -21,7 +21,7 @@ events into it when the run ends.
 checksum of the payload, and the payload (the fixed-endian encoding the hash covers). `open` reads
 them back and refuses with an `EnvelopeError`: `NotAnEnvelope`, `EnvelopeVersion`,
 `MessageVersion { found, expected }`, `Corrupt` or `Decode`. It works for any `Message`. Converting
-an older version is not done here (deferral D6).
+an older version is not done here (deferral D7).
 
 ## Control
 

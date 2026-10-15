@@ -20,6 +20,7 @@ audit = { path = "../../examples/audit" }
 training = { path = "../../examples/training" }
 dispatch = { path = "../../examples/dispatch" }
 bakery = { path = "../../examples/bakery" }
+estate = { path = "../../examples/estate" }
 ledger = { path = "../../examples/ledger" }
 mars-rovers = { path = "../../examples/mars-rovers" }
 
