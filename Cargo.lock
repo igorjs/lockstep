@@ -272,6 +272,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-calendar"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-combat"
 version = "0.1.0"
 dependencies = [
