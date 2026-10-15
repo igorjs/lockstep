@@ -91,6 +91,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: estate::fixture_hash,
         },
         Fixture {
+            name: "orchard",
+            default_seed: orchard::DEFAULT_SEED,
+            default_steps: orchard::DEFAULT_STEPS,
+            run: orchard::fixture_hash,
+        },
+        Fixture {
             name: "sparring",
             default_seed: sparring::DEFAULT_SEED,
             default_steps: sparring::DEFAULT_STEPS,

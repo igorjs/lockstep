@@ -58,6 +58,7 @@ WebAssembly on every change.
 | [`dispatch`](examples/dispatch) | Drivers accept, delay or refuse routes by their trust in the dispatcher against their fatigue, and say why; late pay sours a whole shift. Not a game. |
 | [`bakery`](examples/bakery) | A mixer and an oven turn deliveries into bread through recipes that consume all or nothing, with flat dough, burnt loaves and collapses from an outcome table. Not a game. |
 | [`estate`](examples/estate) | A garden estate rolled from chunk templates with fixed cloisters, and a flood barrier raised across it that surges wear down until it gives way. Not a game. |
+| [`orchard`](examples/orchard) | A blight spreads across orchard blocks before the wind, idle in the cold, as the calendar shortens the days toward winter. Not a game. |
 | [`sparring`](examples/sparring) | Partners spar in pairs: strikes, sweeps that knock back, dodges, thrown balls, walking and running on one stamina pool, and a 200-partner spike. |
 | [`crowd`](examples/crowd) | Sixty bodies route to one goal, solving each step's paths as one batch, with the same hash on one thread or many. |
 

@@ -1,0 +1,10 @@
+{
+  "days_per_year": 12,
+  "daily_swing_celsius": 4,
+  "seasons": [
+    { "name": "spring", "sunrise_minute": 330, "sunset_minute": 1110, "mean_celsius": 12 },
+    { "name": "summer", "sunrise_minute": 300, "sunset_minute": 1200, "mean_celsius": 24 },
+    { "name": "autumn", "sunrise_minute": 360, "sunset_minute": 1080, "mean_celsius": 12 },
+    { "name": "winter", "sunrise_minute": 480, "sunset_minute": 960, "mean_celsius": 0 }
+  ]
+}
