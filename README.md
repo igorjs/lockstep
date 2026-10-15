@@ -25,6 +25,7 @@ Games are the first use, but the same machine runs a ledger, a fleet of rovers, 
 | [`lockstep-progression`](crates/lockstep-progression) | Node graphs bought with points from named triggers: requirements, exclusions that lock both ways, attribute gates, irreversible keystones, refunds and modifiers. |
 | [`lockstep-relations`](crates/lockstep-relations) | Directional standings toward entities and groups, such as trust and reputation, with thresholds and decay toward rest that ignores the step rate. |
 | [`lockstep-crafting`](crates/lockstep-crafting) | Recipes that consume inputs all or nothing, take game time at a station, and end in a weighted outcome with failure branches. |
+| [`lockstep-calendar`](crates/lockstep-calendar) | Seasons from JSON: daylight and temperature by day and minute in integers, handed to the core clock, with a season change event. |
 | [`lockstep-attributes`](crates/lockstep-attributes) | Stats as data: a registry read from JSON, modifiers, thresholds that fire once per crossing, derived values from curves, and timed effects with stacking rules. |
 | [`lockstep-macros`](crates/lockstep-macros) | `#[derive(Message)]`, re-exported by `lockstep-core`. |
 | [`lockstep-headless`](crates/lockstep-headless) | A command line runner that prints and verifies fixture hashes. |
