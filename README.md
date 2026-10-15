@@ -25,6 +25,7 @@ Games are the first use, but the same machine runs a ledger, a fleet of rovers, 
 | [`lockstep-progression`](crates/lockstep-progression) | Node graphs bought with points from named triggers: requirements, exclusions that lock both ways, attribute gates, irreversible keystones, refunds and modifiers. |
 | [`lockstep-relations`](crates/lockstep-relations) | Directional standings toward entities and groups, such as trust and reputation, with thresholds and decay toward rest that ignores the step rate. |
 | [`lockstep-crafting`](crates/lockstep-crafting) | Recipes that consume inputs all or nothing, take game time at a station, and end in a weighted outcome with failure branches. |
+| [`lockstep-meta`](crates/lockstep-meta) | What outlives a run: a cross-run chronicle saved in a versioned envelope, control that falls back when the one in control is lost, and archetypes with point-buy. |
 | [`lockstep-attributes`](crates/lockstep-attributes) | Stats as data: a registry read from JSON, modifiers, thresholds that fire once per crossing, derived values from curves, and timed effects with stacking rules. |
 | [`lockstep-macros`](crates/lockstep-macros) | `#[derive(Message)]`, re-exported by `lockstep-core`. |
 | [`lockstep-headless`](crates/lockstep-headless) | A command line runner that prints and verifies fixture hashes. |
@@ -53,6 +54,7 @@ WebAssembly on every change.
 | [`training`](examples/training) | Technicians earn points at work and study a six-node web: an exclusive specialisation, gates on experience, and an irreversible chief keystone. Not a game. |
 | [`dispatch`](examples/dispatch) | Drivers accept, delay or refuse routes by their trust in the dispatcher against their fatigue, and say why; late pay sours a whole shift. Not a game. |
 | [`bakery`](examples/bakery) | A mixer and an oven turn deliveries into bread through recipes that consume all or nothing, with flat dough, burnt loaves and collapses from an outcome table. Not a game. |
+| [`franchise`](examples/franchise) | A franchise hires shift staff from archetypes with point-buy, hands the manager role down a line, and burns the name of a lost line; the chronicle survives each season. Not a game. |
 | [`sparring`](examples/sparring) | Partners spar in pairs: strikes, sweeps that knock back, dodges, thrown balls, walking and running on one stamina pool, and a 200-partner spike. |
 | [`crowd`](examples/crowd) | Sixty bodies route to one goal, solving each step's paths as one batch, with the same hash on one thread or many. |
 

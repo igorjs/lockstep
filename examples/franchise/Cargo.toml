@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "franchise"
+description = "Non-game consumer scenario for lockstep-meta: a franchise of successive shift managers, where a lost line's name is retired and the chronicle outlives each season"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-meta = { path = "../../crates/lockstep-meta" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

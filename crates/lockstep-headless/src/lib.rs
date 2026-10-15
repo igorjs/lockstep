@@ -85,6 +85,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: bakery::fixture_hash,
         },
         Fixture {
+            name: "franchise",
+            default_seed: franchise::DEFAULT_SEED,
+            default_steps: franchise::DEFAULT_STEPS,
+            run: franchise::fixture_hash,
+        },
+        Fixture {
             name: "sparring",
             default_seed: sparring::DEFAULT_SEED,
             default_steps: sparring::DEFAULT_STEPS,

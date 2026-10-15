@@ -1,0 +1,12 @@
+{
+  "budget": 6,
+  "attributes": [
+    { "name": "stamina", "minimum": 1, "maximum": 8, "cost_per_point": 1 },
+    { "name": "judgement", "minimum": 1, "maximum": 8, "cost_per_point": 2 }
+  ],
+  "archetypes": [
+    { "name": "cook", "base": { "stamina": 4, "judgement": 2 } },
+    { "name": "cashier", "base": { "stamina": 2, "judgement": 4 } },
+    { "name": "lead", "base": { "stamina": 3, "judgement": 3 } }
+  ]
+}
