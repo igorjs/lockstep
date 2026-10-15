@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "orchard"
+description = "Non-game consumer scenario for lockstep-regions and lockstep-calendar: a blight spreads across orchard blocks before the wind, slowing as winter shortens the days"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-agents = { path = "../../crates/lockstep-agents" }
+lockstep-calendar = { path = "../../crates/lockstep-calendar" }
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-regions = { path = "../../crates/lockstep-regions" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

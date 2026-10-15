@@ -1,0 +1,6 @@
+{
+  "base_permille": 400,
+  "interval_minutes": 60,
+  "active_intervals": 8,
+  "wind_percent_per_metre": 4
+}

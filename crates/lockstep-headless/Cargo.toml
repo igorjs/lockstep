@@ -21,6 +21,7 @@ training = { path = "../../examples/training" }
 dispatch = { path = "../../examples/dispatch" }
 bakery = { path = "../../examples/bakery" }
 estate = { path = "../../examples/estate" }
+orchard = { path = "../../examples/orchard" }
 ledger = { path = "../../examples/ledger" }
 mars-rovers = { path = "../../examples/mars-rovers" }
 
