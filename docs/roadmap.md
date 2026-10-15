@@ -25,7 +25,7 @@ items in a milestone are out of scope here.
 | M12 Crafting | Done | `lockstep-crafting`: recipes from JSON with stations, inputs, minutes and weighted outcome tables with failure branches; atomic consumption; outcomes from a named stream; bakery | Met: across the bakery session the pantry changes only by deliveries and whole recipes; 2,000 bakes land within 3 percent of the outcome table |
 | M13 Regions and calendar | Not started | | |
 | M14 Structures and procedural generation | Not started | | |
-| M15 Meta, lineage, templates | Not started | | |
+| M15 Meta, lineage, templates | In progress: crate done, consumer pending | `lockstep-meta`: the chronicle (the cross-run record) saved in a versioned envelope, control transfer with a caller-ordered fall-back, archetypes and point-buy from JSON | Pending: the franchise consumer (death, a fall-back, a burned name) and the chronicle surviving a new season |
 | M16 Hardening | Not started | Saves, migrations, fuzzing and Miri, and money are framework items | |
 
 ## Gaps: short of the reference
@@ -46,6 +46,7 @@ items in a milestone are out of scope here.
 | D3 | `replay --save` and saving mid-recording | M5 | Saves and migrations (M16) | `docs/lockstep-headless.md`, `docs/lockstep-core.md` |
 | D4 | Conversions between message versions | M16 | Saves: until a save ships, no version has shipped | Decision 0010 |
 | D5 | The director's waves, spacing a horde's arrival into pulses | M8 | A consumer with a horde that arrives over time | `docs/lockstep-agents.md` |
+| D6 | Conversions between versions of a saved chronicle: the envelope refuses another message version and does not convert it | M15 | Saves and migrations (M16), as D4 | Decision 0027, `docs/lockstep-meta.md` |
 
 ## Departures: where the work differs from the reference on purpose
 
