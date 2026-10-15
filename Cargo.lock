@@ -176,6 +176,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
 
 [[package]]
+name = "estate"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "lockstep-procgen",
+ "lockstep-spatial",
+ "lockstep-structures",
+ "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -306,6 +318,7 @@ dependencies = [
  "crowd",
  "dispatch",
  "drone-fleet",
+ "estate",
  "ledger",
  "lockstep-core",
  "mars-rovers",
@@ -345,6 +358,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-procgen"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "lockstep-spatial",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-progression"
 version = "0.1.0"
 dependencies = [
@@ -372,6 +396,16 @@ dependencies = [
  "bincode",
  "lockstep-core",
  "rayon",
+ "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
+name = "lockstep-structures"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "lockstep-spatial",
  "serde",
  "wasm-bindgen-test",
 ]

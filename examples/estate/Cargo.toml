@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "estate"
+description = "Non-game consumer scenario for lockstep-structures and lockstep-procgen: a garden estate rolled from chunk templates, with a flood barrier raised across it"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-procgen = { path = "../../crates/lockstep-procgen" }
+lockstep-spatial = { path = "../../crates/lockstep-spatial" }
+lockstep-structures = { path = "../../crates/lockstep-structures" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }
