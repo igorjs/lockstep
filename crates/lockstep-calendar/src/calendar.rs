@@ -34,6 +34,9 @@ pub enum CalendarError {
     TooFewDays,
     /// Sunrise is not before sunset, or sunset is past the end of the day.
     Daylight(String),
+    /// More than a million days in the year, a mean and swing that together pass 30,000
+    /// degrees, or a negative swing.
+    OutOfRange,
 }
 
 impl std::fmt::Display for CalendarError {
@@ -68,6 +71,19 @@ impl Calendar {
         }
         if self.seasons.len() > u16::MAX as usize {
             return Err(CalendarError::TooMany);
+        }
+        let degrees = |value: i32| value.unsigned_abs() as u64;
+        let hottest = self
+            .seasons
+            .iter()
+            .map(|season| degrees(season.mean_celsius))
+            .max()
+            .unwrap_or(0);
+        if self.days_per_year > 1_000_000
+            || self.daily_swing_celsius < 0
+            || hottest + degrees(self.daily_swing_celsius) > 30_000
+        {
+            return Err(CalendarError::OutOfRange);
         }
         if (self.days_per_year as usize) < self.seasons.len() {
             return Err(CalendarError::TooFewDays);
@@ -150,7 +166,7 @@ impl Calendar {
         Fixed32::from_raw((self.mean_temperature(day).raw() as i64 + swing) as i32)
     }
 
-    /// Hands a day's daylight to the clock. The host calls it when the clock reaches a new day.
+    /// Hands a day's daylight to the clock. The host calls it before a step on each day.
     pub fn apply_daylight(&self, day: u32, clock: &mut Clock) {
         let (sunrise, sunset) = self.daylight(day);
         clock.set_daylight(sunrise, sunset);

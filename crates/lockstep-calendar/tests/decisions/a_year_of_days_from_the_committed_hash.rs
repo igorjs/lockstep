@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Decision: the calendar is integers only, so a year of daylight and of temperature every six
+//! Decision: the calendar is integers only, so two years of daylight and of temperature every six
 //! hours hashes to the committed value natively and under WebAssembly.
 //! Alternative rejected: floating point sunrise curves, whose last digits differ across
 //! platforms.

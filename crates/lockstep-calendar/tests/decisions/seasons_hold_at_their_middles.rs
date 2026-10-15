@@ -20,10 +20,10 @@ fn the_longest_day_is_midsummer_and_no_day_jumps() {
         .collect();
     let longest = lengths
         .iter()
-        .position(|&l| l == *lengths.iter().max().unwrap());
+        .position(|&length| length == *lengths.iter().max().unwrap());
     let shortest = lengths
         .iter()
-        .position(|&l| l == *lengths.iter().min().unwrap());
+        .position(|&length| length == *lengths.iter().min().unwrap());
     assert_eq!((longest, shortest), (Some(4), Some(10)));
     for pair in lengths.windows(2) {
         assert!(pair[0].abs_diff(pair[1]) <= 100, "{pair:?}");

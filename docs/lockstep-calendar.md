@@ -21,8 +21,10 @@ in integers.
 ```
 
 - The year is cut into equal seasons in order, each cut rounded down. The year repeats.
-- Refused with a reason: bad JSON, no seasons, repeated names, fewer days than seasons, and a
-  sunrise that is not before the sunset or a sunset past the end of the day.
+- Refused with a reason: bad JSON, no seasons, repeated names, fewer days than seasons, a
+  sunrise that is not before the sunset or a sunset past the end of the day, more than 65,535
+  seasons, and values out of range (over a million days, a negative swing, or a mean and swing
+  together over 30,000 degrees).
 - `season(day)` is the season of a game day.
 - `daylight(day)` is the sunrise and sunset minutes. A season's values hold at the middle of the
   season and change in a straight line to the next season's middle, wrapping from the last season
