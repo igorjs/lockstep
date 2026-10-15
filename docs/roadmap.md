@@ -24,7 +24,7 @@ items in a milestone are out of scope here.
 | M11 Relations | Done | `lockstep-relations`: directional standings toward entities and groups, bounds, thresholds crossed in passing order, exact decay toward rest; dispatch | Met: across the dispatch session every refusal naming trust comes while trust is below the threshold, and a driver who has lost trust refuses saying so |
 | M12 Crafting | Done | `lockstep-crafting`: recipes from JSON with stations, inputs, minutes and weighted outcome tables with failure branches; atomic consumption; outcomes from a named stream; bakery | Met: across the bakery session the pantry changes only by deliveries and whole recipes; 2,000 bakes land within 3 percent of the outcome table |
 | M13 Regions and calendar | In progress | `lockstep-calendar`: seasons from JSON, daylight and temperature by day and minute, the clock's daylight, season events (decision 0027); regions and the orchard consumer follow | Calendar half met: winter has the shortest days; the calendar hash is equal natively and under WebAssembly |
-| M14 Structures and procedural generation | Not started | | |
+| M14 Structures and procedural generation | Done | `lockstep-structures`: durable multi-cell structures that wall a map, wear down, mend and collapse; `lockstep-procgen`: chunk templates and weighted pools from JSON, reserved chunks, a layout rolled with a seed per chunk, applied to a map; estate | Met: a barrier across a chunk border and its collapse each report both chunks dirty; chunk seeds never collide across 200 world seeds times 128 by 128 places |
 | M15 Meta, lineage, templates | Not started | | |
 | M16 Hardening | Not started | Saves, migrations, fuzzing and Miri, and money are framework items | |
 
@@ -46,6 +46,7 @@ items in a milestone are out of scope here.
 | D3 | `replay --save` and saving mid-recording | M5 | Saves and migrations (M16) | `docs/lockstep-headless.md`, `docs/lockstep-core.md` |
 | D4 | Conversions between message versions | M16 | Saves: until a save ships, no version has shipped | Decision 0010 |
 | D5 | The director's waves, spacing a horde's arrival into pulses | M8 | A consumer with a horde that arrives over time | `docs/lockstep-agents.md` |
+| D6 | Matching template edges, so neighbouring chunks join up | M14 | A consumer that needs a connected map without reserving chunks | `docs/lockstep-procgen.md` |
 
 ## Departures: where the work differs from the reference on purpose
 
@@ -73,3 +74,4 @@ items in a milestone are out of scope here.
 | P21 | The reference's progression consumer (a six-node web with one keystone in the survivor's world) is a non-game `training` example | `docs/training.md` |
 | P22 | The reference's relations consumer (a companion refusing a task below a trust threshold) is a non-game `dispatch` example, using the delegation from `lockstep-agents` | `docs/dispatch.md` |
 | P23 | The reference's crafting consumer (an altar reforge with a gamble) is a non-game `bakery` example | `docs/bakery.md` |
+| P24 | The reference's barricade and generated valley consumers are one non-game `estate` example: a flood barrier and a garden estate rolled from chunk templates | `docs/estate.md`, decision 0028 |

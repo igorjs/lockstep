@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "lockstep-procgen"
+description = "Deterministic procedural generation for lockstep: maps assembled from chunk templates drawn from weighted pools, with reserved chunks and seeds that never collide"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+lockstep-core = { path = "../lockstep-core" }
+lockstep-spatial = { path = "../lockstep-spatial" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }
