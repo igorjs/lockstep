@@ -390,6 +390,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-regions"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-relations"
 version = "0.1.0"
 dependencies = [
