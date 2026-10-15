@@ -204,7 +204,7 @@ pub const DEFAULT_SEED: u64 = 20_261_016;
 pub const DEFAULT_STEPS: u64 = 43_200;
 pub const STEPS_PER_DAY: u64 = 3_600;
 
-/// A calm east wind at the start, on the first day of the year.
+/// A light wind blowing east at the start, on the first day of the year.
 pub fn orchard_in_spring() -> Configuration {
     starting_on(0)
 }
@@ -237,8 +237,8 @@ pub fn runner(configuration: Configuration, seed: u64) -> Runner<Orchard> {
 /// One step, after the host hands the clock the daylight of its day.
 pub fn step(runner: &mut Runner<Orchard>, intents: &[Intent]) -> Vec<Event> {
     let day = runner.clock().day();
-    let calendar = runner.simulation().calendar().clone();
-    calendar.apply_daylight(day, runner.clock_mut());
+    let (sunrise, sunset) = runner.simulation().calendar().daylight(day);
+    runner.clock_mut().set_daylight(sunrise, sunset);
     runner.step_once(intents).events
 }
 

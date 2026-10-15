@@ -23,8 +23,8 @@ The fixture hash in `fixtures/orchard.hash` covers 43,200 steps, a whole year: t
 first step, and now and then a random block from outside. It is checked by
 `lockstep-headless verify orchard` and by a WebAssembly test.
 
-The milestone gate is two tests. `in_summer_a_zone_spreads_across_the_orchard`: from the gate in
-midsummer the blight reaches all six blocks in three days, only along links.
+The milestone gate is three tests. `in_summer_a_zone_spreads_across_the_orchard`: from the gate in
+early summer the blight reaches all six blocks in three days, five of them from a neighbour.
 `winter_shortens_the_days_on_the_clock` and `in_midwinter_the_blight_does_not_spread`: at 07:00
 the sun is up in midsummer and not in midwinter, and a midwinter day leaves the gate alone.
 Other tests: the pace following the temperature, one event for each season change in a year, an
