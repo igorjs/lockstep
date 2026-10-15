@@ -99,6 +99,43 @@ fn rolls_are_refused_with_a_reason() {
         templates.roll(1, 3, 3, lockstep_procgen::PoolId(9), &[]),
         Err(RollError::UnknownPool)
     );
+    assert_eq!(
+        templates.roll(1, 65_536, 65_536, wild, &[]),
+        Err(RollError::TooLarge)
+    );
+}
+
+#[test]
+fn a_layout_naming_an_unknown_template_writes_nothing() {
+    let templates = templates();
+    let wild = templates.pool_id("wild").unwrap();
+    let keep = templates.template_id("keep").unwrap();
+    // The second chunk is the fourth template, which the smaller set does not hold.
+    let layout = templates
+        .roll(
+            1,
+            2,
+            1,
+            wild,
+            &[Reservation {
+                x: 1,
+                y: 0,
+                template: keep,
+            }],
+        )
+        .unwrap();
+    let fewer = Templates::from_json(
+        r#"{ "side": 2, "templates": [ { "name": "only", "rows": ["..", ".."] } ],
+             "pools": [ { "name": "p", "entries": [ { "template": "only", "weight": 1 } ] } ] }"#,
+    )
+    .unwrap();
+    let mut map: GridMap<Square4> = GridMap::new(4, 2);
+    let before = map.clone();
+    assert_eq!(
+        layout.apply(&fewer, &mut map),
+        Err(RollError::UnknownTemplate)
+    );
+    assert_eq!(map, before);
 }
 
 #[test]
@@ -119,7 +156,7 @@ fn applying_writes_walls_marsh_and_marks_chunks_dirty() {
             }],
         )
         .unwrap();
-    let mut map: GridMap<Square4> = GridMap::new(4, 2);
+    let mut map: GridMap<Square4> = GridMap::new(64, 2);
     map.take_dirty_chunks();
     layout.apply(&templates, &mut map).unwrap();
     assert!(map.is_passable(map.index(0, 0)) && map.cost(map.index(0, 0)) == 3);

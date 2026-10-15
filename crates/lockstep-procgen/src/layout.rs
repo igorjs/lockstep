@@ -29,7 +29,14 @@ pub enum RollError {
     Reserved(usize),
     /// `apply` met a map too small for the layout.
     MapTooSmall,
+    /// `apply` met a layout that names a template these templates do not hold.
+    UnknownTemplate,
+    /// More than `MAXIMUM_CHUNKS` chunks.
+    TooLarge,
 }
+
+/// The most chunks one layout may hold.
+pub const MAXIMUM_CHUNKS: u32 = 1 << 20;
 
 impl std::fmt::Display for RollError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -77,6 +84,9 @@ impl Templates {
         let pool = self.pool(pool).ok_or(RollError::UnknownPool)?;
         if width == 0 || height == 0 {
             return Err(RollError::Empty);
+        }
+        if (width as u64) * (height as u64) > MAXIMUM_CHUNKS as u64 {
+            return Err(RollError::TooLarge);
         }
         let mut fixed: Vec<Option<TemplateId>> = vec![None; (width * height) as usize];
         for (index, reservation) in reserved.iter().enumerate() {
@@ -146,10 +156,17 @@ impl Layout {
         if map.width() < self.width * side || map.height() < self.height * side {
             return Err(RollError::MapTooSmall);
         }
+        if self
+            .picks
+            .iter()
+            .any(|id| templates.template(*id).is_none())
+        {
+            return Err(RollError::UnknownTemplate);
+        }
         for chunk_y in 0..self.height {
             for chunk_x in 0..self.width {
                 let id = self.picks[(chunk_y * self.width + chunk_x) as usize];
-                let template = templates.template(id).ok_or(RollError::UnknownPool)?;
+                let template = templates.template(id).ok_or(RollError::UnknownTemplate)?;
                 for y in 0..side {
                     for x in 0..side {
                         let cell = map.index(chunk_x * side + x, chunk_y * side + y);

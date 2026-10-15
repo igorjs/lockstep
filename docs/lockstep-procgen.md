@@ -35,7 +35,7 @@ builds on `lockstep-spatial`. The consumer is the [estate](estate.md) example.
 
 - A chunk in `reserved` (a `Reservation` of a place and a template) holds that template and
   draws nothing. Reservations off the layout, naming an unknown template, or naming a place twice
-  are refused.
+  are refused. So is a layout of more than a million chunks (`MAXIMUM_CHUNKS`).
 - Any other chunk draws one number below the pool's total weight from the `"procgen"` stream of
   its own `Streams`, seeded by `chunk_seed(world_seed, x, y)`, and takes the entry whose running
   total passes it.
@@ -48,7 +48,8 @@ builds on `lockstep-spatial`. The consumer is the [estate](estate.md) example.
 
 `layout.apply(&templates, &mut map)` writes every chunk onto a `GridMap` from its top left,
 through the map's setters, so the map's dirty chunks are marked. A map smaller than the layout
-is refused and left alone.
+is refused and left alone. A layout naming a template the templates do not hold is refused
+before anything is written.
 
 ## Limits
 

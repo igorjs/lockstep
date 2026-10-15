@@ -24,7 +24,7 @@ pub const CHUNKS_WIDE: u32 = 6;
 pub const CHUNKS_HIGH: u32 = 4;
 /// The durability of a new barrier, per cell it covers.
 pub const DURABILITY_PER_CELL: u32 = 4;
-/// The chunks on the middle row fixed to the cloister template: the two ends and the middle.
+/// The chunks on the middle row fixed to the cloister template: both ends and the two in the middle.
 pub const CLOISTERS: [(u32, u32); 4] = [(0, 1), (3, 1), (4, 1), (5, 1)];
 
 pub fn templates() -> Templates {
@@ -174,6 +174,14 @@ impl Simulation for Estate {
             let world = &mut self.world;
             match *intent {
                 Intent::Raise { x, y, length } => {
+                    // A barrier longer than the estate is wide cannot fit: refuse it before any
+                    // cell is listed, so an order cannot ask for an endless row.
+                    if length > world.map.width() {
+                        events.push(Event::Refused {
+                            reason: Refusal::OffMap(Cell(u32::MAX)),
+                        });
+                        continue;
+                    }
                     let cells: Vec<Cell> = (x..x.saturating_add(length))
                         .map(|column| {
                             if column < world.map.width() && y < world.map.height() {

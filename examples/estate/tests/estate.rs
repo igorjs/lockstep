@@ -97,6 +97,34 @@ fn a_barrier_over_a_wall_or_off_the_map_is_refused_and_a_mended_one_lasts() {
         y: 12,
         length: 2,
     }]);
+    // A second barrier over the first one's cells is blocked by it, as by any wall.
+    let blocked = runner
+        .step_once(&[Intent::Raise {
+            x: 31,
+            y: 12,
+            length: 2,
+        }])
+        .events;
+    assert!(blocked.iter().any(|event| matches!(
+        event,
+        Event::Refused {
+            reason: Refusal::Blocked(_)
+        }
+    )));
+    // An endless row is refused without being listed cell by cell.
+    let endless = runner
+        .step_once(&[Intent::Raise {
+            x: 0,
+            y: 12,
+            length: u32::MAX,
+        }])
+        .events;
+    assert!(endless.iter().any(|event| matches!(
+        event,
+        Event::Refused {
+            reason: Refusal::OffMap(_)
+        }
+    )));
     runner.step_once(&[Intent::Surge { force: 7 }]);
     runner.step_once(&[Intent::Mend { amount: 100 }]);
     runner.step_once(&[Intent::Surge { force: 7 }]);
