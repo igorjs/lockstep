@@ -24,12 +24,43 @@ pub enum Tile {
 pub struct Template {
     pub name: String,
     tiles: Vec<Tile>,
+    /// Socket of the north, east, south and west edge, when the template set carries sockets.
+    sockets: Option<[SocketId; 4]>,
 }
+
+/// A name for the way an edge of a chunk looks, so edges with the same socket join up.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Serialize, Deserialize)]
+pub struct SocketId(pub u16);
+
+/// The sides of a template, in the order its sockets are kept.
+pub const NORTH: usize = 0;
+pub const EAST: usize = 1;
+pub const SOUTH: usize = 2;
+pub const WEST: usize = 3;
 
 impl Template {
     /// The tile at a column and row, counted from the template's top left.
     pub fn tile(&self, side: u32, x: u32, y: u32) -> Tile {
         self.tiles[(y * side + x) as usize]
+    }
+
+    /// The socket of one side (`NORTH`, `EAST`, `SOUTH` or `WEST`), or `None` when the template
+    /// set has no sockets.
+    pub fn socket(&self, side: usize) -> Option<SocketId> {
+        self.sockets.map(|sockets| sockets[side])
+    }
+
+    /// The tiles along one side, read left to right on the north and south sides and top to
+    /// bottom on the east and west sides.
+    fn strip(&self, length: u32, side: usize) -> Vec<Tile> {
+        (0..length)
+            .map(|offset| match side {
+                NORTH => self.tile(length, offset, 0),
+                SOUTH => self.tile(length, offset, length - 1),
+                EAST => self.tile(length, length - 1, offset),
+                _ => self.tile(length, 0, offset),
+            })
+            .collect()
     }
 }
 
@@ -47,6 +78,7 @@ pub struct Templates {
     side: u32,
     templates: Vec<Template>,
     pools: Vec<Pool>,
+    socket_names: Vec<String>,
 }
 
 /// The widest template, in cells.
@@ -74,6 +106,10 @@ pub enum TemplatesError {
     },
     /// No entries, or weights that add to nothing or past `MAXIMUM_TOTAL_WEIGHT`.
     Weights(String),
+    /// Some templates carry sockets and others do not.
+    Sockets(String),
+    /// Two edges with this socket differ in their tiles, so they would not join seamlessly.
+    SocketTiles(String),
 }
 
 impl std::fmt::Display for TemplatesError {
@@ -112,6 +148,15 @@ impl Templates {
             .map(|index| TemplateId(index as u16))
     }
 
+    /// Whether the templates carry edge sockets, which `roll_matched` needs.
+    pub fn has_sockets(&self) -> bool {
+        !self.socket_names.is_empty()
+    }
+
+    pub fn socket_name(&self, id: SocketId) -> Option<&str> {
+        self.socket_names.get(id.0 as usize).map(String::as_str)
+    }
+
     pub fn pool_id(&self, name: &str) -> Option<PoolId> {
         self.pools
             .iter()
@@ -140,6 +185,16 @@ mod file {
     struct TemplateFile {
         name: String,
         rows: Vec<String>,
+        sockets: Option<SocketsFile>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct SocketsFile {
+        north: String,
+        east: String,
+        south: String,
+        west: String,
     }
 
     #[derive(Deserialize)]
@@ -166,6 +221,7 @@ mod file {
             }
             let mut names = BTreeSet::new();
             let mut templates = Vec::new();
+            let mut socket_names: Vec<String> = Vec::new();
             for file in &self.templates {
                 if !names.insert(file.name.clone()) {
                     return Err(TemplatesError::DuplicateName(file.name.clone()));
@@ -190,10 +246,61 @@ mod file {
                         }
                     });
                 }
+                let sockets = match &file.sockets {
+                    None => None,
+                    Some(named) => {
+                        let mut ids = [SocketId(0); 4];
+                        let names = [&named.north, &named.east, &named.south, &named.west];
+                        for (slot, name) in ids.iter_mut().zip(names) {
+                            let index = match socket_names.iter().position(|known| known == name) {
+                                Some(index) => index,
+                                None => {
+                                    socket_names.push(name.clone());
+                                    socket_names.len() - 1
+                                }
+                            };
+                            if index > u16::MAX as usize {
+                                return Err(TemplatesError::TooMany);
+                            }
+                            *slot = SocketId(index as u16);
+                        }
+                        Some(ids)
+                    }
+                };
                 templates.push(Template {
                     name: file.name.clone(),
                     tiles,
+                    sockets,
                 });
+            }
+            let with_sockets = templates.iter().filter(|t| t.sockets.is_some()).count();
+            if with_sockets != 0 && with_sockets != templates.len() {
+                let missing = templates.iter().find(|t| t.sockets.is_none());
+                return Err(TemplatesError::Sockets(
+                    missing.map(|t| t.name.clone()).unwrap_or_default(),
+                ));
+            }
+            for (index, first) in templates.iter().enumerate() {
+                let Some(first_sockets) = first.sockets else {
+                    continue;
+                };
+                for second in &templates[index..] {
+                    let Some(second_sockets) = second.sockets else {
+                        continue;
+                    };
+                    for (first_side, first_socket) in first_sockets.iter().enumerate() {
+                        for (second_side, second_socket) in second_sockets.iter().enumerate() {
+                            if first_socket == second_socket
+                                && first.strip(self.side, first_side)
+                                    != second.strip(self.side, second_side)
+                            {
+                                return Err(TemplatesError::SocketTiles(
+                                    socket_names[first_socket.0 as usize].clone(),
+                                ));
+                            }
+                        }
+                    }
+                }
             }
             let mut pool_names = BTreeSet::new();
             let mut pools = Vec::new();
@@ -226,6 +333,7 @@ mod file {
                 side: self.side,
                 templates,
                 pools,
+                socket_names,
             })
         }
     }

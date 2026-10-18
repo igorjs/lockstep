@@ -18,6 +18,8 @@ use lockstep_structures::{Refusal, StructureEvent, Structures};
 use serde::{Deserialize, Serialize};
 
 pub const TEMPLATES_JSON: &str = include_str!("../data/templates.json");
+/// Templates with edge sockets: paths and fences that meet across chunk borders.
+pub const JOINED_JSON: &str = include_str!("../data/joined.json");
 
 /// The estate, in chunks of 8 by 8 cells.
 pub const CHUNKS_WIDE: u32 = 6;
@@ -29,6 +31,10 @@ pub const CLOISTERS: [(u32, u32); 4] = [(0, 1), (3, 1), (4, 1), (5, 1)];
 
 pub fn templates() -> Templates {
     Templates::from_json(TEMPLATES_JSON).expect("the committed templates are valid")
+}
+
+pub fn joined_templates() -> Templates {
+    Templates::from_json(JOINED_JSON).expect("the committed templates are valid")
 }
 
 pub fn reservations(templates: &Templates) -> Vec<Reservation> {
