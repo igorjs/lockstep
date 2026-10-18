@@ -335,7 +335,7 @@ fn the_scripted_session_ends_in_death_with_a_clean_world() {
 }
 
 #[test]
-fn needs_drain_with_game_time_so_a_rest_drains_them_twenty_times_faster() {
+fn needs_drain_with_simulated_time_so_a_rest_drains_them_twenty_times_faster() {
     let mut slow = runner(9);
     let mut fast = runner(9);
     fast.set_clock_multiplier(20.0);

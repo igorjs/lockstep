@@ -11,7 +11,7 @@ use lockstep_core::Clock;
 use wasm_bindgen_test::wasm_bindgen_test as test;
 
 #[test]
-fn a_multiplier_scales_game_time_without_changing_the_step_rate() {
+fn a_multiplier_scales_simulated_time_without_changing_the_step_rate() {
     let mut normal = Clock::new(day_clock(), STEP_SECONDS);
     let mut resting = Clock::new(day_clock(), STEP_SECONDS);
     resting.set_multiplier(20.0);
@@ -22,7 +22,7 @@ fn a_multiplier_scales_game_time_without_changing_the_step_rate() {
 }
 
 #[test]
-fn a_one_hundred_twenty_minute_day_is_one_game_day_over_two_hundred_sixteen_thousand_steps() {
+fn a_one_hundred_twenty_minute_day_is_one_simulated_day_over_two_hundred_sixteen_thousand_steps() {
     let clock = Clock::new(day_clock(), STEP_SECONDS);
     let mut probe = clock.clone();
     let mut events = Vec::new();

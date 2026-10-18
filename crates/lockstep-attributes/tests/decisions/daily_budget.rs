@@ -13,7 +13,7 @@ use lockstep_attributes::{Effect, EffectContext, EffectTag, Effects, Stacking};
 use wasm_bindgen_test::wasm_bindgen_test as test;
 
 #[test]
-fn a_capped_effect_gives_nothing_past_its_cap_until_the_next_game_day() {
+fn a_capped_effect_gives_nothing_past_its_cap_until_the_next_simulated_day() {
     let (registry, _, who) = fresh();
     let hunger = id(&registry, "hunger");
     let mut attributes = column_with(&registry, who);

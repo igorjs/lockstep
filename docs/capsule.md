@@ -24,9 +24,9 @@ prays twice, then rests at twenty times until the actor starves. Its hash is com
 ```text
 seed 20260925                          # required, exactly once
 steps 10000                            # required, exactly once
-10 move actor 15 15 walk            # <step> move actor <x> <y> walk|run
-700 stop actor                      # <step> stop actor
-200 wound actor                     # <step> wound|bandage|pray actor
+10 move actor 15 15 walk               # <step> move actor <x> <y> walk|run
+700 stop actor                         # <step> stop actor
+200 wound actor                        # <step> wound|bandage|pray actor
 800 multiplier 20                      # <step> multiplier <number>
 ```
 
