@@ -30,7 +30,7 @@ lockstep-headless stats  <file>
 ```
 
 - `record` writes the fixture session as a recording, with a checkpoint every 100 steps unless
-  `--every` says otherwise, keeping the snapshot at each checkpoint. Every example can be recorded except `mars-rovers` (many sessions in one fixture), `roster` (two successive projects) and `orchard` (the host sets daylight between steps); see decision 0043.
+  `--every` says otherwise, keeping the snapshot at each checkpoint. Every example can be recorded except `roster` (its second project starts from a chronicle folded from the first's events); see decision 0043. `mars-rovers` records as a set of 21 sessions (decision 0061): `replay` and `bisect` name the session that diverged, and `replay --save` and `resume` are refused. `orchard` records because its simulation sets its own daylight (decision 0060).
 - `replay` reads the simulation id at the front of the file, runs the recording again and prints
   `identical <id> after <steps> steps, hash <hash>`. A divergence prints the step and both hashes to
   standard error and exits with status 1. `--until` stops after that many steps. `--save` writes a save where the replay stopped, so

@@ -11,17 +11,17 @@ Status: decided and implemented in the headless runner.
   fixture hash and the recording come from the same loop.
 - The headless table is one line per example, expanded from a macro. An example joins by exporting
   `SIMULATION_ID` and `record_fixture`.
-- `mars-rovers` and `orchard` are excused. The first runs many separate sessions in one fixture.
-  The second sets the clock's daylight from outside the simulation between steps, which a replay
-  does not do, so its recording would diverge.
+- `mars-rovers` and `orchard` were excused at first: the first runs many separate sessions in one
+  fixture, the second sets the clock's daylight from outside the simulation between steps, which
+  a replay does not do. Decisions 0061 and 0060 made them recordable. `roster` stays excused.
 
 ## Alternatives rejected
 
 - A copy of each script for recording: the two could drift, and the recording would stop matching
   the fixture hash.
 - Recording by observing a runner afterwards: a runner keeps no intents.
-- Moving orchard's daylight into its simulation: it changes a fixture hash, which is a separate
-  decision for its owner.
+- Moving orchard's daylight into its simulation: judged to change a fixture hash. Decision 0060
+  made the move and showed the hash is unchanged.
 
 ## Would change if
 

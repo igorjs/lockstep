@@ -3,9 +3,10 @@
 //! simulation, and the table below finds the code that can run it.
 
 use lockstep_core::{
-    bisect, recorded_simulation_id, replay, replay_from, saved_simulation_id, Migrations,
-    Recording, ReplayOutcome, Save, Simulation,
+    bisect, hash_of, recorded_simulation_id, replay, replay_from, saved_simulation_id, Migrations,
+    Recording, RecordingSet, ReplayOutcome, Save, Simulation,
 };
+use mars_rovers::{Hex, MarsRovers, Square4, Square8};
 
 /// A simulation the headless runner can record and replay.
 pub struct Replayable {
@@ -57,9 +58,9 @@ macro_rules! replayable {
     };
 }
 
-/// Every example with a fixture except three that no recording can reproduce: `mars-rovers` runs
-/// many separate sessions in one fixture, `roster` runs two successive projects, and `orchard`
-/// sets the clock's daylight from outside the simulation between steps, which a replay does not do.
+/// Every example with a fixture except `roster`, which runs two successive projects whose second
+/// configuration is built from the first project's events. `mars-rovers` records as a set of
+/// sessions (decision 0061) and `orchard` sets its own daylight (decision 0060).
 pub fn replayables() -> Vec<Replayable> {
     vec![
         replayable!(ledger, ledger::Ledger),
@@ -77,6 +78,20 @@ pub fn replayables() -> Vec<Replayable> {
         replayable!(estate, estate::Estate),
         replayable!(checkout, checkout::Checkout),
         replayable!(rates, rates::Rates),
+        replayable!(orchard, orchard::Orchard),
+        Replayable {
+            id: mars_rovers::SIMULATION_ID,
+            record: |seed, steps, every| {
+                mars_rovers::record_fixture(seed, steps, every, true)
+                    .to_bytes()
+                    .map_err(|error| error.to_string())
+            },
+            replay: replay_set_report,
+            resume: |_, _| Err(NO_SET_SAVE.to_string()),
+            bisect: bisect_set_report,
+            stats: stats_set_report,
+            migrations: Migrations::new,
+        },
     ]
 }
 
@@ -188,8 +203,11 @@ fn resume_report<S: Simulation>(save_bytes: &[u8], bytes: &[u8]) -> Result<Repla
 }
 
 fn bisect_report<S: Simulation>(bytes: &[u8]) -> Result<Replayed, String> {
-    let recording = read::<S>(bytes)?;
-    let found = bisect::<S>(&recording).map_err(|error| error.to_string())?;
+    bisect_recording::<S>(&read::<S>(bytes)?)
+}
+
+fn bisect_recording<S: Simulation>(recording: &Recording<S::Intent>) -> Result<Replayed, String> {
+    let found = bisect::<S>(recording).map_err(|error| error.to_string())?;
     let Some(found) = found else {
         return Ok(Replayed {
             identical: true,
@@ -270,6 +288,141 @@ fn stats_report<S: Simulation>(bytes: &[u8]) -> Result<String, String> {
             recording.checkpoints.len(),
             recording.snapshots.len()
         ),
+    ]
+    .join("\n"))
+}
+
+const NO_SET_SAVE: &str =
+    "a recording set holds many sessions, so there is no one state to save or resume";
+
+fn read_set(bytes: &[u8]) -> Result<RecordingSet<mars_rovers::Intent>, String> {
+    RecordingSet::from_bytes(bytes).map_err(|error| error.to_string())
+}
+
+/// Runs one session of a set on the topology its label names.
+fn on_topology<R>(
+    label: &str,
+    square4: impl FnOnce() -> Result<R, String>,
+    square8: impl FnOnce() -> Result<R, String>,
+    hex: impl FnOnce() -> Result<R, String>,
+) -> Result<R, String> {
+    match label {
+        label if label == mars_rovers::TOPOLOGIES[0] => square4(),
+        label if label == mars_rovers::TOPOLOGIES[1] => square8(),
+        label if label == mars_rovers::TOPOLOGIES[2] => hex(),
+        other => Err(format!("a session on an unknown topology: {other}")),
+    }
+}
+
+/// Replays one session, stopping at the first checkpoint that differs.
+fn replay_session<S: Simulation>(
+    recording: &Recording<S::Intent>,
+) -> Result<(u64, u64, ReplayOutcome), String> {
+    let (runner, outcome) = replay::<S>(recording).map_err(|error| error.to_string())?;
+    Ok((runner.step_number(), runner.hash(), outcome))
+}
+
+fn replay_set_report(bytes: &[u8], until: Option<u64>, save: bool) -> Result<Replayed, String> {
+    if save {
+        return Err(NO_SET_SAVE.to_string());
+    }
+    let set = read_set(bytes)?;
+    let mut hashes = Vec::new();
+    let mut steps = 0;
+    for (index, (label, recording)) in set.sessions.iter().enumerate() {
+        let mut recording = recording.clone();
+        if let Some(until) = until {
+            truncate::<MarsRovers<Square4>>(&mut recording, until);
+        }
+        let (session_steps, hash, outcome) = on_topology(
+            label,
+            || replay_session::<MarsRovers<Square4>>(&recording),
+            || replay_session::<MarsRovers<Square8>>(&recording),
+            || replay_session::<MarsRovers<Hex>>(&recording),
+        )?;
+        if let ReplayOutcome::Diverged {
+            at_step,
+            expected,
+            actual,
+        } = outcome
+        {
+            return Ok(Replayed {
+                identical: false,
+                report: format!(
+                    "diverged {} in session {index} ({label}) at step {at_step}: recorded {expected:016x}, replayed {actual:016x}",
+                    set.simulation_id
+                ),
+                save: None,
+            });
+        }
+        steps = session_steps;
+        hashes.push(hash);
+    }
+    Ok(Replayed {
+        identical: true,
+        report: format!(
+            "identical {} after {} sessions of {steps} steps, hash {:016x}",
+            set.simulation_id,
+            hashes.len(),
+            hash_of(&hashes)
+        ),
+        save: None,
+    })
+}
+
+fn bisect_set_report(bytes: &[u8]) -> Result<Replayed, String> {
+    let set = read_set(bytes)?;
+    for (index, (label, recording)) in set.sessions.iter().enumerate() {
+        let report = on_topology(
+            label,
+            || bisect_recording::<MarsRovers<Square4>>(recording),
+            || bisect_recording::<MarsRovers<Square8>>(recording),
+            || bisect_recording::<MarsRovers<Hex>>(recording),
+        )?;
+        if !report.identical {
+            return Ok(Replayed {
+                identical: false,
+                report: format!("session {index} ({label})\n{}", report.report),
+                save: None,
+            });
+        }
+    }
+    let steps: usize = set
+        .sessions
+        .iter()
+        .map(|(_, session)| session.steps.len())
+        .sum();
+    Ok(Replayed {
+        identical: true,
+        report: format!(
+            "no divergence in {steps} steps of {} sessions of {}",
+            set.sessions.len(),
+            set.simulation_id
+        ),
+        save: None,
+    })
+}
+
+fn stats_set_report(bytes: &[u8]) -> Result<String, String> {
+    let set = read_set(bytes)?;
+    let sessions = set.sessions.iter().map(|(_, session)| session);
+    let steps: usize = sessions.clone().map(|session| session.steps.len()).sum();
+    let intents: usize = sessions
+        .clone()
+        .flat_map(|session| session.steps.iter())
+        .map(|step| step.intents.len())
+        .sum();
+    let checkpoints: usize = sessions
+        .clone()
+        .map(|session| session.checkpoints.len())
+        .sum();
+    let snapshots: usize = sessions.map(|session| session.snapshots.len()).sum();
+    Ok([
+        format!("simulation {}", set.simulation_id),
+        format!("sessions {}", set.sessions.len()),
+        format!("steps {steps}"),
+        format!("intents {intents}"),
+        format!("checkpoints {checkpoints}, snapshots {snapshots}"),
     ]
     .join("\n"))
 }

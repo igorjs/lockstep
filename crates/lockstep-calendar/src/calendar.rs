@@ -166,7 +166,8 @@ impl Calendar {
         Fixed32::from_raw((self.mean_temperature(day).raw() as i64 + swing) as i32)
     }
 
-    /// Hands a day's daylight to the clock. The host calls it before a step on each day.
+    /// Hands a day's daylight to the clock. A simulation answers `Simulation::daylight` instead, so a
+    /// replay sets it too.
     pub fn apply_daylight(&self, day: u32, clock: &mut Clock) {
         let (sunrise, sunset) = self.daylight(day);
         clock.set_daylight(sunrise, sunset);

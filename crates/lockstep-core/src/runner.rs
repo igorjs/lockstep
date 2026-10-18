@@ -152,6 +152,9 @@ impl<S: Simulation> Runner<S> {
     }
 
     fn run_one_step(&mut self, intents: &[S::Intent], events: &mut Vec<S::Event>) {
+        if let Some((sunrise, sunset)) = self.simulation.daylight(self.clock.day()) {
+            self.clock.set_daylight(sunrise, sunset);
+        }
         let (elapsed_game_minutes, elapsed_minutes) =
             self.clock.advance_exactly(&mut self.clock_events);
         let mut context = Context {

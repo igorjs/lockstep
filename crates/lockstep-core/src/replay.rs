@@ -68,7 +68,31 @@ pub fn recorded_simulation_id(bytes: &[u8]) -> Result<String, ReplayError> {
     String::from_utf8(text.to_vec()).map_err(|_| refuse("the simulation id is not text"))
 }
 
-impl<I: Message> Recording<I> {}
+/// Several separate sessions of one simulation family, each with a label that tells a tool which
+/// variant runs it. A fixture that runs many sessions records as one set (decision 0061).
+/// `simulation_id` comes first, like `Recording`'s, so `recorded_simulation_id` reads both.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(bound = "")]
+pub struct RecordingSet<I: Message> {
+    pub simulation_id: String,
+    /// (label, recording), in the order the fixture ran them.
+    pub sessions: Vec<(String, Recording<I>)>,
+}
+
+impl<I: Message> RecordingSet<I> {
+    /// The set's bytes. Refuses a set too large for `from_bytes` to read back.
+    pub fn to_bytes(&self) -> Result<Vec<u8>, ReplayError> {
+        let bytes = encode(self);
+        if bytes.len() as u64 > DECODE_LIMIT {
+            return Err(ReplayError::TooLarge(bytes.len() as u64));
+        }
+        Ok(bytes)
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, ReplayError> {
+        decode(bytes).map_err(ReplayError::NotARecording)
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReplayError {

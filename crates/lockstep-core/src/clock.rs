@@ -74,7 +74,8 @@ impl Clock {
         self.multiplier_units = units.min(ceiling);
     }
 
-    /// The calendar package calls this at each new day to set seasonal daylight.
+    /// Sets seasonal daylight. The runner calls it from `Simulation::daylight`; a host that calls it
+    /// between steps cannot be replayed.
     pub fn set_daylight(&mut self, sunrise_minute: u32, sunset_minute: u32) {
         self.configuration.sunrise_minute = sunrise_minute;
         self.configuration.sunset_minute = sunset_minute;

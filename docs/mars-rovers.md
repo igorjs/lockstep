@@ -25,4 +25,5 @@ The grid-shaped consumer scenario: rovers on a plateau, on any topology.
   along +x, and south and west are their opposites. A rock outside the plateau is ignored.
 
 The fixture hash in `fixtures/mars-rovers.hash` covers every scenario on every topology, and is checked by
-`lockstep-headless verify mars-rovers` and by a WebAssembly test.
+`lockstep-headless verify mars-rovers` and by a WebAssembly test. `lockstep-headless record mars-rovers`
+writes the 21 sessions as one `RecordingSet`, labelled by topology (decision 0061); `replay` reproduces the fixture hash.

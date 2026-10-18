@@ -16,6 +16,13 @@ pub trait Simulation: Sized {
     fn step(&mut self, context: &mut Context<'_, Self>, intents: &[Self::Intent]);
     fn snapshot(&self) -> Self::Snapshot;
     fn restore(snapshot: Self::Snapshot) -> Self;
+
+    /// The sunrise and sunset minutes the clock uses on `day`, asked before every step. The
+    /// default keeps the clock's own, so a simulation whose daylight follows a calendar says so
+    /// here and a replay sets it the same way the first run did (decision 0060).
+    fn daylight(&self, _day: u32) -> Option<(u32, u32)> {
+        None
+    }
 }
 
 /// Everything a simulation may touch during one step.
