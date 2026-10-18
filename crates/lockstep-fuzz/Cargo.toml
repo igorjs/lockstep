@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "lockstep-fuzz"
+description = "Deterministic fuzz harness: decoders, data loaders and arithmetic, with a committed corpus"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-core = { path = "../lockstep-core" }
+lockstep-attributes = { path = "../lockstep-attributes" }
+lockstep-inventory = { path = "../lockstep-inventory" }
+lockstep-crafting = { path = "../lockstep-crafting" }
+lockstep-relations = { path = "../lockstep-relations" }
+lockstep-procgen = { path = "../lockstep-procgen" }
+lockstep-knowledge = { path = "../lockstep-knowledge" }
+lockstep-progression = { path = "../lockstep-progression" }
+lockstep-regions = { path = "../lockstep-regions" }
+lockstep-calendar = { path = "../lockstep-calendar" }
+serde = { workspace = true }
+ledger = { path = "../../examples/ledger" }
+bakery = { path = "../../examples/bakery" }
+cargo-bay = { path = "../../examples/cargo-bay" }
+audit = { path = "../../examples/audit" }
+training = { path = "../../examples/training" }

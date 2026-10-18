@@ -61,6 +61,12 @@ impl Save {
         if self.format != SAVE_FORMAT {
             return Err(SaveError::UnknownFormat(self.format));
         }
+        // No session reaches 2^63 steps; refusing more leaves room to count on from a loaded save.
+        if self.step_number > u64::MAX / 2 {
+            return Err(SaveError::NotASave(
+                "the step number is out of range".to_string(),
+            ));
+        }
         if !self.clock.is_consistent() {
             return Err(SaveError::NotASave("the clock is inconsistent".to_string()));
         }

@@ -9,6 +9,9 @@ const MAXIMUM_MULTIPLIER: f32 = 1_000_000.0;
 const MINUTES_PER_DAY: u64 = 1440;
 /// The most game minutes one step may cover, so a step's exact minutes always fit `Fixed32`.
 const MAXIMUM_MINUTES_PER_STEP: u64 = 16_384;
+/// The most steps one day may take: every product of a position and a constant stays inside 64
+/// bits, whatever a damaged recording says. A day this long is over two years at 60 steps a second.
+const MAXIMUM_STEPS_PER_DAY: u64 = 1 << 32;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClockConfiguration {
@@ -46,8 +49,9 @@ pub struct Clock {
 
 impl Clock {
     pub fn new(configuration: ClockConfiguration, step_seconds: f32) -> Self {
-        let steps_per_day =
-            ((configuration.day_length_real_minutes * 60.0 / step_seconds).round() as u64).max(1);
+        let steps_per_day = ((configuration.day_length_real_minutes * 60.0 / step_seconds).round()
+            as u64)
+            .clamp(1, MAXIMUM_STEPS_PER_DAY);
         let units_per_day = steps_per_day * UNITS_PER_STEP;
         Self {
             configuration,
@@ -92,10 +96,10 @@ impl Clock {
             self.units_per_day as u128 * MAXIMUM_MINUTES_PER_STEP as u128 / MINUTES_PER_DAY as u128;
         self.units_per_day != 0
             && self.units_per_day.is_multiple_of(UNITS_PER_STEP)
-            && self.units_per_day <= u64::MAX / 4
+            && self.units_per_day <= MAXIMUM_STEPS_PER_DAY * UNITS_PER_STEP
             && self.position < self.units_per_day
             && self.multiplier_units as u128 <= ceiling
-            && self.day < u32::MAX
+            && self.day <= u32::MAX - 16
             && self.game_minutes_per_step.is_finite()
     }
 

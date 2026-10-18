@@ -7,6 +7,7 @@
 #[path = "../common/mod.rs"]
 mod common;
 
+mod a_day_has_at_most_four_billion_steps;
 mod a_save_continues_a_recording;
 mod bisect_finds_a_planted_divergence;
 mod chance_in_basis_points;

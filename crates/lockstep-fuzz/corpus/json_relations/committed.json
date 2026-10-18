@@ -1,0 +1,8 @@
+{
+  "relations": [
+    { "name": "trust", "minimum": -100, "maximum": 100, "starting": 20, "decay_per_day": 5,
+      "thresholds": [ { "at": 50, "name": "trusted" }, { "at": 10, "name": "doubtful" },
+                      { "at": -30, "name": "hostile" } ] }
+  ],
+  "groups": ["day_shift", "night_shift"]
+}

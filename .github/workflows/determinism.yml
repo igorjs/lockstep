@@ -29,3 +29,16 @@ jobs:
         with:
           tool: wasm-pack@0.15.0
       - run: just ci
+  # Miri runs the integer-heavy core and the fuzz smoke under an interpreter that checks every
+  # operation. It is slow and needs the nightly compiler, so it is advisory: it never blocks a
+  # merge. See docs/decisions/0041-miri-scope.md.
+  miri:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - uses: extractions/setup-just@v2
+      - run: just miri

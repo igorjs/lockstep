@@ -77,3 +77,28 @@ fn a_clock_that_no_runner_could_have_written_is_an_error_not_a_later_panic() {
         Err(SaveError::NotASave(_))
     ));
 }
+
+/// Found in review of the fuzz harness: a save may not hold a day longer than the clock itself
+/// builds, or the clock's products overflow 64 bits once it runs.
+#[test]
+fn a_save_with_a_day_longer_than_the_clock_allows_is_refused() {
+    let mut original = recorder(9);
+    drive(&mut original, 0, 10);
+    let save = original.save();
+    // The clock encodes its configuration (20 bytes) and then the units in a day.
+    let mut bytes = lockstep_core::encode(&save.clock);
+    let too_long: u64 = 1 << 62;
+    bytes[20..28].copy_from_slice(&too_long.to_le_bytes());
+    let mut damaged = save.clone();
+    damaged.clock = lockstep_core::decode(&bytes).unwrap();
+    assert!(damaged.validate().is_err());
+    assert!(save.validate().is_ok());
+}
+
+/// Found by the fuzz harness: a save at the last step number overflowed when it stepped on.
+#[test]
+fn a_save_at_the_last_step_number_is_refused() {
+    let mut save = recorder(9).save();
+    save.step_number = u64::MAX;
+    assert!(save.validate().is_err());
+}
