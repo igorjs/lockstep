@@ -34,6 +34,10 @@ pub fn read_corpus(target: &Target) -> Vec<Vec<u8>> {
     names.sort();
     names
         .into_iter()
+        .filter(|path| {
+            path.extension()
+                .is_none_or(|extension| extension != "license")
+        })
         .filter_map(|path| std::fs::read(path).ok())
         .collect()
 }

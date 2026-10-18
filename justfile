@@ -98,6 +98,6 @@ fuzz iterations="1000000" seed="20261019":
 # The integer-heavy core and the fuzz smoke under Miri, which needs the nightly compiler.
 miri:
     MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test -p lockstep-fuzz --test smoke
-    cargo +nightly miri test -p lockstep-core --test behaviour -- money store
+    cargo +nightly miri test -p lockstep-core --test behaviour -- money store math
 
 ci: check test determinism

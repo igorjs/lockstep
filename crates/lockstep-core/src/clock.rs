@@ -96,10 +96,10 @@ impl Clock {
             self.units_per_day as u128 * MAXIMUM_MINUTES_PER_STEP as u128 / MINUTES_PER_DAY as u128;
         self.units_per_day != 0
             && self.units_per_day.is_multiple_of(UNITS_PER_STEP)
-            && self.units_per_day <= u64::MAX / 4
+            && self.units_per_day <= MAXIMUM_STEPS_PER_DAY * UNITS_PER_STEP
             && self.position < self.units_per_day
             && self.multiplier_units as u128 <= ceiling
-            && self.day < u32::MAX
+            && self.day <= u32::MAX - 16
             && self.game_minutes_per_step.is_finite()
     }
 

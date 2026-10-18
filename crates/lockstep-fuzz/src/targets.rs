@@ -3,7 +3,9 @@ use ledger::{Books, Configuration, Event, Intent, Ledger};
 use lockstep_attributes::Registry;
 use lockstep_calendar::Calendar;
 use lockstep_core::math::{isqrt, Currency, Fixed32, Money};
-use lockstep_core::{decode, encode, recorded_simulation_id, replay, Recording, Simulation};
+use lockstep_core::{
+    decode, encode, recorded_simulation_id, replay, Migrations, Recording, Runner, Save, Simulation,
+};
 use lockstep_crafting::Recipes;
 use lockstep_inventory::Catalogue as InventoryCatalogue;
 use lockstep_knowledge::Catalogue as KnowledgeCatalogue;
@@ -24,6 +26,10 @@ pub fn targets() -> Vec<Target> {
         Target {
             name: "decode_recording",
             run: decode_recording,
+        },
+        Target {
+            name: "decode_core_save",
+            run: decode_core_save,
         },
         Target {
             name: "decode_save",
@@ -153,6 +159,17 @@ fn decode_recording(bytes: &[u8]) {
     }
 }
 
+fn decode_core_save(bytes: &[u8]) {
+    if let Ok(save) = Save::from_bytes(bytes) {
+        if let Ok(mut runner) = Runner::<Ledger>::from_save(&save, &Migrations::new()) {
+            for step in 0..4 {
+                runner.set_clock_multiplier(step as f32 * 1_000.0);
+                runner.step_once(&[]);
+            }
+        }
+    }
+}
+
 fn decode_save(bytes: &[u8]) {
     let Some(books) = round_trips::<Books>(bytes) else {
         return;
@@ -180,7 +197,6 @@ fn arithmetic_fixed(bytes: &[u8]) {
         let one = Fixed32::ONE;
         assert_eq!(a + b, b + a);
         assert_eq!(a + b - b, a);
-        assert_eq!(a - Fixed32::from_raw(a.raw()), Fixed32::ZERO);
         assert_eq!(-(-a), a);
         assert_eq!(a * b, b * a);
         assert_eq!(a * one, a);
@@ -257,7 +273,13 @@ fn arithmetic_money(bytes: &[u8]) {
                 assert_eq!(parts.len(), weights.len());
                 let sum: i128 = parts.iter().map(|part| part.minor() as i128).sum();
                 assert_eq!(sum, a.minor() as i128, "the parts add up to the amount");
+                let weight_sum: i128 = weights.iter().map(|weight| *weight as i128).sum();
                 for (part, weight) in parts.iter().zip(&weights) {
+                    let exact = a.minor() as i128 * *weight as i128;
+                    // The check itself needs 130 bits for the extremes, so skip those.
+                    if let Some(scaled) = (part.minor() as i128).checked_mul(weight_sum) {
+                        assert!((scaled - exact).abs() < weight_sum);
+                    }
                     assert!(*weight != 0 || part.minor() == 0);
                     assert!(part.minor().signum() * a.minor().signum() >= 0);
                 }

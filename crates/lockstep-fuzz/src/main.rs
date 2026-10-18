@@ -30,10 +30,12 @@ fn main() -> ExitCode {
             }
         }
     }
+    let mut ran = 0;
     for target in targets() {
         if only.as_ref().is_some_and(|name| name != target.name) {
             continue;
         }
+        ran += 1;
         match fuzz(&target, seed, iterations) {
             Ok(()) => println!("ok {} ({iterations} iterations, seed {seed})", target.name),
             Err(failure) => {
@@ -41,6 +43,10 @@ fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             }
         }
+    }
+    if ran == 0 {
+        eprintln!("no target has that name");
+        return ExitCode::from(2);
     }
     ExitCode::SUCCESS
 }

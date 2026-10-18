@@ -35,6 +35,11 @@ pub fn binary_seeds() -> Vec<(&'static str, &'static str, Vec<u8>)> {
         ("decode_recording", "twelve-steps.bin", recording(12, 4)),
         ("decode_recording", "no-steps.bin", recording(0, 1)),
         ("decode_recording", "astronomical-day.bin", astronomical_day),
+        (
+            "decode_core_save",
+            "ledger-save.bin",
+            ledger::runner(7).save("ledger").to_bytes().expect("small"),
+        ),
         ("decode_save", "two-accounts.bin", encode(&books)),
         (
             "decode_message",

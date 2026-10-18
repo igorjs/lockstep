@@ -11,6 +11,7 @@ See decision 0039 for why it is not cargo-fuzz.
 | Target | What it checks |
 |---|---|
 | `decode_recording` | `Recording::from_bytes` and `recorded_simulation_id` never panic; a decoded recording encodes stably and replays without panicking |
+| `decode_core_save` | `Save::from_bytes` never panics, and a runner restored from a save that passes can step on without overflow |
 | `decode_save` | A decoded save (the ledger's books) encodes stably, restores and snapshots back to itself |
 | `decode_message` | Intents, events, configurations, `Money` and `Currency` decode or are refused, and encode stably |
 | `json_registry`, `json_inventory_catalogue`, `json_recipes`, `json_relations`, `json_templates`, `json_knowledge`, `json_progression`, `json_regions`, `json_calendar` | Each crate's `from_json` returns a value or an error, never a panic |
@@ -45,3 +46,6 @@ recordings, saves and messages for the decoders. `write-corpus` regenerates the 
 
 - A recording with an astronomical day length or a zero-length step overflowed the clock's
   64-bit units (decision 0042).
+- A save with a day longer than the clock builds, a day counter within 16 of its limit, or the
+  last step number passed validation and then overflowed once it ran; `Save::validate` now
+  refuses all three.
