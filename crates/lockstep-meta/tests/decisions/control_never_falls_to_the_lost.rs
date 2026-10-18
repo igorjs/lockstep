@@ -2,7 +2,7 @@
 //! Decision: when the one in control is lost, control falls back to the first candidate the
 //! caller lists, in the caller's order, and never to the one just lost; with no candidate it is
 //! vacant and says so, rather than staying with the lost.
-//! Alternative rejected: the library choosing the heir (by age or handle), which would hide a
+//! Alternative rejected: the library choosing who is next in control (by age or handle), which would hide a
 //! rule the game or business owns.
 //! Would change if: a transfer names the lost entity, or skips an earlier candidate.
 
