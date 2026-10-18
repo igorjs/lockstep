@@ -1,0 +1,5 @@
+{
+  "queue_budget": 30,
+  "lanes_at_the_start": 2,
+  "service_minutes": 1
+}

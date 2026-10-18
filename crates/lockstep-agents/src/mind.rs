@@ -98,6 +98,13 @@ pub struct Director {
     pub alert_budget: u16,
 }
 
+impl Director {
+    /// How many more can join a load of `load` before the budget is spent, for `Waves::advance`.
+    pub fn headroom(&self, load: u32) -> u32 {
+        (self.alert_budget as u32).saturating_sub(load)
+    }
+}
+
 /// What `think` reads besides the minds.
 pub struct Surroundings<'a, T: Topology> {
     pub map: &'a GridMap<T>,

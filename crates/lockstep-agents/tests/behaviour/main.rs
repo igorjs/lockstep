@@ -9,4 +9,5 @@ mod minds;
 mod sight;
 mod steering;
 mod utility;
+mod waves;
 mod weather;

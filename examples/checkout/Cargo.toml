@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "checkout"
+description = "Non-game consumer scenario for the waves in lockstep-agents: a surge of shoppers is spaced into pulses so the queue stays under the director's budget"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-agents = { path = "../../crates/lockstep-agents" }
+lockstep-core = { path = "../../crates/lockstep-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }
