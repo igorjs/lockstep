@@ -29,5 +29,15 @@ together with `chunk_seeds_never_collide` (200 world seeds times 128 by 128 plac
 different) covers the generation. Other tests: refused barriers, mending, a closed estate that
 opens when its barrier gives way, and the session reaching every branch.
 
+## Joined paths and fences
+
+`data/joined.json` is a second template set with sockets: a crossing, two lanes, a dead end and
+a plot, where a gate (a gap in the wall) only meets a gate and a fence only meets a fence. The
+test `paths_and_fences_join_across_every_chunk_border` rolls 8 by 6 chunks with `roll_matched`
+for several seeds, checks that every seam is open on both sides or walled on both, and checks
+with the pathfinder that a walker reaches exactly the chunks of its own path network and none
+of another. Other tests cover reservations, a refused layout (`NoLayout`) and a search that
+ends in `SearchLimit`. The estate's own fixture hash does not change.
+
 This example stands in for the reference's barricade and generated valley consumers
 (departure P24 in the roadmap).
