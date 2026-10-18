@@ -83,10 +83,28 @@ step, its memory ages, so a noise heard this step ages with it and a sighting st
   while the agent stays Curious about that target.
 - Every change is a `Changed` event, after the director has ruled.
 
-`Leash::allows` says whether a cell is within the leash, for steering too. The director's waves,
-which space a horde's arrival into pulses, wait for a consumer (deferral D5 in the roadmap).
+`Leash::allows` says whether a cell is within the leash, for steering too. 
 
 See decision 0019.
+
+## Waves
+
+A `Waves` spaces a large arrival into pulses. The pacing is data, `WaveRules`: `pulse_size`
+arrivals fall due every `interval_minutes` game minutes, the first after `start_after_minutes`.
+The last pulse is the remainder.
+
+`Waves::advance(rules, minutes, headroom, events)` lets game time pass and admits as many due
+arrivals as `headroom` allows, returning the number admitted. `Director::headroom(load)` is the
+budget less the current load. Arrivals the budget turns away wait and are admitted on a later
+step; none is dropped, and the load never passes the budget.
+
+- Pulses fall due by the game minutes since the wave began, counted from the total, so the same
+  game time gives the same pulses at any step rate (decision 0055).
+- Events: `Pulse` when a pulse falls due, `Admitted` with the arrivals let in, `Held` once when a
+  hold starts, and `Finished` once when every arrival is in.
+- The state is plain data, so a snapshot taken mid-wave restores and carries on exactly.
+
+The `checkout` example is the consumer: see `docs/checkout.md`. Decisions 0055 and 0056.
 
 ## Steering
 

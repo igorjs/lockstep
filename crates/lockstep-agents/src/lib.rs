@@ -6,6 +6,7 @@ mod noise;
 mod perception;
 mod steering;
 mod utility;
+mod waves;
 mod weather;
 
 pub use mind::{
@@ -16,4 +17,5 @@ pub use noise::{audible_metres, effective_range, hear, hearing_threshold, Heard,
 pub use perception::{checks_on, distance_metres, perceive, sees, Cone, Seen, Senses};
 pub use steering::{steer, SteerEvent};
 pub use utility::{choose, evaluate_task, Choice, Consideration, Reason, Task, TaskResponse};
+pub use waves::{WaveEvent, WaveRules, Waves};
 pub use weather::{Front, Gust, Weather, WeatherEvent, WeatherRules};
