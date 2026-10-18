@@ -49,6 +49,7 @@ WebAssembly on every change.
 |---|---|
 | [`capsule`](examples/capsule) | A survivor walks a walled room along A* paths; needs, health and sanity are attributes from JSON, and decay, bleeding and prayer are effects. |
 | [`ledger`](examples/ledger) | Accounts and transfers: exact money, rejected transfers with reasons. Not a game. |
+| [`tariffs`](examples/tariffs) | Transfers that charge a fee, and a save written before the fee existed that still loads through a migration. Not a game. |
 | [`mars-rovers`](examples/mars-rovers) | The Mars Rovers kata on any topology, with collisions as occupancy and rovers that ram each other. |
 | [`drone-fleet`](examples/drone-fleet) | Delivery drones whose batteries charge, drain and wear: attributes from JSON, effects, a ratchet, and fault rolls. Not a game. |
 | [`cargo-bay`](examples/cargo-bay) | A crew works a cargo bay: deliveries into stores with slots and weight limits, rations that spoil by temperature (and faster after a power cut), suits that raise oxygen, and faulty seals that bind until repaired. Not a game. |

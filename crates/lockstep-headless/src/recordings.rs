@@ -2,38 +2,72 @@
 //! Commands on recorded sessions: `record`, `replay`, `bisect` and `stats`. A recording names its
 //! simulation, and the table below finds the code that can run it.
 
-use lockstep_core::{bisect, recorded_simulation_id, replay, Recording, ReplayOutcome, Simulation};
+use lockstep_core::{
+    bisect, recorded_simulation_id, replay, replay_from, saved_simulation_id, Migrations,
+    Recording, ReplayOutcome, Save, Simulation,
+};
 
 /// A simulation the headless runner can record and replay.
 pub struct Replayable {
     pub id: &'static str,
     /// Records the fixture session: seed, steps, checkpoint every.
     pub record: fn(u64, u64, u64) -> Result<Vec<u8>, String>,
-    pub replay: fn(&[u8], Option<u64>) -> Result<Replayed, String>,
+    /// Replays, stopping after `until` steps when given; the flag asks for a save at the stop.
+    pub replay: fn(&[u8], Option<u64>, bool) -> ReplayResult,
+    /// Continues a recording from a save: save bytes, recording bytes.
+    pub resume: fn(&[u8], &[u8]) -> Result<Replayed, String>,
     pub bisect: fn(&[u8]) -> Result<Replayed, String>,
     pub stats: fn(&[u8]) -> Result<String, String>,
+    /// The conversions that load this simulation's older saves.
+    pub migrations: fn() -> Migrations,
 }
+
+type ReplayResult = Result<Replayed, String>;
 
 /// What a replay or a bisect found: `identical` is false when the session diverged.
 #[derive(Debug, PartialEq)]
 pub struct Replayed {
     pub identical: bool,
     pub report: String,
+    /// The save bytes taken where the replay stopped, when one was asked for and it matched.
+    pub save: Option<Vec<u8>>,
 }
 
 pub fn replayables() -> Vec<Replayable> {
-    vec![Replayable {
-        id: ledger::SIMULATION_ID,
-        record: |seed, steps, every| {
-            // The ledger's snapshot is small, so recordings keep one per checkpoint for bisect.
-            ledger::record_fixture(seed, steps, every, true)
-                .to_bytes()
-                .map_err(|error| error.to_string())
+    vec![
+        Replayable {
+            id: ledger::SIMULATION_ID,
+            record: |seed, steps, every| {
+                // The ledger's snapshot is small, so recordings keep one per checkpoint for bisect.
+                ledger::record_fixture(seed, steps, every, true)
+                    .to_bytes()
+                    .map_err(|error| error.to_string())
+            },
+            replay: replay_report::<ledger::Ledger>,
+            resume: resume_report::<ledger::Ledger>,
+            bisect: bisect_report::<ledger::Ledger>,
+            stats: stats_report::<ledger::Ledger>,
+            migrations: Migrations::new,
         },
-        replay: replay_report::<ledger::Ledger>,
-        bisect: bisect_report::<ledger::Ledger>,
-        stats: stats_report::<ledger::Ledger>,
-    }]
+        Replayable {
+            id: tariffs::SIMULATION_ID,
+            record: |seed, steps, every| {
+                tariffs::record_fixture(seed, steps, every, true)
+                    .to_bytes()
+                    .map_err(|error| error.to_string())
+            },
+            replay: replay_report::<tariffs::Tariffs>,
+            resume: resume_report::<tariffs::Tariffs>,
+            bisect: bisect_report::<tariffs::Tariffs>,
+            stats: stats_report::<tariffs::Tariffs>,
+            migrations: tariffs::migrations,
+        },
+    ]
+}
+
+/// The simulation id at the front of a save's bytes.
+pub fn saved_id(bytes: &[u8]) -> Result<String, String> {
+    saved_simulation_id(bytes).map_err(|error| error.to_string())
 }
 
 /// The simulation id at the front of a recording's bytes.
@@ -54,7 +88,11 @@ fn truncate<S: Simulation>(recording: &mut Recording<S::Intent>, until: u64) {
     recording.snapshots.retain(|(step, _)| *step <= until);
 }
 
-fn replay_report<S: Simulation>(bytes: &[u8], until: Option<u64>) -> Result<Replayed, String> {
+fn replay_report<S: Simulation>(
+    bytes: &[u8],
+    until: Option<u64>,
+    save: bool,
+) -> Result<Replayed, String> {
     let mut recording = read::<S>(bytes)?;
     if let Some(until) = until {
         truncate::<S>(&mut recording, until);
@@ -69,6 +107,16 @@ fn replay_report<S: Simulation>(bytes: &[u8], until: Option<u64>) -> Result<Repl
                 runner.step_number(),
                 runner.hash()
             ),
+            save: if save {
+                Some(
+                    runner
+                        .save(&recording.simulation_id)
+                        .to_bytes()
+                        .map_err(|error| error.to_string())?,
+                )
+            } else {
+                None
+            },
         },
         ReplayOutcome::Diverged {
             at_step,
@@ -80,6 +128,46 @@ fn replay_report<S: Simulation>(bytes: &[u8], until: Option<u64>) -> Result<Repl
                 "diverged {} at step {at_step}: recorded {expected:016x}, replayed {actual:016x}",
                 recording.simulation_id
             ),
+            save: None,
+        },
+    })
+}
+
+/// Loads the save, converting an older shape, and runs the recording from the save's step on,
+/// comparing every checkpoint from there.
+fn resume_report<S: Simulation>(save_bytes: &[u8], bytes: &[u8]) -> Result<Replayed, String> {
+    let recording = read::<S>(bytes)?;
+    let save = Save::from_bytes(save_bytes).map_err(|error| error.to_string())?;
+    let migrations = replayables()
+        .into_iter()
+        .find(|replayable| replayable.id == save.simulation_id)
+        .map(|replayable| (replayable.migrations)())
+        .unwrap_or_default();
+    let (runner, outcome) =
+        replay_from::<S>(&recording, &save, &migrations).map_err(|error| error.to_string())?;
+    Ok(match outcome {
+        ReplayOutcome::Identical => Replayed {
+            identical: true,
+            report: format!(
+                "identical {} from step {} to step {}, hash {:016x}",
+                recording.simulation_id,
+                save.step_number,
+                runner.step_number(),
+                runner.hash()
+            ),
+            save: None,
+        },
+        ReplayOutcome::Diverged {
+            at_step,
+            expected,
+            actual,
+        } => Replayed {
+            identical: false,
+            report: format!(
+                "diverged {} at step {at_step}: recorded {expected:016x}, replayed {actual:016x}",
+                recording.simulation_id
+            ),
+            save: None,
         },
     })
 }
@@ -95,6 +183,7 @@ fn bisect_report<S: Simulation>(bytes: &[u8]) -> Result<Replayed, String> {
                 recording.steps.len(),
                 recording.simulation_id
             ),
+            save: None,
         });
     };
     let mut lines = vec![
@@ -114,6 +203,7 @@ fn bisect_report<S: Simulation>(bytes: &[u8]) -> Result<Replayed, String> {
     Ok(Replayed {
         identical: false,
         report: lines.join("\n"),
+        save: None,
     })
 }
 

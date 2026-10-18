@@ -6,7 +6,10 @@
 //! - `verify <name> --expect <file> [--seed <number>] [--steps <number>]` compares the hash with
 //!   a committed hash file and fails when they differ.
 //! - `record <name> --out <file> [--seed] [--steps] [--every]` writes a recording of the fixture.
-//! - `replay <file> [--until <step>]` runs a recording again and fails when it diverges.
+//! - `replay <file> [--until <step>] [--save <file>]` runs a recording again and fails when it
+//!   diverges; `--save` writes a save where the replay stopped.
+//! - `resume <save> --recording <file>` continues a recording from a save, converting an older
+//!   save, and fails when a later checkpoint differs.
 //! - `bisect <file>` names the checkpoints around the first divergence and what differs.
 //! - `stats <file>` prints the session's length, intents per minute and multiplier use.
 
@@ -103,6 +106,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: sparring::fixture_hash,
         },
         Fixture {
+            name: "tariffs",
+            default_seed: tariffs::DEFAULT_SEED,
+            default_steps: tariffs::DEFAULT_STEPS,
+            run: tariffs::fixture_hash,
+        },
+        Fixture {
             name: "ledger",
             default_seed: ledger::DEFAULT_SEED,
             default_steps: ledger::DEFAULT_STEPS,
@@ -166,7 +175,8 @@ impl std::fmt::Display for CommandError {
 const USAGE: &str = "usage: lockstep-headless fixture <name> [--seed <number>] [--steps <number>]
        lockstep-headless verify <name> --expect <file> [--seed <number>] [--steps <number>]
        lockstep-headless record <name> --out <file> [--seed <number>] [--steps <number>] [--every <number>]
-       lockstep-headless replay <recording> [--until <step>]
+       lockstep-headless replay <recording> [--until <step>] [--save <file>]
+       lockstep-headless resume <save> --recording <recording>
        lockstep-headless bisect <recording>
        lockstep-headless stats <recording>";
 
@@ -180,6 +190,8 @@ struct Options {
     out: Option<String>,
     every: Option<u64>,
     until: Option<u64>,
+    save: Option<String>,
+    recording: Option<String>,
 }
 
 fn parse_options(arguments: &[String]) -> Result<Options, CommandError> {
@@ -190,6 +202,8 @@ fn parse_options(arguments: &[String]) -> Result<Options, CommandError> {
         out: None,
         every: None,
         until: None,
+        save: None,
+        recording: None,
     };
     let mut index = 0;
     while index < arguments.len() {
@@ -204,6 +218,8 @@ fn parse_options(arguments: &[String]) -> Result<Options, CommandError> {
             "--out" => options.out = Some(value.clone()),
             "--every" => options.every = Some(parse_number(flag, value)?.max(1)),
             "--until" => options.until = Some(parse_number(flag, value)?),
+            "--save" => options.save = Some(value.clone()),
+            "--recording" => options.recording = Some(value.clone()),
             other => {
                 return Err(CommandError::Usage(format!(
                     "unknown option {other}\n{USAGE}"
@@ -224,12 +240,15 @@ fn refuse_unused_options(command: &str, options: &Options) -> Result<(), Command
         ("--out", options.out.is_some()),
         ("--every", options.every.is_some()),
         ("--until", options.until.is_some()),
+        ("--save", options.save.is_some()),
+        ("--recording", options.recording.is_some()),
     ];
     let allowed: &[&str] = match command {
         "fixture" => &["--seed", "--steps"],
         "verify" => &["--seed", "--steps", "--expect"],
         "record" => &["--seed", "--steps", "--out", "--every"],
-        "replay" => &["--until"],
+        "replay" => &["--until", "--save"],
+        "resume" => &["--recording"],
         _ => &[],
     };
     match given
@@ -315,6 +334,39 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
             })?;
             Ok(format!("recorded {name} to {out} ({} bytes)", bytes.len()))
         }
+        "resume" => {
+            let recording_path = options.recording.clone().ok_or_else(|| {
+                CommandError::Usage(format!("resume needs --recording <file>\n{USAGE}"))
+            })?;
+            let save_bytes = fs::read(name).map_err(|error| {
+                CommandError::Unreadable(format!("cannot read {name}: {error}"))
+            })?;
+            let bytes = fs::read(&recording_path).map_err(|error| {
+                CommandError::Unreadable(format!("cannot read {recording_path}: {error}"))
+            })?;
+            let saved = recordings::saved_id(&save_bytes).map_err(CommandError::Recording)?;
+            let recorded = recordings::simulation_id(&bytes).map_err(CommandError::Recording)?;
+            if saved != recorded {
+                return Err(CommandError::Recording(format!(
+                    "the save is for '{saved}' but the recording is for '{recorded}'"
+                )));
+            }
+            let replayable = replayables()
+                .into_iter()
+                .find(|replayable| replayable.id == saved)
+                .ok_or_else(|| {
+                    CommandError::Recording(format!(
+                        "no simulation called '{saved}' can be resumed"
+                    ))
+                })?;
+            let resumed =
+                (replayable.resume)(&save_bytes, &bytes).map_err(CommandError::Recording)?;
+            if resumed.identical {
+                Ok(resumed.report)
+            } else {
+                Err(CommandError::Diverged(resumed.report))
+            }
+        }
         "replay" | "bisect" | "stats" => {
             let bytes = fs::read(name).map_err(|error| {
                 CommandError::Unreadable(format!("cannot read {name}: {error}"))
@@ -328,9 +380,20 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
                 })?;
             match command.as_str() {
                 "replay" => {
-                    let replayed = (replayable.replay)(&bytes, options.until)
-                        .map_err(CommandError::Recording)?;
+                    let replayed =
+                        (replayable.replay)(&bytes, options.until, options.save.is_some())
+                            .map_err(CommandError::Recording)?;
                     if replayed.identical {
+                        if let (Some(path), Some(save)) = (&options.save, &replayed.save) {
+                            fs::write(path, save).map_err(|error| {
+                                CommandError::Unwritable(format!("cannot write {path}: {error}"))
+                            })?;
+                            return Ok(format!(
+                                "{}\nsaved to {path} ({} bytes)",
+                                replayed.report,
+                                save.len()
+                            ));
+                        }
                         Ok(replayed.report)
                     } else {
                         Err(CommandError::Diverged(replayed.report))

@@ -5,6 +5,7 @@ use crate::clock::ClockConfiguration;
 use crate::hashing::{decode, encode, DECODE_LIMIT};
 use crate::message::Message;
 use crate::runner::{Advanced, Runner, StepConfiguration};
+use crate::save::{Migrations, Save, SaveError};
 use crate::simulation::Simulation;
 use serde::{Deserialize, Serialize};
 
@@ -82,6 +83,13 @@ pub enum ReplayError {
     Snapshot(String),
     /// The recording's bytes would pass `DECODE_LIMIT`.
     TooLarge(u64),
+    /// The save cannot be loaded, belongs to another simulation, or lies past the last step.
+    Save(String),
+    /// The save was converted from an older snapshot shape, so the recorded hashes, which cover
+    /// the shape the recording was made with, can no longer be compared.
+    NotComparable {
+        from_version: u32,
+    },
 }
 
 impl std::fmt::Display for ReplayError {
@@ -97,6 +105,13 @@ impl std::fmt::Display for ReplayError {
             ReplayError::Snapshot(reason) => {
                 write!(formatter, "a kept snapshot does not decode: {reason}")
             }
+            ReplayError::Save(reason) => {
+                write!(formatter, "the save cannot continue this recording: {reason}")
+            }
+            ReplayError::NotComparable { from_version } => write!(
+                formatter,
+                "the save was converted from snapshot version {from_version}, so the recorded hashes no longer apply"
+            ),
             ReplayError::TooLarge(bytes) => write!(
                 formatter,
                 "the recording is {bytes} bytes, over the {DECODE_LIMIT} bytes it could be read back with"
@@ -209,6 +224,11 @@ impl<S: Simulation> Recorder<S> {
         advanced
     }
 
+    /// A save of the session as it stands, which `replay_from` continues the recording from.
+    pub fn save(&self) -> Save {
+        self.runner.save(&self.recording.simulation_id)
+    }
+
     pub fn runner(&self) -> &Runner<S> {
         &self.runner
     }
@@ -271,15 +291,64 @@ pub(crate) fn replay_with<S: Simulation>(
 ) -> Result<(Runner<S>, ReplayOutcome), ReplayError> {
     let configuration: S::Configuration =
         decode(&recording.configuration).map_err(ReplayError::Configuration)?;
-    let mut runner = Runner::new(
+    let runner = Runner::new(
         configuration,
         recording.seed,
         recording.step_configuration,
         recording.clock_configuration,
     );
+    run_from(recording, runner, observer)
+}
+
+/// Continues a recording from a save taken partway through it: the steps before the save's step
+/// are skipped, and every checkpoint from the save's step on is compared, so the save's own hash
+/// is checked against the recording first. A save written by an older snapshot shape was
+/// converted, and the recorded hashes cover the shape the recording was made with, so that is an
+/// error, not a pass. Check such a save against a session run on the current code instead.
+pub fn replay_from<S: Simulation>(
+    recording: &Recording<S::Intent>,
+    save: &Save,
+    migrations: &Migrations,
+) -> Result<(Runner<S>, ReplayOutcome), ReplayError> {
+    if save.simulation_id != recording.simulation_id {
+        return Err(ReplayError::Save(
+            SaveError::WrongSimulation {
+                expected: recording.simulation_id.clone(),
+                found: save.simulation_id.clone(),
+            }
+            .to_string(),
+        ));
+    }
+    if save.step_number > recording.steps.len() as u64 {
+        return Err(ReplayError::Save(format!(
+            "the save is at step {}, past the recording's {} steps",
+            save.step_number,
+            recording.steps.len()
+        )));
+    }
+    if save.snapshot_version != <S::Snapshot as Message>::VERSION {
+        return Err(ReplayError::NotComparable {
+            from_version: save.snapshot_version,
+        });
+    }
+    let runner = Runner::<S>::from_save(save, migrations)
+        .map_err(|error| ReplayError::Save(error.to_string()))?;
+    run_from(recording, runner, &mut |_, _| {})
+}
+
+fn run_from<S: Simulation>(
+    recording: &Recording<S::Intent>,
+    mut runner: Runner<S>,
+    observer: &mut StepObserver<'_, S>,
+) -> Result<(Runner<S>, ReplayOutcome), ReplayError> {
+    let start = runner.step_number();
     // Checkpoints must rise strictly; one at or below the last compared, or past the last step,
     // would be skipped without a comparison, so it is an error rather than a silent pass.
-    let mut checkpoints = recording.checkpoints.iter().peekable();
+    let mut checkpoints = recording
+        .checkpoints
+        .iter()
+        .filter(|(step, _)| *step >= start)
+        .peekable();
     let mut compared: Option<u64> = None;
     let mut check = |runner: &Runner<S>| -> Result<Option<ReplayOutcome>, ReplayError> {
         while let Some((at_step, expected)) = checkpoints.peek().copied() {
@@ -305,7 +374,7 @@ pub(crate) fn replay_with<S: Simulation>(
     if let Some(outcome) = check(&runner)? {
         return Ok((runner, outcome));
     }
-    for step in &recording.steps {
+    for step in recording.steps.iter().skip(start as usize) {
         runner.set_clock_multiplier(step.clock_multiplier);
         let advanced = runner.step_once(&step.intents);
         observer(&runner, &advanced.events);

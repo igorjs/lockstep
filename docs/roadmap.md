@@ -26,7 +26,7 @@ items in a milestone are out of scope here.
 | M13 Regions and calendar | Done | `lockstep-regions`: region graph from JSON with anchors, receptiveness, hops and nearest, a condition that spreads by chance each interval helped downwind and scaled by a pace (decisions 0029, 0030); `lockstep-calendar`: seasons from JSON, daylight and temperature by day and minute, the clock's daylight, season events (decision 0027); orchard | Met: the mean spread time is within 3 percent of the inverse of the chance; winter has the shortest days and a midwinter blight does not spread; the calendar, spread and orchard hashes are equal natively and under WebAssembly |
 | M14 Structures and procedural generation | Done | `lockstep-structures`: durable multi-cell structures that wall a map, wear down, mend and collapse; `lockstep-procgen`: chunk templates and weighted pools from JSON, reserved chunks, a layout rolled with a seed per chunk, applied to a map; estate | Met: a barrier across a chunk border and its collapse each report both chunks dirty; chunk seeds never collide across 200 world seeds times 128 by 128 places |
 | M15 Meta, lineage, templates | Not started | | |
-| M16 Hardening | Not started | Saves, migrations, fuzzing and Miri, and money are framework items | |
+| M16 Hardening | In progress | Done: saves with a versioned envelope, migrations between snapshot versions, committed old-version fixtures, saving mid-recording and `resume` (decisions 0035, 0036); `tariffs`. Still to land: data tables with hot reload, fuzzing and Miri, money | Open until every framework part lands |
 
 ## Gaps: short of the reference
 
@@ -35,7 +35,7 @@ items in a milestone are out of scope here.
 | G1 | Hexagon distance is 15.47 percent off true distance; the reference asks for 3 percent, which no hexagon step count can meet | Decision 0005 | Open: needs the reference's figure revised |
 | G2 | 500 paths on a 512 by 512 map take about 611 milliseconds serially (88 with the path batch on ten threads); the reference asks for 50 | Decisions 0005, 0006 | Open: needs hierarchical search, bidirectional search or a cheaper step, or a revised target |
 | G3 | `bisect` narrows to the checkpoint, not the step, unless the recording checkpoints every step | Decision 0011 | Accepted: the recording has no hash between checkpoints |
-| G4 | Only the ledger can be recorded by `lockstep-headless record` | `crates/lockstep-headless/src/recordings.rs` | Open: add other simulations as they gain consumers |
+| G4 | Only the ledger and `tariffs` can be recorded by `lockstep-headless record` | `crates/lockstep-headless/src/recordings.rs` | Open: add other simulations as they gain consumers |
 
 ## Deferrals: built later, when a consumer pulls them
 
@@ -43,10 +43,11 @@ items in a milestone are out of scope here.
 |---|---|---|---|---|
 | D1 | Schema export from `#[derive(Message)]` | M5 | A tool that reads schemas | Decision 0010 |
 | D2 | The crash bundle (a recording, the last good save and the host's log) | M5 | A host, which writes it | Decision 0011 |
-| D3 | `replay --save` and saving mid-recording | M5 | Saves and migrations (M16) | `docs/lockstep-headless.md`, `docs/lockstep-core.md` |
-| D4 | Conversions between message versions | M16 | Saves: until a save ships, no version has shipped | Decision 0010 |
+| D3 | `replay --save` and saving mid-recording | M5 | Closed in M16: `replay --until --save`, `resume`, `Recorder::save` | Decision 0036 |
+| D4 | Conversions between message versions | M16 | Closed in M16 for snapshots (decision 0035); see D7 for the rest | Decisions 0010, 0035 |
 | D5 | The director's waves, spacing a horde's arrival into pulses | M8 | A consumer with a horde that arrives over time | `docs/lockstep-agents.md` |
 | D6 | Matching template edges, so neighbouring chunks join up | M14 | A consumer that needs a connected map without reserving chunks | `docs/lockstep-procgen.md` |
+| D7 | Conversions for intents, events and configurations, so recordings made by an older shape still replay | M16 | A consumer that keeps old recordings | Decision 0035 |
 
 ## Departures: where the work differs from the reference on purpose
 
