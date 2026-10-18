@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use checkout::{
-    fixture_hash, queue_rules, run_fixture, runner, step, store, Checkout, Configuration, Event,
-    Intent, DEFAULT_SEED, DEFAULT_STEPS,
+    fixture_hash, queue_rules, runner, step, store, Checkout, Configuration, Event, Intent,
+    DEFAULT_SEED, DEFAULT_STEPS,
 };
 use lockstep_agents::WaveEvent;
 use lockstep_core::{decode, encode, hash_of, Clock, Context, Simulation, Streams};
