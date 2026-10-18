@@ -49,6 +49,7 @@ determinism:
     wasm-pack test --node crates/lockstep-progression
     wasm-pack test --node crates/lockstep-relations
     wasm-pack test --node crates/lockstep-crafting
+    wasm-pack test --node crates/lockstep-meta
     wasm-pack test --node crates/lockstep-calendar
     wasm-pack test --node crates/lockstep-regions
     wasm-pack test --node crates/lockstep-structures
