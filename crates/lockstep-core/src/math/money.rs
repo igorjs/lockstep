@@ -2,6 +2,9 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// The most parts `split` makes, so a damaged request cannot ask for gigabytes.
+pub const MAXIMUM_PARTS: u32 = 1_000_000;
+
 /// The largest currency exponent: ten to the 18th is the largest power of ten an `i64` holds.
 pub const MAXIMUM_EXPONENT: u8 = 18;
 
@@ -163,9 +166,13 @@ impl Money {
 
     /// Shares the amount between `parts` equal parts. Whole minor units cannot always divide
     /// evenly, so the first parts get one more unit each; the parts always add up to the amount.
+    /// More than `MAXIMUM_PARTS` parts is an `Overflow` error.
     pub fn split(&self, parts: u32) -> Result<Vec<Money>, MoneyError> {
         if parts == 0 {
             return Err(MoneyError::NothingToShareWith);
+        }
+        if parts > MAXIMUM_PARTS {
+            return Err(MoneyError::Overflow);
         }
         self.allocate(&vec![1; parts as usize])
     }

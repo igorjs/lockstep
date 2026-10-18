@@ -113,6 +113,11 @@ fn a_split_gives_the_extra_units_to_the_first_parts() {
     );
     assert_eq!(amount(2).split(5).unwrap().len(), 5);
     assert_eq!(amount(5).split(0), Err(MoneyError::NothingToShareWith));
+    assert_eq!(amount(5).split(u32::MAX), Err(MoneyError::Overflow));
+    assert_eq!(
+        amount(2).split(5).unwrap(),
+        vec![amount(1), amount(1), amount(0), amount(0), amount(0)]
+    );
 }
 
 #[test]
@@ -120,6 +125,11 @@ fn an_allocation_follows_the_weights_and_zero_weights_get_nothing() {
     assert_eq!(
         amount(100).allocate(&[1, 0, 1]).unwrap(),
         vec![amount(50), amount(0), amount(50)]
+    );
+    // The unit left over goes to the larger remainder, not the first part.
+    assert_eq!(
+        amount(10).allocate(&[1, 2]).unwrap(),
+        vec![amount(3), amount(7)]
     );
     assert_eq!(
         amount(10).allocate(&[3, 1]).unwrap(),

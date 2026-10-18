@@ -26,6 +26,12 @@ pub fn settle_intents(
     if payees.len() != weights.len() {
         return Err(MoneyError::NothingToShareWith);
     }
+    if bill.currency() != currency() {
+        return Err(MoneyError::CurrencyMismatch);
+    }
+    if bill.is_negative() {
+        return Err(MoneyError::NothingToShareWith);
+    }
     let shares = bill.allocate(weights)?;
     Ok(payees
         .iter()

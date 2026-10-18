@@ -78,3 +78,24 @@ fn a_bill_with_no_one_to_share_it_is_refused() {
         Err(MoneyError::NothingToShareWith)
     );
 }
+
+#[test]
+fn a_refund_or_a_bill_in_another_currency_is_refused() {
+    let session = runner(1);
+    let accounts = session.simulation().books().accounts.handles();
+    let weights = [1; ACCOUNT_COUNT];
+    assert_eq!(
+        settle_intents(
+            accounts[0],
+            &accounts,
+            &weights,
+            Money::from_minor(-5, currency())
+        ),
+        Err(MoneyError::NothingToShareWith)
+    );
+    let yen = lockstep_core::math::Currency::new("JPY", 0).unwrap();
+    assert_eq!(
+        settle_intents(accounts[0], &accounts, &weights, Money::from_minor(5, yen)),
+        Err(MoneyError::CurrencyMismatch)
+    );
+}
