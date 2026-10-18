@@ -40,9 +40,9 @@ macro_rules! replayable {
     };
 }
 
-/// Every example with a fixture except two that no recording can reproduce: `mars-rovers` runs
-/// many separate sessions in one fixture, and `orchard` sets the clock's daylight from outside
-/// the simulation between steps, which a replay does not do.
+/// Every example with a fixture except three that no recording can reproduce: `mars-rovers` runs
+/// many separate sessions in one fixture, `roster` runs two successive projects, and `orchard`
+/// sets the clock's daylight from outside the simulation between steps, which a replay does not do.
 pub fn replayables() -> Vec<Replayable> {
     vec![
         replayable!(ledger, ledger::Ledger),

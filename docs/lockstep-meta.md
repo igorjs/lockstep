@@ -54,7 +54,7 @@ that `lost` has left: if it was in control, control moves to the first of `fall_
   archetype that omits an attribute, names an unknown one or starts outside the bounds, an unknown
   archetype or attribute in `build`, a purchase past a maximum, and a budget overrun.
 
-See decision 0031.
+See decision 0031. The consumer is the [roster](roster.md) example.
 
 ## Tests
 

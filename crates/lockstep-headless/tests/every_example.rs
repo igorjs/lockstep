@@ -6,8 +6,9 @@ use lockstep_headless::{fixtures, format_hash, run};
 use std::path::PathBuf;
 
 /// Fixtures with no single session a recording could capture, each for the reason named.
-const NOT_RECORDABLE: [(&str, &str); 2] = [
+const NOT_RECORDABLE: [(&str, &str); 3] = [
     ("mars-rovers", "one fixture runs many separate sessions"),
+    ("roster", "one fixture runs two successive projects"),
     (
         "orchard",
         "the host sets daylight on the clock between steps",

@@ -60,6 +60,7 @@ WebAssembly on every change.
 | [`bakery`](examples/bakery) | A mixer and an oven turn deliveries into bread through recipes that consume all or nothing, with flat dough, burnt loaves and collapses from an outcome table. Not a game. |
 | [`estate`](examples/estate) | A garden estate rolled from chunk templates with fixed cloisters, and a flood barrier raised across it that surges wear down until it gives way. Not a game. |
 | [`checkout`](examples/checkout) | A surge of shoppers is spaced into pulses so the checkout queue stays under the director's budget, with the rest waiting outside. Not a game. |
+| [`roster`](examples/roster) | A crew roster across successive projects: a retired name is never hired again, even in a later project, and the lead falls back to the next hired. Not a game. |
 | [`orchard`](examples/orchard) | A blight spreads across orchard blocks before the wind, idle in the cold, as the calendar shortens the days toward winter. Not a game. |
 | [`sparring`](examples/sparring) | Partners spar in pairs: strikes, sweeps that knock back, dodges, thrown balls, walking and running on one stamina pool, and a 200-partner spike. |
 | [`crowd`](examples/crowd) | Sixty bodies route to one goal, solving each step's paths as one batch, with the same hash on one thread or many. |

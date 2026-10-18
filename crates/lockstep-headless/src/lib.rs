@@ -97,6 +97,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: checkout::fixture_hash,
         },
         Fixture {
+            name: "roster",
+            default_seed: roster::DEFAULT_SEED,
+            default_steps: roster::DEFAULT_STEPS,
+            run: roster::fixture_hash,
+        },
+        Fixture {
             name: "orchard",
             default_seed: orchard::DEFAULT_SEED,
             default_steps: orchard::DEFAULT_STEPS,

@@ -1,0 +1,11 @@
+{
+  "budget": 5,
+  "attributes": [
+    { "name": "craft", "minimum": 1, "maximum": 8, "cost_per_point": 1 },
+    { "name": "reliability", "minimum": 1, "maximum": 8, "cost_per_point": 2 }
+  ],
+  "archetypes": [
+    { "name": "planner", "base": { "craft": 3, "reliability": 4 } },
+    { "name": "builder", "base": { "craft": 5, "reliability": 2 } }
+  ]
+}
