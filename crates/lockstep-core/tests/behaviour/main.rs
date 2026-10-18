@@ -12,6 +12,7 @@ mod queue;
 mod replay;
 mod runner;
 mod save;
+mod save_checks;
 mod store;
 mod streams;
 mod timeline;

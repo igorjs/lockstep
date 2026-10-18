@@ -2,7 +2,7 @@
 
 # 0035 A save carries its snapshot version, and old shapes migrate one version at a time (decided)
 
-Status: decided and implemented in milestone M16.
+Status: decided and implemented in `lockstep-core` in milestone M16. The consumer with a committed old save and its WebAssembly twin follows in the next pull request.
 
 ## Decision
 
@@ -25,7 +25,7 @@ shape is a new version plus a conversion from the one before. This closes deferr
 - A conversion keeps behaviour: it fills a new field with the value that makes the next step do what
   it did before the field existed. The consumer's old save, taken before transfers charged a fee,
   loads with a fee of nothing.
-- Each shipped shape gets a committed save as bytes. A test loads it, continues it, and compares the
+- Each shipped shape gets a committed save as bytes (the `tariffs` example, next pull request). A test loads it, continues it, and compares the
   hash with a committed file, natively and under WebAssembly, so an edit to a frozen shape or to a
   conversion fails.
 

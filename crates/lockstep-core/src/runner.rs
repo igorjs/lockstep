@@ -83,6 +83,7 @@ impl<S: Simulation> Runner<S> {
     /// Continues from a save, converting an older snapshot shape through `migrations`. The runner
     /// starts with no unspent real time and no queued intents.
     pub fn from_save(save: &Save, migrations: &Migrations) -> Result<Self, SaveError> {
+        save.validate()?;
         let snapshot: S::Snapshot = migrations.migrate(save.snapshot_version, &save.snapshot)?;
         Ok(Self {
             simulation: S::restore(snapshot),

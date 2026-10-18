@@ -50,7 +50,21 @@ impl Save {
         if format != SAVE_FORMAT {
             return Err(SaveError::UnknownFormat(format));
         }
-        decode(bytes).map_err(SaveError::NotASave)
+        let save: Save = decode(bytes).map_err(SaveError::NotASave)?;
+        save.validate()?;
+        Ok(save)
+    }
+
+    /// Refuses a save whose clock could not have come from a runner, so a damaged file is an error
+    /// here and not a panic later. `Runner::from_save` checks it too.
+    pub fn validate(&self) -> Result<(), SaveError> {
+        if self.format != SAVE_FORMAT {
+            return Err(SaveError::UnknownFormat(self.format));
+        }
+        if !self.clock.is_consistent() {
+            return Err(SaveError::NotASave("the clock is inconsistent".to_string()));
+        }
+        Ok(())
     }
 }
 

@@ -2,7 +2,7 @@
 
 # 0036 A save is taken at a step boundary, and a recording continues from it (decided)
 
-Status: decided and implemented in milestone M16.
+Status: decided and implemented in `lockstep-core` in milestone M16. The headless commands follow in the next pull request.
 
 ## Decision
 
@@ -12,8 +12,10 @@ queued for the next step. Neither is in the hash, and a replay uses whole steps,
 continued from a save sees what the original saw.
 
 `replay_from` continues a recording from a save: it skips the steps before the save's step and
-compares every checkpoint from that step on. The checkpoint at the save's own step is compared first,
-so a save from another run, or one that was edited, diverges immediately.
+compares every checkpoint from that step on. The save's own hash is compared first: against the
+checkpoint at its step when there is one, and otherwise against the recording's steps run from the
+start to that step, so a save between checkpoints is still checked. A save taken with other step or
+clock settings than the recording is refused.
 
 - `Recorder::save` takes the save of a session in progress. `lockstep-headless replay <file> --until
   <step> --save <file>` writes one from a recording, and `resume <save> --recording <file>` continues.

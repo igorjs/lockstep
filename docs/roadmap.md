@@ -44,7 +44,7 @@ items in a milestone are out of scope here.
 | D1 | Schema export from `#[derive(Message)]` | M5 | A tool that reads schemas | Decision 0010 |
 | D2 | The crash bundle (a recording, the last good save and the host's log) | M5 | A host, which writes it | Decision 0011 |
 | D3 | `replay --save` and saving mid-recording | M5 | Core part closed in M16 (`Recorder::save`, `replay_from`); the headless commands follow | `docs/lockstep-headless.md`, `docs/lockstep-core.md` |
-| D4 | Conversions between message versions | M16 | Closed in M16 for snapshots (decision 0035); see D7 and D8 for the rest | Decisions 0010, 0035 |
+| D4 | Conversions between message versions | M16 | Closed in M16 for snapshots (decision 0035); see D8 for the rest | Decisions 0010, 0035 |
 | D7 | Conversions between versions of a saved chronicle: the envelope refuses another message version and does not convert it | M15 | Saves and migrations (M16), as D4 | Decision 0031, `docs/lockstep-meta.md` |
 | D8 | Conversions for intents, events and configurations, so recordings made by an older shape still replay | M16 | A consumer that keeps old recordings | Decision 0035 |
 

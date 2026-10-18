@@ -418,8 +418,47 @@ pub fn replay_from<S: Simulation>(
             from_version: save.snapshot_version,
         });
     }
+    if save.step_configuration != recording.step_configuration
+        || save.clock_configuration != recording.clock_configuration
+    {
+        return Err(ReplayError::Save(
+            "the save was taken with other step or clock settings than the recording".to_string(),
+        ));
+    }
     let runner = Runner::<S>::from_save(save, migrations)
         .map_err(|error| ReplayError::Save(error.to_string()))?;
+    // A checkpoint at the save's step compares it. Without one, the save is checked against the
+    // recording's own steps run from the start, so no save continues unchecked.
+    if !recording
+        .checkpoints
+        .iter()
+        .any(|(step, _)| *step == save.step_number)
+    {
+        let configuration: S::Configuration =
+            decode(&recording.configuration).map_err(ReplayError::Configuration)?;
+        let mut expected = Runner::<S>::new(
+            configuration,
+            recording.seed,
+            recording.step_configuration,
+            recording.clock_configuration,
+        );
+        for step in recording.steps.iter().take(save.step_number as usize) {
+            expected.set_clock_multiplier(step.clock_multiplier);
+            expected.step_once(&step.intents);
+        }
+        let (expected, actual) = (expected.hash(), runner.hash());
+        if expected != actual {
+            let at_step = save.step_number;
+            return Ok((
+                runner,
+                ReplayOutcome::Diverged {
+                    at_step,
+                    expected,
+                    actual,
+                },
+            ));
+        }
+    }
     run_from(recording, runner, &mut |_, _| {})
 }
 
