@@ -120,6 +120,12 @@ pub fn fixtures() -> Vec<Fixture> {
             default_steps: ledger::DEFAULT_STEPS,
             run: ledger::fixture_hash,
         },
+        Fixture {
+            name: "ledger-bills",
+            default_seed: ledger::DEFAULT_SEED,
+            default_steps: ledger::bills::DEFAULT_ROUNDS,
+            run: ledger::bills::bill_fixture_hash,
+        },
     ]
 }
 

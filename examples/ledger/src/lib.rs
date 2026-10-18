@@ -2,9 +2,11 @@
 //! The ledger: a consumer scenario that is not a game.
 //!
 //! Accounts hold whole minor units (cents, pence) as integers. Transfers either move money
-//! exactly or are rejected with a reason; no money is created or lost. The framework has no
-//! money type yet (it arrives in milestone M16), so this scenario uses plain integers and a
-//! single currency, which also shows the core needs nothing game-specific.
+//! exactly or are rejected with a reason; no money is created or lost. Balances are plain integers
+//! of one currency; the `bills` module shares a bill with `lockstep_core::math::Money`, so the
+//! shares add up to the bill exactly. Nothing here is specific to a game.
+
+pub mod bills;
 
 use lockstep_core::{
     ClockConfiguration, Column, Context, Handle, Message, Recorder, Recording, Runner, Session,

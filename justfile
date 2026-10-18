@@ -23,6 +23,7 @@ check:
 determinism:
     cargo run -p lockstep-headless -- verify capsule --expect examples/capsule/fixtures/capsule.hash
     cargo run -p lockstep-headless -- verify ledger --expect examples/ledger/fixtures/ledger.hash
+    cargo run -p lockstep-headless -- verify ledger-bills --expect examples/ledger/fixtures/ledger-bills.hash
     cargo run -p lockstep-headless -- record ledger --out "${CARGO_TARGET_DIR:-target}/ledger.recording" --steps 3000
     cargo run -p lockstep-headless -- replay "${CARGO_TARGET_DIR:-target}/ledger.recording"
     cargo run -p lockstep-headless -- record bakery --out "${CARGO_TARGET_DIR:-target}/bakery.recording" --steps 3000
