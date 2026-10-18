@@ -345,6 +345,7 @@ dependencies = [
  "lockstep-core",
  "mars-rovers",
  "orchard",
+ "rates",
  "roster",
  "sparring",
  "tariffs",
@@ -453,6 +454,16 @@ dependencies = [
  "lockstep-core",
  "lockstep-spatial",
  "serde",
+ "wasm-bindgen-test",
+]
+
+[[package]]
+name = "lockstep-tables"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "serde",
+ "serde_json",
  "wasm-bindgen-test",
 ]
 
@@ -575,6 +586,16 @@ checksum = "59cad018caf63deb318e5a4586d99a24424a364f40f1e5778c29aca23f4fc73e"
 dependencies = [
  "rand_core",
  "serde",
+]
+
+[[package]]
+name = "rates"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "lockstep-tables",
+ "serde",
+ "wasm-bindgen-test",
 ]
 
 [[package]]

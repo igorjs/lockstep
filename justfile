@@ -32,6 +32,9 @@ determinism:
     cargo run -p lockstep-headless -- record tariffs --out "${CARGO_TARGET_DIR:-target}/tariffs.recording" --steps 3000
     cargo run -p lockstep-headless -- replay "${CARGO_TARGET_DIR:-target}/tariffs.recording" --until 1200 --save "${CARGO_TARGET_DIR:-target}/tariffs.save"
     cargo run -p lockstep-headless -- resume "${CARGO_TARGET_DIR:-target}/tariffs.save" --recording "${CARGO_TARGET_DIR:-target}/tariffs.recording"
+    cargo run -p lockstep-headless -- verify rates --expect examples/rates/fixtures/rates.hash
+    cargo run -p lockstep-headless -- record rates --out "${CARGO_TARGET_DIR:-target}/rates.recording" --steps 3500
+    cargo run -p lockstep-headless -- replay "${CARGO_TARGET_DIR:-target}/rates.recording"
     cargo run -p lockstep-headless -- verify mars-rovers --expect examples/mars-rovers/fixtures/mars-rovers.hash
     cargo run -p lockstep-headless -- verify crowd --expect examples/crowd/fixtures/crowd.hash
     cargo run -p lockstep-headless -- verify drone-fleet --expect examples/drone-fleet/fixtures/drone-fleet.hash
@@ -63,9 +66,11 @@ determinism:
     wasm-pack test --node crates/lockstep-regions
     wasm-pack test --node crates/lockstep-structures
     wasm-pack test --node crates/lockstep-procgen
+    wasm-pack test --node crates/lockstep-tables
     wasm-pack test --node examples/capsule
     wasm-pack test --node examples/ledger
     wasm-pack test --node examples/tariffs
+    wasm-pack test --node examples/rates
     wasm-pack test --node examples/mars-rovers
     wasm-pack test --node examples/crowd
     wasm-pack test --node examples/drone-fleet
