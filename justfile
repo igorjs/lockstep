@@ -90,4 +90,14 @@ bench-baseline:
     cargo bench -p lockstep-spatial --features parallel --bench spatial -- --write-baseline
     cargo bench -p lockstep-agents --bench agents -- --write-baseline
 
+# A long fuzz run: every target for many iterations. `just fuzz 2000000 7` takes an iteration
+# count and a seed. The bounded run every pull request makes is in `just test`.
+fuzz iterations="1000000" seed="20261019":
+    cargo run --profile fuzz -p lockstep-fuzz -- --iterations {{iterations}} --seed {{seed}}
+
+# The integer-heavy core and the fuzz smoke under Miri, which needs the nightly compiler.
+miri:
+    MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test -p lockstep-fuzz --test smoke
+    cargo +nightly miri test -p lockstep-core --test behaviour -- money store
+
 ci: check test determinism

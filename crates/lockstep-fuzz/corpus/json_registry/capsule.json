@@ -1,0 +1,9 @@
+{
+  "attributes": [
+    { "name": "health", "minimum": 0, "maximum": 100, "starting": 100 },
+    { "name": "hunger", "minimum": 0, "maximum": 100, "starting": 100,
+      "thresholds": [ { "at": 25, "name": "hungry" } ] },
+    { "name": "thirst", "minimum": 0, "maximum": 100, "starting": 100 },
+    { "name": "sanity", "minimum": 0, "maximum": 100, "starting": 100 }
+  ]
+}

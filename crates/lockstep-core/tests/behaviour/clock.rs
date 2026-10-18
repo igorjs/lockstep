@@ -122,3 +122,27 @@ fn a_clock_survives_a_save_round_trip_exactly() {
     let restored: Clock = bincode::deserialize(&bytes).unwrap();
     assert_eq!(restored, clock);
 }
+
+/// Found by the fuzz harness: a recording whose day length was astronomically long (or whose step
+/// length was zero) made the day's units overflow 64 bits.
+#[test]
+fn an_absurd_day_length_or_step_length_is_capped_instead_of_overflowing() {
+    for (day_minutes, step_seconds) in [
+        (f32::MAX, STEP_SECONDS),
+        (f32::INFINITY, STEP_SECONDS),
+        (1_000_000.0, 0.0),
+        (1_000_000.0, f32::MIN_POSITIVE),
+        (f32::NAN, STEP_SECONDS),
+    ] {
+        let mut configuration = day_clock();
+        configuration.day_length_real_minutes = day_minutes;
+        configuration.starting_minute = 1_439;
+        let mut clock = Clock::new(configuration, step_seconds);
+        clock.set_multiplier(1_000_000.0);
+        let mut events = Vec::new();
+        for _ in 0..3 {
+            clock.advance(&mut events);
+        }
+        assert!(clock.position_units() <= (1u64 << 32) * 65_536);
+    }
+}

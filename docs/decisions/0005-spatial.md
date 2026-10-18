@@ -2,7 +2,8 @@
 
 # 0005 The spatial crate (decided, with two open items)
 
-Status: decided and implemented for `lockstep-spatial` and its consumers, with one open item remaining (the hexagon figure is a recorded departure, decision 0048; the pathfinding benchmark target is met by a hierarchical search, decision 0047). The reference calls this crate `lockstep-grid`;
+Status: decided and implemented for `lockstep-spatial` and its consumers, with two open items (the hexagon figure and
+the pathfinding benchmark target, which decision 0047 meets with a hierarchical search). The reference calls this crate `lockstep-grid`;
 it was renamed to stay generic.
 
 ## Decisions where the reference was silent or ambiguous
@@ -46,9 +47,7 @@ not give. The committed baseline is the honest number. Ways to close the gap, no
 pathfinding, bidirectional search, or a cheaper step (precomputed neighbour tables). This needs the
 owner: relax the target, or choose a technique.
 
-## Closed item: the hexagon figure in the circle decision
-
-Closed by decision 0048, which records it as a departure and pins the measurement. What follows is the state when it was open.
+## Open item: the hexagon figure in the circle decision
 
 The reference's decision test says a path around a circle of radius 50 deviates from the true
 distance by at most 8 percent for `Square8`, at most 3 percent for hexagons, and at least 30 percent

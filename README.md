@@ -29,6 +29,7 @@ Games are the first use, but the same machine runs a ledger, a fleet of rovers, 
 | [`lockstep-regions`](crates/lockstep-regions) | A graph of anchored regions and a condition that spreads across it by chance each interval, helped downwind and scaled by a pace the caller sets. |
 | [`lockstep-calendar`](crates/lockstep-calendar) | Seasons from JSON: daylight and temperature by day and minute in integers, handed to the core clock, with a season change event. |
 | [`lockstep-structures`](crates/lockstep-structures) | Durable multi-cell structures: walls on a map that wear down, mend and collapse, marking the changed chunks dirty. |
+| [`lockstep-fuzz`](crates/lockstep-fuzz) | A deterministic fuzz harness for decoders, data loaders and arithmetic, with a committed corpus. A test tool, not published. |
 | [`lockstep-procgen`](crates/lockstep-procgen) | Maps assembled from chunk templates drawn from weighted pools, with reserved chunks and a seed per chunk that never collides. |
 | [`lockstep-attributes`](crates/lockstep-attributes) | Stats as data: a registry read from JSON, modifiers, thresholds that fire once per crossing, derived values from curves, and timed effects with stacking rules. |
 | [`lockstep-macros`](crates/lockstep-macros) | `#[derive(Message)]`, re-exported by `lockstep-core`. |

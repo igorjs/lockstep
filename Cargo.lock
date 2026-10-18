@@ -328,6 +328,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-fuzz"
+version = "0.1.0"
+dependencies = [
+ "audit",
+ "bakery",
+ "cargo-bay",
+ "ledger",
+ "lockstep-attributes",
+ "lockstep-calendar",
+ "lockstep-core",
+ "lockstep-crafting",
+ "lockstep-inventory",
+ "lockstep-knowledge",
+ "lockstep-procgen",
+ "lockstep-progression",
+ "lockstep-regions",
+ "lockstep-relations",
+ "serde",
+ "training",
+]
+
+[[package]]
 name = "lockstep-headless"
 version = "0.1.0"
 dependencies = [

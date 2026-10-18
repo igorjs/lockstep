@@ -26,3 +26,12 @@ codegen-units = 1
 
 [profile.dev]
 overflow-checks = true
+
+# The fuzz harness catches panics, which `panic = "abort"` would turn into a crash, and it keeps
+# the overflow checks on so an arithmetic slip is a finding rather than a silent wrap.
+[profile.fuzz]
+inherits = "release"
+panic = "unwind"
+lto = false
+codegen-units = 16
+overflow-checks = true
