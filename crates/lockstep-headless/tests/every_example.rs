@@ -131,6 +131,17 @@ fn an_orchard_recording_replays_across_days_to_its_fixture_hash() {
         format!("identical orchard after 8000 steps, hash {expected}")
     );
     std::fs::remove_file(&file).unwrap();
+    // The replayed clock holds the daylight of its day, set by the simulation.
+    let recording = orchard::record_fixture(orchard::DEFAULT_SEED, 8_000, 1_000, false);
+    let (runner, _) = lockstep_core::replay::<orchard::Orchard>(&recording).unwrap();
+    let day = runner.clock().day();
+    assert!(day >= 2);
+    let (sunrise, sunset) = runner.simulation().calendar().daylight(day);
+    let configuration = runner.clock().configuration();
+    assert_eq!(
+        (configuration.sunrise_minute, configuration.sunset_minute),
+        (sunrise, sunset)
+    );
 }
 
 #[test]

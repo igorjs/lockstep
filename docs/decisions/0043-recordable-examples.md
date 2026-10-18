@@ -20,8 +20,8 @@ Status: decided and implemented in the headless runner.
 - A copy of each script for recording: the two could drift, and the recording would stop matching
   the fixture hash.
 - Recording by observing a runner afterwards: a runner keeps no intents.
-- Moving orchard's daylight into its simulation: it changes a fixture hash, which is a separate
-  decision for its owner.
+- Moving orchard's daylight into its simulation: judged to change a fixture hash. Decision 0060
+  made the move and showed the hash is unchanged.
 
 ## Would change if
 

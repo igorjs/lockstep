@@ -34,8 +34,8 @@ in integers.
 - `temperature(day, minute)` adds a swing: lowest at 03:00 and highest at 15:00, rising and
   falling in straight lines, by `daily_swing_celsius` either side of the mean.
 - `apply_daylight(day, clock)` gives a day's sunrise and sunset to the core `Clock`
-  (`Clock::set_daylight`). The host calls it before a step on each day, because a simulation sees
-  only a shared clock. A simulation reads the same numbers from the calendar by the day.
+  (`Clock::set_daylight`). A simulation answers `Simulation::daylight` with it and the runner calls it
+  before each step (decision 0060); a host that sets daylight itself between steps cannot be replayed. A simulation reads the same numbers from the calendar by the day.
 
 ## Almanac
 

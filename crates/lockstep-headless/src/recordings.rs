@@ -203,8 +203,11 @@ fn resume_report<S: Simulation>(save_bytes: &[u8], bytes: &[u8]) -> Result<Repla
 }
 
 fn bisect_report<S: Simulation>(bytes: &[u8]) -> Result<Replayed, String> {
-    let recording = read::<S>(bytes)?;
-    let found = bisect::<S>(&recording).map_err(|error| error.to_string())?;
+    bisect_recording::<S>(&read::<S>(bytes)?)
+}
+
+fn bisect_recording<S: Simulation>(recording: &Recording<S::Intent>) -> Result<Replayed, String> {
+    let found = bisect::<S>(recording).map_err(|error| error.to_string())?;
     let Some(found) = found else {
         return Ok(Replayed {
             identical: true,
@@ -304,9 +307,9 @@ fn on_topology<R>(
     hex: impl FnOnce() -> Result<R, String>,
 ) -> Result<R, String> {
     match label {
-        "square4" => square4(),
-        "square8" => square8(),
-        "hex" => hex(),
+        label if label == mars_rovers::TOPOLOGIES[0] => square4(),
+        label if label == mars_rovers::TOPOLOGIES[1] => square8(),
+        label if label == mars_rovers::TOPOLOGIES[2] => hex(),
         other => Err(format!("a session on an unknown topology: {other}")),
     }
 }
@@ -372,9 +375,9 @@ fn bisect_set_report(bytes: &[u8]) -> Result<Replayed, String> {
     for (index, (label, recording)) in set.sessions.iter().enumerate() {
         let report = on_topology(
             label,
-            || bisect_report::<MarsRovers<Square4>>(&encode_session(recording)?),
-            || bisect_report::<MarsRovers<Square8>>(&encode_session(recording)?),
-            || bisect_report::<MarsRovers<Hex>>(&encode_session(recording)?),
+            || bisect_recording::<MarsRovers<Square4>>(recording),
+            || bisect_recording::<MarsRovers<Square8>>(recording),
+            || bisect_recording::<MarsRovers<Hex>>(recording),
         )?;
         if !report.identical {
             return Ok(Replayed {
@@ -398,10 +401,6 @@ fn bisect_set_report(bytes: &[u8]) -> Result<Replayed, String> {
         ),
         save: None,
     })
-}
-
-fn encode_session(recording: &Recording<mars_rovers::Intent>) -> Result<Vec<u8>, String> {
-    recording.to_bytes().map_err(|error| error.to_string())
 }
 
 fn stats_set_report(bytes: &[u8]) -> Result<String, String> {
