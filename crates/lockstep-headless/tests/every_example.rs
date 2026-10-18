@@ -6,18 +6,19 @@ use lockstep_headless::{fixtures, format_hash, run};
 use std::path::PathBuf;
 
 /// Fixtures with no single session a recording could capture, each for the reason named.
-const NOT_RECORDABLE: [(&str, &str); 4] = [
+const NOT_RECORDABLE: [(&str, &str); 2] = [
     (
         "ledger-bills",
         "it runs the ledger simulation, which is recorded as ledger",
     ),
-    ("mars-rovers", "one fixture runs many separate sessions"),
-    ("roster", "one fixture runs two successive projects"),
     (
-        "orchard",
-        "the host sets daylight on the clock between steps",
+        "roster",
+        "the second of its two projects starts from a chronicle folded from the first's events",
     ),
 ];
+
+/// Fixtures that record as a set of sessions, with the sessions in one fixture.
+const SETS: [(&str, u64); 1] = [("mars-rovers", 21)];
 
 fn arguments(words: &[&str]) -> Vec<String> {
     words.iter().map(|word| word.to_string()).collect()
@@ -58,15 +59,37 @@ fn every_recording_replays_to_its_fixture_hash() {
         let expected = run(&arguments(&["fixture", id, "--steps", "1000"])).unwrap();
         let replayed =
             run(&arguments(&["replay", &path])).unwrap_or_else(|error| panic!("{id}: {error}"));
-        assert_eq!(
-            replayed,
-            format!("identical {id} after 1000 steps, hash {expected}"),
-            "{id}"
-        );
-        let bisected = run(&arguments(&["bisect", &path])).unwrap();
-        assert_eq!(bisected, format!("no divergence in 1000 steps of {id}"));
-        let stats = run(&arguments(&["stats", &path])).unwrap();
-        assert!(stats.contains("steps 1000"), "{id}: {stats}");
+        if let Some((_, sessions)) = SETS.iter().find(|(name, _)| *name == id) {
+            // Each session lands, programs, then runs the 1000 steps.
+            assert_eq!(
+                replayed,
+                format!("identical {id} after {sessions} sessions of 1002 steps, hash {expected}"),
+                "{id}"
+            );
+            let bisected = run(&arguments(&["bisect", &path])).unwrap();
+            assert_eq!(
+                bisected,
+                format!(
+                    "no divergence in {} steps of {sessions} sessions of {id}",
+                    sessions * 1002
+                )
+            );
+            let stats = run(&arguments(&["stats", &path])).unwrap();
+            assert!(
+                stats.contains(&format!("sessions {sessions}")),
+                "{id}: {stats}"
+            );
+        } else {
+            assert_eq!(
+                replayed,
+                format!("identical {id} after 1000 steps, hash {expected}"),
+                "{id}"
+            );
+            let bisected = run(&arguments(&["bisect", &path])).unwrap();
+            assert_eq!(bisected, format!("no divergence in 1000 steps of {id}"));
+            let stats = run(&arguments(&["stats", &path])).unwrap();
+            assert!(stats.contains("steps 1000"), "{id}: {stats}");
+        }
         std::fs::remove_file(&file).unwrap();
     }
 }
@@ -90,4 +113,59 @@ fn a_recording_taken_with_another_seed_replays_to_that_seed() {
             replayed.report
         );
     }
+}
+
+/// Long enough to cross two day boundaries, where the orchard's daylight changes.
+#[test]
+fn an_orchard_recording_replays_across_days_to_its_fixture_hash() {
+    let file = scratch("orchard-days");
+    let path = file.to_string_lossy().into_owned();
+    run(&arguments(&[
+        "record", "orchard", "--out", &path, "--steps", "8000", "--every", "1000",
+    ]))
+    .unwrap();
+    let expected = run(&arguments(&["fixture", "orchard", "--steps", "8000"])).unwrap();
+    let replayed = run(&arguments(&["replay", &path])).unwrap();
+    assert_eq!(
+        replayed,
+        format!("identical orchard after 8000 steps, hash {expected}")
+    );
+    std::fs::remove_file(&file).unwrap();
+}
+
+#[test]
+fn a_recorded_session_set_names_the_session_that_diverged() {
+    let mut set = lockstep_core::RecordingSet::<mars_rovers::Intent>::from_bytes(
+        &(replayables()
+            .iter()
+            .find(|replayable| replayable.id == "mars-rovers")
+            .unwrap()
+            .record)(1, 50, 10)
+        .unwrap(),
+    )
+    .unwrap();
+    set.sessions[9].1.checkpoints[2].1 ^= 1;
+    let bytes = set.to_bytes().unwrap();
+    let replayable = replayables()
+        .into_iter()
+        .find(|replayable| replayable.id == "mars-rovers")
+        .unwrap();
+    let replayed = (replayable.replay)(&bytes, None, false).unwrap();
+    assert!(!replayed.identical);
+    assert!(
+        replayed
+            .report
+            .starts_with("diverged mars-rovers in session 9 (square8) at step 20: "),
+        "{}",
+        replayed.report
+    );
+    let bisected = (replayable.bisect)(&bytes).unwrap();
+    assert!(
+        bisected
+            .report
+            .starts_with("session 9 (square8)\nlast good checkpoint: step 10"),
+        "{}",
+        bisected.report
+    );
+    assert!((replayable.replay)(&bytes, None, true).is_err());
 }

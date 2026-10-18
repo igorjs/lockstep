@@ -343,7 +343,7 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
                 .find(|replayable| replayable.id == name)
                 .ok_or_else(|| {
                     CommandError::Recording(format!(
-                        "fixture '{name}' cannot be recorded, see decision 0043"
+                        "fixture '{name}' cannot be recorded, see decisions 0043 and 0061"
                     ))
                 })?;
             let out = options.out.clone().ok_or_else(|| {

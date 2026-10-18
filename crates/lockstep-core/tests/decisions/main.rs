@@ -8,11 +8,13 @@
 mod common;
 
 mod a_day_has_at_most_four_billion_steps;
+mod a_fixture_of_many_sessions_records_as_a_set;
 mod a_save_continues_a_recording;
 mod bisect_finds_a_planted_divergence;
 mod chance_in_basis_points;
 mod clock_as_a_rate;
 mod clock_in_integer_ticks;
+mod daylight_follows_the_simulation;
 mod derived_messages;
 mod fixed_endian_hash;
 mod fixed_point_math;

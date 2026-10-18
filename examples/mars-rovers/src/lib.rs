@@ -23,13 +23,13 @@
 //!   push on `Square8`, which a body cannot cut past. Rams do not chain.
 
 use lockstep_core::{
-    ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,
-    StepConfiguration, Streams,
+    record_session, ClockConfiguration, Column, Context, Handle, Message, Recording, RecordingSet,
+    Runner, Session, Simulation, StableVector, StepConfiguration, Streams,
 };
-use lockstep_spatial::{Cell, GridMap, Occupancy, Square4, Square8, Topology};
+use lockstep_spatial::{Cell, GridMap, Occupancy, Topology};
 use serde::{Deserialize, Serialize};
 
-pub use lockstep_spatial::Hex;
+pub use lockstep_spatial::{Hex, Square4, Square8};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Instruction {
@@ -426,6 +426,37 @@ pub fn opposite<T: Topology>(heading: u8) -> u8 {
     (heading + T::NEIGHBOURS as u8 / 2) % T::NEIGHBOURS as u8
 }
 
+/// Lands rovers (one step), programs them (one step) and runs `steps` more, on a runner or a
+/// recorder alike. Rover indexes count landings in order.
+fn drive<T: RoverTopology>(
+    session: &mut impl Session<MarsRovers<T>>,
+    landings: &[(u32, u32, u8)],
+    programs: &[(usize, &str)],
+    steps: u64,
+) {
+    let lands: Vec<Intent> = landings
+        .iter()
+        .map(|(x, y, heading)| Intent::Land {
+            x: *x,
+            y: *y,
+            heading: *heading,
+        })
+        .collect();
+    session.step_once(&lands);
+    let rovers = session.simulation().rovers();
+    let program_intents: Vec<Intent> = programs
+        .iter()
+        .map(|(index, letters)| Intent::Program {
+            rover: rovers[*index],
+            instructions: instructions(letters),
+        })
+        .collect();
+    session.step_once(&program_intents);
+    for _ in 0..steps {
+        session.step_once(&[]);
+    }
+}
+
 /// Lands rovers (one step), programs them (one step), runs `steps` more steps, and returns the runner
 /// for inspection. Rover indexes count landings in order.
 pub fn play<T: RoverTopology>(
@@ -436,62 +467,127 @@ pub fn play<T: RoverTopology>(
     steps: u64,
 ) -> Runner<MarsRovers<T>> {
     let mut runner = runner::<T>(configuration, seed);
-    let lands: Vec<Intent> = landings
-        .iter()
-        .map(|(x, y, heading)| Intent::Land {
-            x: *x,
-            y: *y,
-            heading: *heading,
-        })
-        .collect();
-    runner.step_once(&lands);
-    let rovers = runner.simulation().rovers();
-    let program_intents: Vec<Intent> = programs
-        .iter()
-        .map(|(index, letters)| Intent::Program {
-            rover: rovers[*index],
-            instructions: instructions(letters),
-        })
-        .collect();
-    runner.step_once(&program_intents);
-    for _ in 0..steps {
-        runner.step_once(&[]);
-    }
+    drive(&mut runner, landings, programs, steps);
     runner
 }
 
+type Landings = Vec<(u32, u32, u8)>;
+type Programs = Vec<(usize, &'static str)>;
+
+fn plateau() -> Configuration {
+    Configuration {
+        width: 6,
+        height: 6,
+        rocks: vec![(3, 4)],
+    }
+}
+
+/// The classic kata, then edge, rock, head-on, contested cell, following, and a wrecked landing.
+fn scenarios<T: RoverTopology>() -> Vec<(Landings, Programs)> {
+    let east = compass::east::<T>();
+    let west = compass::west::<T>();
+    vec![
+        (
+            vec![(1, 2, compass::NORTH), (3, 3, east)],
+            vec![(0, "LMLMLMLMM"), (1, "MMRMMRMRRM")],
+        ),
+        (vec![(5, 2, east)], vec![(0, "MMMM")]),
+        (vec![(1, 4, east)], vec![(0, "MMMMM")]),
+        (
+            vec![(1, 1, east), (2, 1, west)],
+            vec![(0, "MMM"), (1, "MMM")],
+        ),
+        (vec![(1, 1, east), (3, 1, west)], vec![(0, "MM"), (1, "MM")]),
+        (
+            vec![(1, 1, east), (2, 1, east)],
+            vec![(0, "MMM"), (1, "MMM")],
+        ),
+        (
+            vec![(3, 4, east), (1, 1, east), (1, 1, west)],
+            vec![(1, "M"), (2, "M")],
+        ),
+    ]
+}
+
+/// The topologies the fixture runs, in order, with the label a recorded session carries.
+pub const TOPOLOGIES: [&str; 3] = ["square4", "square8", "hex"];
+
 /// One scripted run of every scenario on every topology; the hash covers all of them.
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {
-    fn scenario_set<T: RoverTopology>(seed: u64, steps: u64) -> Vec<u64> {
-        let plateau = Configuration {
-            width: 6,
-            height: 6,
-            rocks: vec![(3, 4)],
-        };
-        let east = compass::east::<T>();
-        let west = compass::west::<T>();
-        let mut hashes = Vec::new();
-        let mut run = |landings: &[(u32, u32, u8)], programs: &[(usize, &str)]| {
-            hashes.push(play::<T>(plateau.clone(), seed, landings, programs, steps).hash());
-        };
-        // The classic kata, then edge, rock, head-on, contested cell, following, and a wrecked landing.
-        run(
-            &[(1, 2, compass::NORTH), (3, 3, east)],
-            &[(0, "LMLMLMLMM"), (1, "MMRMMRMRRM")],
-        );
-        run(&[(5, 2, east)], &[(0, "MMMM")]);
-        run(&[(1, 4, east)], &[(0, "MMMMM")]);
-        run(&[(1, 1, east), (2, 1, west)], &[(0, "MMM"), (1, "MMM")]);
-        run(&[(1, 1, east), (3, 1, west)], &[(0, "MM"), (1, "MM")]);
-        run(&[(1, 1, east), (2, 1, east)], &[(0, "MMM"), (1, "MMM")]);
-        run(
-            &[(3, 4, east), (1, 1, east), (1, 1, west)],
-            &[(1, "M"), (2, "M")],
-        );
-        hashes
+    fn hashes<T: RoverTopology>(seed: u64, steps: u64) -> Vec<u64> {
+        scenarios::<T>()
+            .iter()
+            .map(|(landings, programs)| {
+                play::<T>(plateau(), seed, landings, programs, steps).hash()
+            })
+            .collect()
     }
-    let mut hashes = scenario_set::<Square4>(seed, steps);
-    hashes.extend(scenario_set::<Square8>(seed, steps));
-    hashes.extend(scenario_set::<Hex>(seed, steps));
-    lockstep_core::hash_of(&hashes)
+    let mut all = hashes::<Square4>(seed, steps);
+    all.extend(hashes::<Square8>(seed, steps));
+    all.extend(hashes::<Hex>(seed, steps));
+    lockstep_core::hash_of(&all)
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "mars-rovers";
+
+/// The same sessions, recorded one by one into a set labelled by topology, each with a checkpoint
+/// every `checkpoint_every` steps and, when `keep_snapshots` is set, a snapshot at each.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> RecordingSet<Intent> {
+    fn record<T: RoverTopology>(
+        label: &str,
+        seed: u64,
+        steps: u64,
+        checkpoint_every: u64,
+        keep_snapshots: bool,
+        sessions: &mut Vec<(String, Recording<Intent>)>,
+    ) {
+        for (landings, programs) in scenarios::<T>() {
+            let configuration = plateau();
+            let recording = record_session(
+                SIMULATION_ID,
+                &configuration,
+                seed,
+                runner::<T>(configuration.clone(), seed),
+                checkpoint_every,
+                keep_snapshots,
+                |recorder| drive(recorder, &landings, &programs, steps),
+            );
+            sessions.push((label.to_string(), recording));
+        }
+    }
+    let mut sessions = Vec::new();
+    record::<Square4>(
+        TOPOLOGIES[0],
+        seed,
+        steps,
+        checkpoint_every,
+        keep_snapshots,
+        &mut sessions,
+    );
+    record::<Square8>(
+        TOPOLOGIES[1],
+        seed,
+        steps,
+        checkpoint_every,
+        keep_snapshots,
+        &mut sessions,
+    );
+    record::<Hex>(
+        TOPOLOGIES[2],
+        seed,
+        steps,
+        checkpoint_every,
+        keep_snapshots,
+        &mut sessions,
+    );
+    RecordingSet {
+        simulation_id: SIMULATION_ID.to_string(),
+        sessions,
+    }
 }

@@ -63,7 +63,10 @@ the clock multiplier the host had set, and the runner hash at step 0 and every `
 steps. Inputs are all a replay needs, so a long session stays small. `keep_snapshots()` also keeps
 the snapshot at each checkpoint, for `bisect`. A scripted session written against the `Session`
 trait (`simulation`, `step_once`, `set_clock_multiplier`, implemented by `Runner` and `Recorder`)
-runs or records from one loop; `record_session` records one around a built runner.
+runs or records from one loop; `record_session` records one around a built runner. A fixture of
+several separate sessions records as a `RecordingSet`, a label and a recording for each (decision
+0061). A simulation whose daylight follows a calendar answers `Simulation::daylight`, which the
+runner sets on the clock before every step, so a replay needs nothing recorded for it (decision 0060).
 
 - `replay::<S>(&recording)` runs it again and returns the runner and `Identical`, or
   `Diverged { at_step, expected, actual }` at the first checkpoint whose hash differs.

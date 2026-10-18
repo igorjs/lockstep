@@ -5,13 +5,15 @@
 //! weather in `lockstep-agents`. The rules are in `data/blight.json`. The calendar
 //! (`data/calendar.json`) sets the pace: the blight is idle below 5 degrees and at full pace from
 //! 20, so it runs through summer, slows in spring and autumn, and stalls in winter, when the days
-//! are also shortest. The host hands each day's daylight to the clock before every step.
+//! are also shortest. The simulation hands each day's daylight to the clock before every step (decision 0060), so a
+//! replay does the same.
 
 use lockstep_agents::{Weather, WeatherRules};
 use lockstep_calendar::{Almanac, Calendar, CalendarEvent};
 use lockstep_core::math::{Fixed32, Turn};
 use lockstep_core::{
-    ClockConfiguration, Context, Message, Runner, Simulation, StepConfiguration, Streams,
+    record_session, ClockConfiguration, Context, Message, Recording, Runner, Session, Simulation,
+    StepConfiguration, Streams,
 };
 use lockstep_regions::{Breeze, RegionId, Regions, Spread, SpreadEvent, SpreadRules};
 use serde::{Deserialize, Serialize};
@@ -190,6 +192,10 @@ impl Simulation for Orchard {
         }
     }
 
+    fn daylight(&self, day: u32) -> Option<(u32, u32)> {
+        Some(self.calendar().daylight(day))
+    }
+
     fn snapshot(&self) -> World {
         self.world.clone()
     }
@@ -234,11 +240,8 @@ pub fn runner(configuration: Configuration, seed: u64) -> Runner<Orchard> {
     )
 }
 
-/// One step, after the host hands the clock the daylight of its day.
+/// One step; the runner sets the daylight of its day first.
 pub fn step(runner: &mut Runner<Orchard>, intents: &[Intent]) -> Vec<Event> {
-    let day = runner.clock().day();
-    let (sunrise, sunset) = runner.simulation().calendar().daylight(day);
-    runner.clock_mut().set_daylight(sunrise, sunset);
     runner.step_once(intents).events
 }
 
@@ -257,14 +260,41 @@ pub fn script(orchard: &Orchard, step_number: u64, script: &mut Streams) -> Vec<
     Vec::new()
 }
 
-pub fn run_fixture(seed: u64, steps: u64) -> Runner<Orchard> {
-    let mut runner = runner(orchard_in_spring(), seed);
+fn drive(session: &mut impl Session<Orchard>, seed: u64, steps: u64) {
     let mut streams = Streams::new(seed ^ 0x006f_7263_6861);
     for step_number in 0..steps {
-        let intents = script(runner.simulation(), step_number, &mut streams);
-        step(&mut runner, &intents);
+        let intents = script(session.simulation(), step_number, &mut streams);
+        session.step_once(&intents);
     }
+}
+
+pub fn run_fixture(seed: u64, steps: u64) -> Runner<Orchard> {
+    let mut runner = runner(orchard_in_spring(), seed);
+    drive(&mut runner, seed, steps);
     runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "orchard";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = orchard_in_spring();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(configuration.clone(), seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, seed, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

@@ -14,8 +14,9 @@ spreads across six orchard blocks as winter shortens the days.
   midsummer and 8 at midwinter, and a mean of 24 degrees in summer and 0 in winter.
 - The pace is the temperature: idle below 5 degrees, full from 20, straight between. So the blight
   runs through summer, slows in spring and autumn, and stalls in winter.
-- A day is 2 real minutes, 3,600 steps. Before each step the host gives the clock the day's
-  daylight (`Calendar::apply_daylight`).
+- A day is 2 real minutes, 3,600 steps. Before each step the runner sets the day's daylight
+  on the clock, asking `Simulation::daylight` (decision 0060), so a recording of the orchard replays to
+  the fixture hash.
 - An `Infect` order starts a block from outside; one that is unknown, infected or spent is
   `Ignored`. A new season is reported once as `Season`.
 
