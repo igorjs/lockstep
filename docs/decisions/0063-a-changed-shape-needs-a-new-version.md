@@ -17,6 +17,11 @@ WebAssembly). So:
 - A version bump has no file yet, and the test fails until `lockstep-headless schema <name> --out
   examples/<name>/fixtures/schema` writes it.
 - The file of an older version stays as it was, which is the record of what that version was.
+  `schema --out` refuses to rewrite a file whose text differs, so a changed shape cannot be
+  saved over its own version.
+
+The limit is the one of decision 0062: a change inside a nested type without a schema of its own
+is not seen. Deriving `Message` on that type, and listing it, would close it.
 
 `bakery` and `tariffs` keep their schemas. Another example joins by running the same command.
 

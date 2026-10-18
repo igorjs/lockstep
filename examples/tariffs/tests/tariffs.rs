@@ -98,28 +98,40 @@ fn balances_and_fees_together_equal_the_opening_money_plus_deposits() {
 fn the_message_schemas_match_the_saved_ones_natively_and_under_webassembly() {
     use lockstep_core::Message;
     use tariffs::{Books, Configuration};
-    for (name, schema, saved) in [
+    for (name, version, schema, saved) in [
         (
             "Intent",
+            <Intent as Message>::VERSION,
             <Intent as Message>::SCHEMA,
             include_str!("../fixtures/schema/Intent.v1.json"),
         ),
         (
             "Event",
+            <Event as Message>::VERSION,
             <Event as Message>::SCHEMA,
             include_str!("../fixtures/schema/Event.v1.json"),
         ),
         (
             "Books",
+            <Books as Message>::VERSION,
             <Books as Message>::SCHEMA,
             include_str!("../fixtures/schema/Books.v2.json"),
         ),
         (
             "Configuration",
+            <Configuration as Message>::VERSION,
             <Configuration as Message>::SCHEMA,
             include_str!("../fixtures/schema/Configuration.v1.json"),
         ),
     ] {
-        assert_eq!(format!("{schema}\n"), saved, "{name}: bump its version");
+        assert!(
+            saved.contains(&format!("\"version\": {version}")),
+            "{name} is at version {version}: save its schema and point this test at the new file"
+        );
+        assert_eq!(
+            format!("{schema}\n"),
+            saved,
+            "{name} changed shape: bump its version"
+        );
     }
 }

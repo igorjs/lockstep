@@ -53,6 +53,10 @@ struct Pair<T>(T, Box<T>);
 #[message(version = 2)]
 struct Nothing;
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 4)]
+struct Table<const N: usize>(std::collections::BTreeMap<u8, String>, [u8; 4]);
+
 #[test]
 fn a_shape_changed_under_the_same_version_gives_a_different_schema() {
     assert_eq!(
@@ -143,6 +147,26 @@ fn a_generic_message_lists_its_parameters() {
   "fields": [
     { "name": "0", "type": "T" },
     { "name": "1", "type": "Box<T>" }
+  ]
+}"#
+    );
+}
+
+#[test]
+fn paths_and_constant_parameters_keep_their_spelling() {
+    assert_eq!(
+        <Table<2> as Message>::SCHEMA,
+        r#"{
+  "name": "Table",
+  "version": 4,
+  "generics": [
+    "N"
+  ],
+  "kind": "struct",
+  "form": "tuple",
+  "fields": [
+    { "name": "0", "type": "std::collections::BTreeMap<u8,String>" },
+    { "name": "1", "type": "[u8;4]" }
   ]
 }"#
     );

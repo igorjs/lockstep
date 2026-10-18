@@ -299,28 +299,40 @@ fn a_restored_snapshot_continues_exactly_like_the_one_that_kept_running() {
 fn the_message_schemas_match_the_saved_ones_natively_and_under_webassembly() {
     use bakery::{Configuration, World};
     use lockstep_core::Message;
-    for (name, schema, saved) in [
+    for (name, version, schema, saved) in [
         (
             "Intent",
+            <Intent as Message>::VERSION,
             <Intent as Message>::SCHEMA,
             include_str!("../fixtures/schema/Intent.v1.json"),
         ),
         (
             "Event",
+            <Event as Message>::VERSION,
             <Event as Message>::SCHEMA,
             include_str!("../fixtures/schema/Event.v1.json"),
         ),
         (
             "World",
+            <World as Message>::VERSION,
             <World as Message>::SCHEMA,
             include_str!("../fixtures/schema/World.v1.json"),
         ),
         (
             "Configuration",
+            <Configuration as Message>::VERSION,
             <Configuration as Message>::SCHEMA,
             include_str!("../fixtures/schema/Configuration.v1.json"),
         ),
     ] {
-        assert_eq!(format!("{schema}\n"), saved, "{name}: bump its version");
+        assert!(
+            saved.contains(&format!("\"version\": {version}")),
+            "{name} is at version {version}: save its schema and point this test at the new file"
+        );
+        assert_eq!(
+            format!("{schema}\n"),
+            saved,
+            "{name} changed shape: bump its version"
+        );
     }
 }

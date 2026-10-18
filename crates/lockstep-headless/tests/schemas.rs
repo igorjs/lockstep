@@ -112,6 +112,29 @@ fn schema_out_writes_one_file_per_message_with_a_license_sidecar() {
 }
 
 #[test]
+fn schema_out_never_rewrites_a_saved_version_with_another_shape() {
+    let directory = std::env::temp_dir().join(format!(
+        "lockstep-headless-{}-schemas-kept",
+        std::process::id()
+    ));
+    let path = directory.to_string_lossy().into_owned();
+    run(&arguments(&["schema", "bakery", "--out", &path])).unwrap();
+    // The same command again changes nothing and succeeds.
+    run(&arguments(&["schema", "bakery", "--out", &path])).unwrap();
+    std::fs::write(directory.join("Event.v1.json"), "an older shape\n").unwrap();
+    let error = run(&arguments(&["schema", "bakery", "--out", &path])).unwrap_err();
+    assert!(
+        matches!(&error, CommandError::Recording(reason) if reason.contains("bump the version")),
+        "{error}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(directory.join("Event.v1.json")).unwrap(),
+        "an older shape\n"
+    );
+    std::fs::remove_dir_all(&directory).unwrap();
+}
+
+#[test]
 fn schema_refuses_an_unknown_fixture_and_options_it_does_not_use() {
     let error = run(&arguments(&["schema", "nowhere"])).unwrap_err();
     assert!(matches!(error, CommandError::UnknownFixture(_)), "{error}");

@@ -398,6 +398,11 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
         "schema" => {
             let schemas = recordings::schemas_for(name)
                 .ok_or_else(|| CommandError::UnknownFixture(name.to_string()))?;
+            if let Some((role, _)) = schemas.iter().find(|(_, schema)| schema.is_empty()) {
+                return Err(CommandError::Recording(format!(
+                    "the {role} of '{name}' has no schema: its Message is written by hand"
+                )));
+            }
             match &options.out {
                 Some(directory) => write_schemas(directory, &schemas),
                 None => Ok(schemas_json(name, &schemas)),
@@ -484,11 +489,25 @@ fn write_schemas(directory: &str, schemas: &[(&str, &str)]) -> Result<String, Co
         CommandError::Unwritable(format!("cannot write {path}: {error}"))
     };
     fs::create_dir_all(directory).map_err(|error| unwritable(directory, error))?;
-    let mut lines = Vec::new();
+    // A saved version is never rewritten: a different shape under the same version is the
+    // mistake the saved schemas exist to catch. Every file is checked before any is written.
+    let mut files = Vec::new();
     for (_, schema) in schemas {
         let file = schema_file_name(schema).map_err(CommandError::Recording)?;
         let path = format!("{directory}/{file}");
-        fs::write(&path, format!("{schema}\n")).map_err(|error| unwritable(&path, error))?;
+        let text = format!("{schema}\n");
+        if let Ok(saved) = fs::read_to_string(&path) {
+            if saved != text {
+                return Err(CommandError::Recording(format!(
+                    "{path} holds another shape under the same version: bump the version of the type"
+                )));
+            }
+        }
+        files.push((path, text));
+    }
+    let mut lines = Vec::new();
+    for (path, text) in files {
+        fs::write(&path, text).map_err(|error| unwritable(&path, error))?;
         let sidecar = format!("{path}.license");
         fs::write(&sidecar, "SPDX-License-Identifier: Apache-2.0\n")
             .map_err(|error| unwritable(&sidecar, error))?;

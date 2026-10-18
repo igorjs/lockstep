@@ -15,7 +15,10 @@ and shape.
 - A field has its `name` (the position for a tuple field) and its `type` as written in the source,
   with the spaces the token printer adds removed, so `Vec<Option<(u8,[u16;2])>>`.
 - A generic message lists its `generics`.
-- A hand written `impl Message` leaves `SCHEMA` empty.
+- A hand written `impl Message` leaves `SCHEMA` empty, and `schema` refuses to print it.
+- Only the four top level types of a simulation have a schema here. A nested type that is not a
+  derived message, such as an enum from another crate, appears by name, so a change inside it does
+  not change the schema of the message that holds it.
 
 `lockstep-headless schema <name>` prints the four messages of a fixture's simulation (intent,
 event, snapshot, configuration) as one JSON document. With `--out <directory>` it writes one file
@@ -27,7 +30,7 @@ differ between platforms.
 ## Alternatives rejected
 
 - Types resolved to their definitions: a macro sees syntax only, so an alias or a type from another
-  crate stays a name. A tool that needs the shape of `KindId` reads the schema of `KindId`.
+  crate stays a name. A tool that needs the shape of `KindId` reads it from the type's own definition.
 - A registry of every message type in a program: it needs life before main or a list kept by hand.
   The headless table already names each simulation's four types.
 - A hash of the shape in place of text: a failing comparison would not say what changed.
