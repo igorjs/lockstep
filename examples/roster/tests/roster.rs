@@ -160,7 +160,7 @@ fn a_damaged_save_is_refused() {
     assert_eq!(open::<Chronicle>(&bytes), Err(EnvelopeError::Corrupt));
 }
 
-/// The session reaches every branch, in both projects.
+/// The session hires in both projects, and the second refuses a retired name.
 #[test]
 fn the_session_hires_refuses_and_hands_over_the_lead_in_both_projects() {
     let (_, first) = run_project(empty(), DEFAULT_SEED, DEFAULT_STEPS);

@@ -24,7 +24,7 @@ departures, the chronicle between them and the chronicle at the end. It is check
 The milestone gate is `a_retired_name_stays_retired_in_the_next_project`: a name that left in the
 first project is refused in the second after the chronicle was saved and opened. Other tests: the
 lead falling back in hire order and never to the one who left, duplicate and retired names, the
-point-buy budget and maximum, a damaged save, and the session reaching every branch in both
+point-buy budget and maximum, a damaged save, and the session hiring in both
 projects.
 
 This example stands in for the reference's lineage consumer (departure P26 in the roadmap).

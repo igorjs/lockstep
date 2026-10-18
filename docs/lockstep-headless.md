@@ -29,7 +29,7 @@ lockstep-headless stats  <file>
 ```
 
 - `record` writes the fixture session as a recording, with a checkpoint every 100 steps unless
-  `--every` says otherwise, keeping the snapshot at each checkpoint. Every example can be recorded except `mars-rovers` (many sessions in one fixture) and `orchard` (the host sets daylight between steps); see decision 0043.
+  `--every` says otherwise, keeping the snapshot at each checkpoint. Every example can be recorded except `mars-rovers` (many sessions in one fixture), `roster` (two successive projects) and `orchard` (the host sets daylight between steps); see decision 0043.
 - `replay` reads the simulation id at the front of the file, runs the recording again and prints
   `identical <id> after <steps> steps, hash <hash>`. A divergence prints the step and both hashes to
   standard error and exits with status 1. `--until` stops after that many steps.
