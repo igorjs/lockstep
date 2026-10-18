@@ -118,6 +118,12 @@ pub fn fixtures() -> Vec<Fixture> {
             run: sparring::fixture_hash,
         },
         Fixture {
+            name: "rates",
+            default_seed: rates::DEFAULT_SEED,
+            default_steps: rates::DEFAULT_STEPS,
+            run: rates::fixture_hash,
+        },
+        Fixture {
             name: "tariffs",
             default_seed: tariffs::DEFAULT_SEED,
             default_steps: tariffs::DEFAULT_STEPS,

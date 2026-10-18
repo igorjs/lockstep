@@ -26,6 +26,7 @@ checkout = { path = "../../examples/checkout" }
 orchard = { path = "../../examples/orchard" }
 ledger = { path = "../../examples/ledger" }
 tariffs = { path = "../../examples/tariffs" }
+rates = { path = "../../examples/rates" }
 mars-rovers = { path = "../../examples/mars-rovers" }
 
 [features]

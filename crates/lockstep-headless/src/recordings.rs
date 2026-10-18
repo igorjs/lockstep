@@ -76,6 +76,7 @@ pub fn replayables() -> Vec<Replayable> {
         replayable!(bakery, bakery::Bakery),
         replayable!(estate, estate::Estate),
         replayable!(checkout, checkout::Checkout),
+        replayable!(rates, rates::Rates),
     ]
 }
 
