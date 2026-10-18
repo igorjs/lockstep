@@ -54,7 +54,7 @@ that `lost` has left: if it was in control, control moves to the first of `fall_
   archetype that omits an attribute, names an unknown one or starts outside the bounds, an unknown
   archetype or attribute in `build`, a purchase past a maximum, and a budget overrun.
 
-See decision 0027.
+See decision 0031.
 
 ## Tests
 
@@ -62,4 +62,4 @@ See decision 0027.
   each refusal.
 - `tests/decisions`: control falling back in the caller's order and never to the lost, a retired
   name staying retired across runs and a save, the budget spent exactly and no further, and the
-  envelope carrying the message version (decision 0027).
+  envelope carrying the message version (decision 0031).

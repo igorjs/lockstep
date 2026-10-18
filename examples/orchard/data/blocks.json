@@ -1,0 +1,15 @@
+{
+  "regions": [
+    { "name": "gate",   "x": 0,   "y": 0 },
+    { "name": "apple",  "x": 100, "y": 0 },
+    { "name": "pear",   "x": 200, "y": 0, "receptive_percent": 60 },
+    { "name": "cherry", "x": 0,   "y": 100 },
+    { "name": "plum",   "x": 100, "y": 100 },
+    { "name": "quince", "x": 200, "y": 100, "receptive_percent": 60 }
+  ],
+  "links": [
+    ["gate", "apple"], ["apple", "pear"],
+    ["cherry", "plum"], ["plum", "quince"],
+    ["gate", "cherry"], ["apple", "plum"], ["pear", "quince"]
+  ]
+}

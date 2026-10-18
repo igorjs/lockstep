@@ -272,6 +272,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-calendar"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-combat"
 version = "0.1.0"
 dependencies = [
@@ -322,6 +332,7 @@ dependencies = [
  "ledger",
  "lockstep-core",
  "mars-rovers",
+ "orchard",
  "sparring",
  "training",
 ]
@@ -383,6 +394,17 @@ name = "lockstep-progression"
 version = "0.1.0"
 dependencies = [
  "lockstep-attributes",
+ "lockstep-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
+name = "lockstep-regions"
+version = "0.1.0"
+dependencies = [
+ "lockstep-agents",
  "lockstep-core",
  "serde",
  "serde_json",
@@ -478,6 +500,19 @@ name = "oorandom"
 version = "11.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
+
+[[package]]
+name = "orchard"
+version = "0.1.0"
+dependencies = [
+ "lockstep-agents",
+ "lockstep-calendar",
+ "lockstep-core",
+ "lockstep-regions",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
 
 [[package]]
 name = "pin-project-lite"
