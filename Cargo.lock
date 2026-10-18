@@ -370,6 +370,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "lockstep-meta"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "lockstep-procgen"
 version = "0.1.0"
 dependencies = [

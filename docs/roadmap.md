@@ -25,7 +25,7 @@ items in a milestone are out of scope here.
 | M12 Crafting | Done | `lockstep-crafting`: recipes from JSON with stations, inputs, minutes and weighted outcome tables with failure branches; atomic consumption; outcomes from a named stream; bakery | Met: across the bakery session the pantry changes only by deliveries and whole recipes; 2,000 bakes land within 3 percent of the outcome table |
 | M13 Regions and calendar | Done | `lockstep-regions`: region graph from JSON with anchors, receptiveness, hops and nearest, a condition that spreads by chance each interval helped downwind and scaled by a pace (decisions 0029, 0030); `lockstep-calendar`: seasons from JSON, daylight and temperature by day and minute, the clock's daylight, season events (decision 0027); orchard | Met: the mean spread time is within 3 percent of the inverse of the chance; winter has the shortest days and a midwinter blight does not spread; the calendar, spread and orchard hashes are equal natively and under WebAssembly |
 | M14 Structures and procedural generation | Done | `lockstep-structures`: durable multi-cell structures that wall a map, wear down, mend and collapse; `lockstep-procgen`: chunk templates and weighted pools from JSON, reserved chunks, a layout rolled with a seed per chunk, applied to a map; estate | Met: a barrier across a chunk border and its collapse each report both chunks dirty; chunk seeds never collide across 200 world seeds times 128 by 128 places |
-| M15 Meta, lineage, templates | Not started | | |
+| M15 Meta, lineage, templates | In progress: crate done, consumer pending | `lockstep-meta`: the chronicle (the cross-run record) saved in a versioned envelope, control transfer with a caller-ordered fall-back, archetypes and point-buy from JSON | Pending: the franchise consumer (death, a fall-back, a burned name) and the chronicle surviving a new season |
 | M16 Hardening | In progress | Done: saves with a versioned envelope, migrations between snapshot versions, committed old-version fixtures, saving mid-recording and `resume` (decisions 0035, 0036); `tariffs`. Still to land: data tables with hot reload, fuzzing and Miri, money | Open until every framework part lands |
 
 ## Gaps: short of the reference
@@ -46,6 +46,7 @@ items in a milestone are out of scope here.
 | D3 | `replay --save` and saving mid-recording | M5 | Closed in M16: `replay --until --save`, `resume`, `Recorder::save` | Decision 0036 |
 | D4 | Conversions between message versions | M16 | Closed in M16 for snapshots (decision 0035); see D7 for the rest | Decisions 0010, 0035 |
 | D5 | The director's waves, spacing a horde's arrival into pulses | M8 | A consumer with a horde that arrives over time | `docs/lockstep-agents.md` |
+| D7 | Conversions between versions of a saved chronicle: the envelope refuses another message version and does not convert it | M15 | Saves and migrations (M16), as D4 | Decision 0031, `docs/lockstep-meta.md` |
 | D6 | Matching template edges, so neighbouring chunks join up | M14 | A consumer that needs a connected map without reserving chunks | `docs/lockstep-procgen.md` |
 | D7 | Conversions for intents, events and configurations, so recordings made by an older shape still replay | M16 | A consumer that keeps old recordings | Decision 0035 |
 
