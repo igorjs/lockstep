@@ -76,7 +76,7 @@ fn a_recording_taken_with_another_seed_replays_to_that_seed() {
     for replayable in replayables() {
         let id = replayable.id;
         let bytes = (replayable.record)(7, 1000, 100).unwrap();
-        let replayed = (replayable.replay)(&bytes, None).unwrap();
+        let replayed = (replayable.replay)(&bytes, None, false).unwrap();
         let fixture = fixtures()
             .into_iter()
             .find(|fixture| fixture.name == id)

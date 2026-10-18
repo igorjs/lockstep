@@ -347,6 +347,7 @@ dependencies = [
  "orchard",
  "roster",
  "sparring",
+ "tariffs",
  "training",
 ]
 
@@ -696,6 +697,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "tariffs"
+version = "0.1.0"
+dependencies = [
+ "lockstep-core",
+ "serde",
+ "wasm-bindgen-test",
 ]
 
 [[package]]
