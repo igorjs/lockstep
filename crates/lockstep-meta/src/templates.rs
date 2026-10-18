@@ -98,9 +98,7 @@ impl Templates {
                 return Err(TemplateError::AboveMaximum(rule.name.clone()));
             }
             values[index] = raised as i32;
-            cost = (*points as u64 * rule.cost_per_point as u64)
-                .checked_add(cost)
-                .unwrap_or(u64::MAX);
+            cost = (*points as u64 * rule.cost_per_point as u64).saturating_add(cost);
         }
         if cost > self.budget as u64 {
             return Err(TemplateError::OverBudget {
