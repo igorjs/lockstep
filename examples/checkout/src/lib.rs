@@ -8,7 +8,8 @@
 
 use lockstep_agents::{Director, WaveEvent, WaveRules, Waves};
 use lockstep_core::{
-    ClockConfiguration, Context, Message, Runner, Simulation, StepConfiguration, Streams,
+    record_session, ClockConfiguration, Context, Message, Recording, Runner, Session, Simulation,
+    StepConfiguration, Streams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -226,12 +227,39 @@ pub fn script(step_number: u64, script: &mut Streams) -> Vec<Intent> {
 
 pub fn run_fixture(seed: u64, steps: u64) -> Runner<Checkout> {
     let mut runner = runner(store(), seed);
+    drive(&mut runner, seed, steps);
+    runner
+}
+
+fn drive(session: &mut impl Session<Checkout>, seed: u64, steps: u64) {
     let mut streams = Streams::new(seed ^ 0x0063_6865_636b);
     for step_number in 0..steps {
         let intents = script(step_number, &mut streams);
-        step(&mut runner, &intents);
+        session.step_once(&intents);
     }
-    runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "checkout";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = store();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(configuration.clone(), seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, seed, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {
