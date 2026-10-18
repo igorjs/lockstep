@@ -13,7 +13,7 @@
 //! About the hexagon figure in the reference ("at most 3 percent"): with true hexagonal geometry,
 //! the cube distance over-counts by up to 15.5 percent along the directions halfway between two
 //! lattice axes, so no hexagon distance can reach 3 percent. The test records the measured value
-//! and docs/decisions/0005-spatial.md raises this for the owner.
+//! and decision 0048 records it as a departure.
 
 use lockstep_core::math::unit_circle_table;
 use lockstep_spatial::{Cell, Square4, Square8, Topology};
