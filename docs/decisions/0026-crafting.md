@@ -10,7 +10,7 @@ Status: decided and implemented in milestone M12.
   as hold the kind and leaving spoiled units out; only when all are there is anything consumed.
 - An outcome is one number drawn from the `"crafting"` stream below the table's total weight,
   taking the row whose running total passes it. Each row's share converges on its weight.
-- A job takes whole game minutes at its station, one job a station at a time, and its outputs
+- A job takes whole simulated minutes at its station, one job a station at a time, and its outputs
   go into the station's container, or are left loose when there is no room.
 
 ## Alternatives rejected

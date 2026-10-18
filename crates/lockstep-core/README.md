@@ -9,7 +9,7 @@ same hash natively and under WebAssembly.
 - `Simulation`: the one trait you implement (`create`, `step`, `snapshot`, `restore`).
 - `Runner`: owns time. Fixed steps at 30 per second by default, an accumulator with a cap, the game
   clock, the random streams, and the intent queue.
-- `Clock`: game time as an exact integer position, with sunrise, sunset and new day events.
+- `Clock`: simulated time as an exact integer position, with sunrise, sunset and new day events.
 - `StableVector`, `Column`, `Handle`: entities as generational handles, components as columns.
 - `Streams`: named random streams. `Chance` and the rolls `roll`, `roll_with_luck` and `roll_smoothed`.
 - `hash_of`: xxh3 over fixed-width, little-endian bytes.

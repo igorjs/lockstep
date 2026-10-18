@@ -44,7 +44,7 @@ impl Streams {
         ((self.next_u32(name) as u64 * CERTAIN as u64) >> 32) as u32
     }
 
-    /// True with probability `chance`. Honest and streaky: use it for loot.
+    /// True with probability `chance`. Honest and streaky: use it for ordinary outcomes.
     pub fn roll(&mut self, name: &str, chance: Chance) -> bool {
         self.basis_point_draw(name) < chance.clamped()
     }
@@ -67,7 +67,7 @@ impl Streams {
     /// A pseudo-random distribution: attempt n after a success succeeds with probability
     /// `n × increment`, and a success resets n. Same long-run rate, far fewer streaks.
     /// Use it for hits and criticals. Never use it for farmable rolls or for a roll that
-    /// affects another player in multiplayer.
+    /// affects another participant in multiplayer.
     pub fn roll_smoothed(&mut self, name: &str, chance: Chance, state: &mut SmoothedState) -> bool {
         // Draw first, as every roll does, so a chance that reaches 100 percent leaves the
         // stream's later draws where they were.

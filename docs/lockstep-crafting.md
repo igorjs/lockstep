@@ -2,7 +2,7 @@
 
 # lockstep-crafting
 
-Crafting: recipes that consume their inputs atomically, take game time at a station, and end in
+Crafting: recipes that consume their inputs atomically, take simulated time at a station, and end in
 an outcome drawn from a table, with failure branches. It builds on `lockstep-inventory`.
 
 ## Recipes
@@ -23,7 +23,7 @@ an outcome drawn from a table, with failure branches. It builds on `lockstep-inv
 }
 ```
 
-- A recipe names its station kind, its inputs (kinds and counts), its whole game minutes, and an
+- A recipe names its station kind, its inputs (kinds and counts), its whole simulated minutes, and an
   outcome table: rows with a name, a weight and outputs. A row yielding less, or nothing, is a
   failure branch.
 - Refused with a reason: repeated names, an unknown station or kind, an input or output of no
@@ -42,7 +42,7 @@ the inventory for its outputs) and the one job running at each.
   kind and leaving spoiled units out. When any is short, nothing is consumed and the first short
   input is named (`Missing`). Otherwise the inputs are consumed from the container's items in
   order and the job starts (`Started`).
-- `tick(inventory, catalogue, recipes, minutes, streams, events)` lets game time pass; each job
+- `tick(inventory, catalogue, recipes, minutes, streams, events)` lets simulated time pass; each job
   that runs out ends, in station handle order. Its outcome is drawn from the `"crafting"` stream
   (`Finished`, with the row), and each output goes into the station's container (`Produced`), or
   is left loose when there is no room (`Overflowed`).

@@ -16,7 +16,7 @@ locker (4 slots, 40 weight, 30 degrees).
   a seal failing on a suit (an affix that binds the suit and takes 30 oxygen), a repair that
   removes it, throwing an item out, and a store's power going off or coming back
   (`set_temperature`).
-- Each step runs the orders, then spoils everything by the step's exact game minutes, at the
+- Each step runs the orders, then spoils everything by the step's exact simulated minutes, at the
   cabin's 18 degrees for anything loose or worn.
 
 The fixture hash in `fixtures/cargo-bay.hash` covers 60,000 steps of a scripted session with
@@ -24,8 +24,8 @@ deliveries, meals fresh and spoiled, faults and repairs, and power cuts. It is c
 `lockstep-headless verify cargo-bay` and by a WebAssembly test.
 
 The milestone gate is `spoilage_does_not_depend_on_the_step_rate`: rations on the rack and in the
-cold store, with the cold store losing power after two game hours, spoil on game minutes 360 and
+cold store, with the cold store losing power after two simulated hours, spoil on simulated minutes 360 and
 456 at both 30 and 60 steps a second.
 
-This example stands in for the reference's inventory consumers, the survivor's can of food and
-knife and a Mars cargo bay (departure P16 in the roadmap).
+This example stands in for the reference's inventory consumers, one actor's ration and
+tool and a Mars cargo bay (departure P16 in the roadmap).

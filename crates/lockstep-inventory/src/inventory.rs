@@ -5,7 +5,7 @@ use lockstep_core::math::Fixed32;
 use lockstep_core::{Column, Handle, Message, StableVector};
 use serde::{Deserialize, Serialize};
 
-/// Raw 16.16 units in one game minute, times 100 percent: one minute of spoiling at the base rate.
+/// Raw 16.16 units in one simulated minute, times 100 percent: one minute of spoiling at the base rate.
 const MINUTE_AT_FULL_RATE: u64 = 65_536 * 100;
 
 /// One item: a kind, a count of units, and its own affixes and spoilage.
@@ -14,13 +14,13 @@ pub struct Item {
     pub kind: KindId,
     pub count: u16,
     pub affixes: Vec<AffixId>,
-    /// Raw 16.16 game minutes times the spoilage percent, added exactly.
+    /// Raw 16.16 simulated minutes times the spoilage percent, added exactly.
     exposure: u64,
     pub spoiled: bool,
 }
 
 impl Item {
-    /// Raw 16.16 game minutes times the spoilage percent the item has been through.
+    /// Raw 16.16 simulated minutes times the spoilage percent the item has been through.
     pub fn exposure(&self) -> u64 {
         self.exposure
     }
@@ -545,7 +545,7 @@ impl Inventory {
         Ok(())
     }
 
-    /// Spoils every item that spoils by `minutes` of game time, at its container's temperature,
+    /// Spoils every item that spoils by `minutes` of simulated time, at its container's temperature,
     /// or at `outside` when it is loose or worn. Exposure adds up exactly, so the same minutes
     /// spoil the same whatever the steps they are cut into.
     pub fn spoil(

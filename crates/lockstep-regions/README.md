@@ -7,7 +7,7 @@ point, and a condition (a fire, a flood, a blight) that spreads across the graph
 
 - `Regions`: regions and their links, read from JSON and checked. `neighbours`, `hops` and
   `nearest` (the region a point is anchored to) answer questions about the graph.
-- `Spread`: the condition of every region (clear, active or spent). `advance` lets game time pass:
+- `Spread`: the condition of every region (clear, active or spent). `advance` lets simulated time pass:
   each interval, every active region may start each clear neighbour, more often downwind and in
   step with a pace the caller supplies (a season, say), drawing from the `"spread"` stream.
 

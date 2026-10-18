@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The capsule: a game-shaped consumer scenario.
 //!
-//! One survivor lives in a small room with a wall across the middle. The host clicks a cell and the
-//! survivor walks there along the cheapest path around the wall, one cell every few steps.
+//! One actor lives in a small room with a wall across the middle. The host clicks a cell and the
+//! actor walks there along the cheapest path around the wall, one cell every few steps.
 //!
 //! Health, hunger, thirst and sanity are attributes read from `data/attributes.json`. Their decay is
-//! three effects that drain per game minute, with no system code. A wound may bleed (a roll), a
+//! three effects that drain per simulated minute, with no system code. A wound may bleed (a roll), a
 //! bandage removes every bleed, and a prayer restores sanity up to a daily budget. When hunger or
-//! thirst runs out, starvation drains health, and at zero the survivor dies. Everything the
-//! survivor is lives in columns keyed by a handle.
+//! thirst runs out, starvation drains health, and at zero the actor dies. Everything the
+//! actor is lives in columns keyed by a handle.
 
 pub mod script;
 
@@ -81,7 +81,7 @@ fn drain(attribute: AttributeId, tag: &str, numerator: i32, denominator: i32) ->
     }
 }
 
-/// Needs decay: a survivor with full thirst runs dry in about eleven game hours, and with full
+/// Needs decay: an actor with full thirst runs dry in about eleven simulated hours, and with full
 /// hunger starts starving in about seventeen.
 pub fn decay(ids: Ids) -> [Effect; 3] {
     [
@@ -91,7 +91,7 @@ pub fn decay(ids: Ids) -> [Effect; 3] {
     ]
 }
 
-/// Health lost while hunger or thirst is empty, until the survivor dies: about eight game hours,
+/// Health lost while hunger or thirst is empty, until the actor dies: about eight simulated hours,
 /// long enough for both to run out.
 pub fn starvation(ids: Ids) -> Effect {
     Effect {
@@ -137,7 +137,7 @@ pub struct Walk {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
 #[message(version = 1)]
 pub struct Configuration {
-    pub survivor_name: String,
+    pub actor_name: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
@@ -242,7 +242,7 @@ impl World {
         found
     }
 
-    /// A survivor's attribute value, if alive.
+    /// An actor's attribute value, if alive.
     pub fn value(&self, entity: Handle, attribute: AttributeId) -> Option<Fixed32> {
         Some(self.attributes.get(entity)?.get(attribute).current())
     }
@@ -293,8 +293,8 @@ impl Capsule {
         self.ids
     }
 
-    /// The first (and only) survivor, if alive.
-    pub fn survivor(&self) -> Option<Handle> {
+    /// The first (and only) actor, if alive.
+    pub fn actor(&self) -> Option<Handle> {
         self.world.entities.handles().first().copied()
     }
 }
@@ -314,7 +314,7 @@ impl Simulation for Capsule {
             attributes: Column::new(),
             effects: Effects::new(),
         };
-        let survivor = world.entities.insert(configuration.survivor_name);
+        let actor = world.entities.insert(configuration.actor_name);
         // Spawn on open ground: draw again if the draw lands on the wall.
         let spawn = loop {
             let cell = Cell {
@@ -325,12 +325,12 @@ impl Simulation for Capsule {
                 break cell;
             }
         };
-        world.positions.set(survivor, spawn);
+        world.positions.set(actor, spawn);
         let mut capsule = Capsule::with_world(world);
         let world = &mut capsule.world;
         world
             .attributes
-            .set(survivor, Attributes::from_registry(&capsule.registry));
+            .set(actor, Attributes::from_registry(&capsule.registry));
         let mut effect_context = EffectContext {
             attributes: &mut world.attributes,
             registry: &capsule.registry,
@@ -338,7 +338,7 @@ impl Simulation for Capsule {
             effect_events: &mut Vec::new(),
         };
         for effect in decay(capsule.ids) {
-            world.effects.add(survivor, effect, &mut effect_context);
+            world.effects.add(actor, effect, &mut effect_context);
         }
         capsule
     }
@@ -506,7 +506,7 @@ fn walking_system(world: &mut World, context: &mut Context<'_, Capsule>) {
     }
 }
 
-/// Runs every effect for the step's game minutes, then turns what the attributes report into the
+/// Runs every effect for the step's simulated minutes, then turns what the attributes report into the
 /// capsule's events: the hunger warning, starvation when hunger or thirst runs out, and death.
 fn effects_system(
     capsule: &mut Capsule,
@@ -585,7 +585,7 @@ pub fn clock_configuration() -> ClockConfiguration {
 
 fn configuration() -> Configuration {
     Configuration {
-        survivor_name: "Mara".to_string(),
+        actor_name: "Mara".to_string(),
     }
 }
 

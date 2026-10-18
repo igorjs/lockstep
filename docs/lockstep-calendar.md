@@ -2,7 +2,7 @@
 
 # lockstep-calendar
 
-The calendar: which season a game day is in, how long its daylight lasts and how warm it is, all
+The calendar: which season a simulated day is in, how long its daylight lasts and how warm it is, all
 in integers.
 
 ## Calendar
@@ -25,7 +25,7 @@ in integers.
   sunrise that is not before the sunset or a sunset past the end of the day, more than 65,535
   seasons, and values out of range (over a million days, a negative swing, or a mean and swing
   together over 30,000 degrees).
-- `season(day)` is the season of a game day.
+- `season(day)` is the season of a simulated day.
 - `daylight(day)` is the sunrise and sunset minutes. A season's values hold at the middle of the
   season and change in a straight line to the next season's middle, wrapping from the last season
   to the first (decision 0027). The longest day is in the middle of summer and the shortest in the

@@ -18,7 +18,7 @@ Status: decided and implemented in milestone M8.
 
 - Weighted floating point scores, or learned ones: they differ across platforms. Tuning happens
   offline from headless runs, as data.
-- A refusal with no reason: the host has nothing to show the player.
+- A refusal with no reason: the host has nothing to show the operator.
 - A fixed world view trait: every simulation would have to fit its shape.
 
 ## Would change if

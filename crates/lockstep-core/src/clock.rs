@@ -3,11 +3,11 @@ use crate::math::Fixed32;
 use serde::{Deserialize, Serialize};
 
 /// One step at multiplier 1.0 advances this many units. A multiplier is stored as a whole number
-/// of 1/65,536ths, so game time is an exact integer and never drifts.
+/// of 1/65,536ths, so simulated time is an exact integer and never drifts.
 const UNITS_PER_STEP: u64 = 65_536;
 const MAXIMUM_MULTIPLIER: f32 = 1_000_000.0;
 const MINUTES_PER_DAY: u64 = 1440;
-/// The most game minutes one step may cover, so a step's exact minutes always fit `Fixed32`.
+/// The most simulated minutes one step may cover, so a step's exact minutes always fit `Fixed32`.
 const MAXIMUM_MINUTES_PER_STEP: u64 = 16_384;
 /// The most steps one day may take: every product of a position and a constant stays inside 64
 /// bits, whatever a damaged recording says. A day this long is over two years at 60 steps a second.
@@ -29,7 +29,7 @@ pub enum ClockEvent {
     NewDay(u32),
 }
 
-/// The game clock is a rate: one step advances the multiplier times a fixed amount of game time.
+/// The simulated clock is a rate: one step advances the multiplier times a fixed amount of simulated time.
 ///
 /// Time of day is kept as an exact integer position inside the day, so a 120 minute day is
 /// exactly 216,000 steps at multiplier 1.0 and the position never drifts. Floats appear only
@@ -37,7 +37,7 @@ pub enum ClockEvent {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Clock {
     configuration: ClockConfiguration,
-    /// Units in one game day: steps per day times `UNITS_PER_STEP`.
+    /// Units in one simulated day: steps per day times `UNITS_PER_STEP`.
     units_per_day: u64,
     /// Position inside the current day, in `[0, units_per_day)`.
     position: u64,
@@ -65,7 +65,7 @@ impl Clock {
     }
 
     /// Negative and not-a-number values become zero. Values are rounded to 1/65,536 and capped
-    /// at a million, and at whatever makes one step cover 16,384 game minutes (about eleven
+    /// at a million, and at whatever makes one step cover 16,384 simulated minutes (about eleven
     /// days), so the exact minutes of a step always fit `Fixed32`.
     pub fn set_multiplier(&mut self, multiplier: f32) {
         let clamped = multiplier.clamp(0.0, MAXIMUM_MULTIPLIER);
@@ -133,19 +133,19 @@ impl Clock {
         (minute as u64).min(MINUTES_PER_DAY) * self.units_per_day / MINUTES_PER_DAY
     }
 
-    /// Advance one step. Returns elapsed game minutes and pushes any boundary crossed.
+    /// Advance one step. Returns elapsed simulated minutes and pushes any boundary crossed.
     pub fn advance(&mut self, events: &mut Vec<ClockEvent>) -> f32 {
         self.advance_exactly(events).0
     }
 
-    /// Game minutes since day zero began, in 16.16 raw units, rounded down. Differences of this
+    /// Simulated minutes since day zero began, in 16.16 raw units, rounded down. Differences of this
     /// value never drift, however the minutes are split into steps.
     fn minutes_raw(&self) -> i128 {
         let total = self.day as u128 * self.units_per_day as u128 + self.position as u128;
         (total * MINUTES_PER_DAY as u128 * 65_536 / self.units_per_day as u128) as i128
     }
 
-    /// Advance one step. Returns the elapsed game minutes as a float and as exact 16.16 fixed
+    /// Advance one step. Returns the elapsed simulated minutes as a float and as exact 16.16 fixed
     /// point, and pushes any boundary crossed. The fixed point minutes of many steps add up to
     /// exactly the minutes between the first and last position, so effects that run on game
     /// minutes never drift with the step count.

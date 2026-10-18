@@ -4,8 +4,8 @@
 //! ```text
 //! seed 20260925
 //! steps 10000
-//! 10 move survivor 15 15 walk
-//! 200 wound survivor
+//! 10 move actor 15 15 walk
+//! 200 wound actor
 //! 800 multiplier 20
 //! ```
 //!
@@ -100,7 +100,7 @@ pub fn parse(text: &str) -> Result<Script, ParseError> {
                 })?;
                 let command = match words.next() {
                     Some("move") => {
-                        expect_survivor(words.next(), line)?;
+                        expect_actor(words.next(), line)?;
                         let x = number(words.next(), line, "a cell x")?;
                         let y = number(words.next(), line, "a cell y")?;
                         let run = match words.next() {
@@ -119,19 +119,19 @@ pub fn parse(text: &str) -> Result<Script, ParseError> {
                         }
                     }
                     Some("stop") => {
-                        expect_survivor(words.next(), line)?;
+                        expect_actor(words.next(), line)?;
                         Command::Stop
                     }
                     Some("wound") => {
-                        expect_survivor(words.next(), line)?;
+                        expect_actor(words.next(), line)?;
                         Command::Wound
                     }
                     Some("bandage") => {
-                        expect_survivor(words.next(), line)?;
+                        expect_actor(words.next(), line)?;
                         Command::Bandage
                     }
                     Some("pray") => {
-                        expect_survivor(words.next(), line)?;
+                        expect_actor(words.next(), line)?;
                         Command::Pray
                     }
                     Some("multiplier") => {
@@ -167,13 +167,13 @@ pub fn parse(text: &str) -> Result<Script, ParseError> {
     })
 }
 
-fn expect_survivor(word: Option<&str>, line: usize) -> Result<(), ParseError> {
-    if word == Some("survivor") {
+fn expect_actor(word: Option<&str>, line: usize) -> Result<(), ParseError> {
+    if word == Some("actor") {
         Ok(())
     } else {
         Err(ParseError {
             line,
-            message: "expected 'survivor'".into(),
+            message: "expected 'actor'".into(),
         })
     }
 }
@@ -187,7 +187,7 @@ pub fn run(script: &Script, seed: Option<u64>, steps: Option<u64>) -> Runner<Cap
 
 /// Plays a script on a runner, or on a recorder around one.
 pub fn drive(session: &mut impl Session<Capsule>, script: &Script, steps: Option<u64>) {
-    let Some(survivor) = session.simulation().survivor() else {
+    let Some(actor) = session.simulation().actor() else {
         return;
     };
     // Group by step once, keeping file order within a step, so each step is a lookup.
@@ -201,14 +201,14 @@ pub fn drive(session: &mut impl Session<Capsule>, script: &Script, steps: Option
             match command {
                 Command::Multiplier(multiplier) => session.set_clock_multiplier(*multiplier),
                 Command::Move { cell, run } => intents.push(Intent::MoveTo {
-                    entity: survivor,
+                    entity: actor,
                     cell: *cell,
                     run: *run,
                 }),
-                Command::Stop => intents.push(Intent::Stop { entity: survivor }),
-                Command::Wound => intents.push(Intent::Wound { entity: survivor }),
-                Command::Bandage => intents.push(Intent::Bandage { entity: survivor }),
-                Command::Pray => intents.push(Intent::Pray { entity: survivor }),
+                Command::Stop => intents.push(Intent::Stop { entity: actor }),
+                Command::Wound => intents.push(Intent::Wound { entity: actor }),
+                Command::Bandage => intents.push(Intent::Bandage { entity: actor }),
+                Command::Pray => intents.push(Intent::Pray { entity: actor }),
             }
         }
         session.step_once(&intents);

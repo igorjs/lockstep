@@ -157,7 +157,7 @@ fn bread_comes_from_dough_from_the_pantry() {
         count: 1,
     }]);
     runner.step_once(&[Intent::Mix]);
-    // Ten minutes of mixing at one game minute a real second.
+    // Ten minutes of mixing at one simulated minute a real second.
     for _ in 0..300 {
         runner.step_once(&[]);
     }
@@ -185,7 +185,7 @@ fn spoiled_dough_is_thrown_out_of_the_mixer() {
     }
     runner.step_once(&[Intent::Mix]);
     let mut thrown = Vec::new();
-    // Dough spoils in four game hours, 7,200 steps, after 300 steps of mixing.
+    // Dough spoils in four simulated hours, 7,200 steps, after 300 steps of mixing.
     for _ in 0..7_600 {
         thrown.extend(
             runner

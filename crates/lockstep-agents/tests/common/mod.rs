@@ -139,8 +139,8 @@ impl Floor {
     }
 }
 
-/// One game day of weather from a seed at a step rate, where a game day lasts 24 real minutes.
-/// Returns the weather after each game minute and every event.
+/// One simulated day of weather from a seed at a step rate, where a simulated day lasts 24 real minutes.
+/// Returns the weather after each simulated minute and every event.
 pub fn weather_day(
     seed: u64,
     steps_per_second: u32,
@@ -167,7 +167,7 @@ pub fn weather_day(
     let mut weather = Weather::new(0, metres(4));
     let mut streams = Streams::new(seed);
     let (mut minutes, mut events) = (Vec::new(), Vec::new());
-    // One game minute is one real second here: a day is 1,440 seconds of steps.
+    // One simulated minute is one real second here: a day is 1,440 seconds of steps.
     for step in 1..=(1_440 * steps_per_second as u64) {
         let (_, elapsed) = clock.advance_exactly(&mut Vec::new());
         weather.advance(elapsed, &rules, &mut streams, &mut events);

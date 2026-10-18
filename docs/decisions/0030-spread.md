@@ -6,8 +6,8 @@ Status: decided and implemented in milestone M13.
 
 ## Decision
 
-- The spread tries once per whole interval of game minutes, carrying any part of an interval to
-  the next step, and draws from the `"spread"` stream only then. The same game time gives the same
+- The spread tries once per whole interval of simulated minutes, carrying any part of an interval to
+  the next step, and draws from the `"spread"` stream only then. The same simulated time gives the same
   spread at any step rate.
 - Each interval, every region active at its start tries each clear neighbour once, in region and
   neighbour order. A region that takes hold waits for the next interval, so a condition crosses

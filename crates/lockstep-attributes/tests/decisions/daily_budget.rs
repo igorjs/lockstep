@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Decision: a `DailyBudget` caps the total change an entity gets from one tag in a game day.
+//! Decision: a `DailyBudget` caps the total change an entity gets from one tag in a simulated day.
 //! Prayer restores hope, but praying all day gives no more than the cap until the next day.
 //! Alternative rejected: diminishing each application by a factor, which still rewards spamming
 //! and needs a tuned curve.
-//! Would change if: a capped effect gives anything past its cap before the next game day, or the
+//! Would change if: a capped effect gives anything past its cap before the next simulated day, or the
 //! next day's budget does not start fresh.
 
 use crate::common::{column_with, fresh, id, whole};

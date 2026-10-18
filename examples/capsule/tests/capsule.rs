@@ -38,21 +38,13 @@ fn the_same_seed_and_script_give_the_same_hash_and_another_seed_does_not() {
     assert_ne!(fixture_hash(1, 2_000), fixture_hash(2, 2_000));
 }
 
-/// A seed whose survivor spawns in the given column range, so a test can aim across the wall.
+/// A seed whose actor spawns in the given column range, so a test can aim across the wall.
 fn seed_spawning_in(columns: std::ops::RangeInclusive<i32>) -> u64 {
     (0..200)
         .find(|seed| {
             let runner = runner(*seed);
-            let survivor = runner.simulation().survivor().unwrap();
-            columns.contains(
-                &runner
-                    .simulation()
-                    .world()
-                    .positions
-                    .get(survivor)
-                    .unwrap()
-                    .x,
-            )
+            let actor = runner.simulation().actor().unwrap();
+            columns.contains(&runner.simulation().world().positions.get(actor).unwrap().x)
         })
         .expect("some seed spawns there")
 }
@@ -65,8 +57,8 @@ fn is_wall(cell: Cell) -> bool {
 fn nobody_spawns_on_the_wall() {
     for seed in 0..300 {
         let runner = runner(seed);
-        let survivor = runner.simulation().survivor().unwrap();
-        let spawn = *runner.simulation().world().positions.get(survivor).unwrap();
+        let actor = runner.simulation().actor().unwrap();
+        let spawn = *runner.simulation().world().positions.get(actor).unwrap();
         assert!(
             !is_wall(spawn),
             "seed {seed} spawned on the wall at {spawn:?}"
@@ -75,11 +67,11 @@ fn nobody_spawns_on_the_wall() {
 }
 
 #[test]
-fn the_survivor_walks_around_the_wall_through_a_gap_and_arrives_when_the_path_ends() {
+fn the_actor_walks_around_the_wall_through_a_gap_and_arrives_when_the_path_ends() {
     let seed = seed_spawning_in(1..=5);
     let mut walker = runner(seed);
-    let survivor = walker.simulation().survivor().unwrap();
-    let start = *walker.simulation().world().positions.get(survivor).unwrap();
+    let actor = walker.simulation().actor().unwrap();
+    let start = *walker.simulation().world().positions.get(actor).unwrap();
     let target = Cell { x: 14, y: 6 };
 
     // The cheapest path, found on its own, says how long the walk should take.
@@ -108,7 +100,7 @@ fn the_survivor_walks_around_the_wall_through_a_gap_and_arrives_when_the_path_en
     for step in 0..3_000u64 {
         let intents = if step == 0 {
             vec![Intent::MoveTo {
-                entity: survivor,
+                entity: actor,
                 cell: target,
                 run: false,
             }]
@@ -116,10 +108,10 @@ fn the_survivor_walks_around_the_wall_through_a_gap_and_arrives_when_the_path_en
             vec![]
         };
         let result = walker.step_once(&intents);
-        let position = *walker.simulation().world().positions.get(survivor).unwrap();
+        let position = *walker.simulation().world().positions.get(actor).unwrap();
         assert!(
             !is_wall(position),
-            "the survivor stood on the wall at {position:?} on step {step}"
+            "the actor stood on the wall at {position:?} on step {step}"
         );
         if visited.last() != Some(&position) {
             visited.push(position);
@@ -139,7 +131,7 @@ fn the_survivor_walks_around_the_wall_through_a_gap_and_arrives_when_the_path_en
         "six steps per cell of the path"
     );
     assert_eq!(
-        walker.simulation().world().positions.get(survivor),
+        walker.simulation().world().positions.get(actor),
         Some(&target)
     );
     assert!(walker.simulation().world().walks.is_empty());
@@ -147,7 +139,7 @@ fn the_survivor_walks_around_the_wall_through_a_gap_and_arrives_when_the_path_en
         visited.iter().any(
             |cell| cell.x == WALL_COLUMN && (cell.y < WALL_FIRST_ROW || cell.y > WALL_LAST_ROW)
         ),
-        "the survivor crossed the wall column through a gap"
+        "the actor crossed the wall column through a gap"
     );
 }
 
@@ -155,8 +147,8 @@ fn the_survivor_walks_around_the_wall_through_a_gap_and_arrives_when_the_path_en
 fn a_walk_on_the_same_side_of_the_wall_goes_straight_there() {
     let seed = seed_spawning_in(0..=4);
     let mut walker = runner(seed);
-    let survivor = walker.simulation().survivor().unwrap();
-    let start = *walker.simulation().world().positions.get(survivor).unwrap();
+    let actor = walker.simulation().actor().unwrap();
+    let start = *walker.simulation().world().positions.get(actor).unwrap();
     let target = Cell {
         x: (start.x + 3).min(7),
         y: start.y,
@@ -166,7 +158,7 @@ fn a_walk_on_the_same_side_of_the_wall_goes_straight_there() {
     for step in 0..500u64 {
         let intents = if step == 0 {
             vec![Intent::MoveTo {
-                entity: survivor,
+                entity: actor,
                 cell: target,
                 run: false,
             }]
@@ -194,8 +186,8 @@ fn a_walk_on_the_same_side_of_the_wall_goes_straight_there() {
 #[test]
 fn running_covers_a_cell_in_half_the_steps() {
     let mut runner = runner(3);
-    let survivor = runner.simulation().survivor().unwrap();
-    let start = *runner.simulation().world().positions.get(survivor).unwrap();
+    let actor = runner.simulation().actor().unwrap();
+    let start = *runner.simulation().world().positions.get(actor).unwrap();
     // Aim at an open neighbour that is not the wall.
     let target = [(1, 0), (-1, 0), (0, 1), (0, -1)]
         .iter()
@@ -206,7 +198,7 @@ fn running_covers_a_cell_in_half_the_steps() {
         .find(|cell| (0..16).contains(&cell.x) && (0..16).contains(&cell.y) && !is_wall(*cell))
         .unwrap();
     runner.step_once(&[Intent::MoveTo {
-        entity: survivor,
+        entity: actor,
         cell: target,
         run: true,
     }]);
@@ -219,25 +211,25 @@ fn running_covers_a_cell_in_half_the_steps() {
 }
 
 #[test]
-fn a_move_onto_the_wall_is_rejected_and_the_survivor_stays_put() {
+fn a_move_onto_the_wall_is_rejected_and_the_actor_stays_put() {
     let mut runner = runner(3);
-    let survivor = runner.simulation().survivor().unwrap();
-    let start = *runner.simulation().world().positions.get(survivor).unwrap();
+    let actor = runner.simulation().actor().unwrap();
+    let start = *runner.simulation().world().positions.get(actor).unwrap();
     let wall = Cell {
         x: WALL_COLUMN,
         y: 5,
     };
     let result = runner.step_once(&[Intent::MoveTo {
-        entity: survivor,
+        entity: actor,
         cell: wall,
         run: false,
     }]);
-    assert_eq!(result.events, vec![Event::Rejected { entity: survivor }]);
+    assert_eq!(result.events, vec![Event::Rejected { entity: actor }]);
     for _ in 0..200 {
         runner.step_once(&[]);
     }
     assert_eq!(
-        runner.simulation().world().positions.get(survivor),
+        runner.simulation().world().positions.get(actor),
         Some(&start)
     );
 }
@@ -245,7 +237,7 @@ fn a_move_onto_the_wall_is_rejected_and_the_survivor_stays_put() {
 #[test]
 fn a_destination_walled_in_is_rejected_as_unreachable() {
     // Seal the target cell inside a ring of walls using the room builder's own map, then check
-    // the survivor's search refuses it: build the world, wall in a cell, and restore from it.
+    // the actor's search refuses it: build the world, wall in a cell, and restore from it.
     let mut world = runner(3).snapshot();
     for (x, y) in [
         (13, 13),
@@ -259,9 +251,9 @@ fn a_destination_walled_in_is_rejected_as_unreachable() {
     ] {
         world.room.set_passable(world.room.index(x, y), false);
     }
-    // The centre cell (14, 14) is now enclosed: restore the world and ask the survivor to go there.
+    // The centre cell (14, 14) is now enclosed: restore the world and ask the actor to go there.
     let mut simulation = <Capsule as Simulation>::restore(world);
-    let survivor = simulation.survivor().unwrap();
+    let actor = simulation.actor().unwrap();
     let mut randomness = lockstep_core::Streams::new(0);
     let mut events = Vec::new();
     let clock = lockstep_core::Clock::new(capsule::clock_configuration(), 1.0 / 30.0);
@@ -277,12 +269,12 @@ fn a_destination_walled_in_is_rejected_as_unreachable() {
     simulation.step(
         &mut context,
         &[Intent::MoveTo {
-            entity: survivor,
+            entity: actor,
             cell: Cell { x: 14, y: 14 },
             run: false,
         }],
     );
-    assert_eq!(events, vec![Event::Rejected { entity: survivor }]);
+    assert_eq!(events, vec![Event::Rejected { entity: actor }]);
 }
 
 #[test]
@@ -308,11 +300,11 @@ fn a_move_outside_the_room_is_rejected_not_obeyed() {
 }
 
 #[test]
-fn the_survivor_starves_in_order_and_leaves_no_orphaned_components() {
-    // Thirst drains faster than hunger, so the survivor is starving before the hunger warning.
-    // Hunger runs out later too, while the survivor still lives: starvation starts only once.
+fn the_actor_starves_in_order_and_leaves_no_orphaned_components() {
+    // Thirst drains faster than hunger, so the actor is starving before the hunger warning.
+    // Hunger runs out later too, while the actor still lives: starvation starts only once.
     let mut resting = runner(default_seed());
-    let survivor = resting.simulation().survivor().unwrap();
+    let actor = resting.simulation().actor().unwrap();
     resting.set_clock_multiplier(20.0);
     let mut kinds = Vec::new();
     for _ in 0..default_steps() {
@@ -326,10 +318,10 @@ fn the_survivor_starves_in_order_and_leaves_no_orphaned_components() {
         }
     }
     assert_eq!(kinds, vec!["starving", "hungry", "died"]);
-    assert!(!resting.simulation().world().entities.contains(survivor));
+    assert!(!resting.simulation().world().entities.contains(actor));
     assert!(resting.simulation().world().orphans().is_empty());
     assert_eq!(
-        resting.simulation().world().effects.on(survivor).count(),
+        resting.simulation().world().effects.on(actor).count(),
         0,
         "the dead keep no effects"
     );
@@ -338,7 +330,7 @@ fn the_survivor_starves_in_order_and_leaves_no_orphaned_components() {
 #[test]
 fn the_scripted_session_ends_in_death_with_a_clean_world() {
     let session = run_fixture(default_seed(), default_steps());
-    assert!(session.simulation().survivor().is_none());
+    assert!(session.simulation().actor().is_none());
     assert!(session.simulation().world().orphans().is_empty());
 }
 
@@ -347,14 +339,14 @@ fn needs_drain_with_game_time_so_a_rest_drains_them_twenty_times_faster() {
     let mut slow = runner(9);
     let mut fast = runner(9);
     fast.set_clock_multiplier(20.0);
-    let survivor = slow.simulation().survivor().unwrap();
+    let actor = slow.simulation().actor().unwrap();
     let hunger = slow.simulation().ids().hunger;
     for _ in 0..300 {
         slow.step_once(&[]);
         fast.step_once(&[]);
     }
     let loss = |runner: &lockstep_core::Runner<Capsule>| {
-        let left = runner.simulation().world().value(survivor, hunger).unwrap();
+        let left = runner.simulation().world().value(actor, hunger).unwrap();
         (lockstep_core::math::Fixed32::from_int(100) - left).raw() as i64
     };
     // Exact fixed point: twenty times the minutes give twenty times the loss, to a raw unit or so
@@ -378,22 +370,22 @@ fn a_snapshot_restores_to_an_identical_world() {
 }
 
 #[test]
-fn a_new_move_during_a_walk_paths_again_from_where_the_survivor_stands() {
+fn a_new_move_during_a_walk_paths_again_from_where_the_actor_stands() {
     let seed = seed_spawning_in(0..=3);
     let mut walker = runner(seed);
-    let survivor = walker.simulation().survivor().unwrap();
+    let actor = walker.simulation().actor().unwrap();
     walker.step_once(&[Intent::MoveTo {
-        entity: survivor,
+        entity: actor,
         cell: Cell { x: 14, y: 14 },
         run: false,
     }]);
     for _ in 0..20 {
         walker.step_once(&[]);
     }
-    let midway = *walker.simulation().world().positions.get(survivor).unwrap();
+    let midway = *walker.simulation().world().positions.get(actor).unwrap();
     let new_target = Cell { x: 0, y: 15 };
     walker.step_once(&[Intent::MoveTo {
-        entity: survivor,
+        entity: actor,
         cell: new_target,
         run: false,
     }]);
@@ -401,11 +393,11 @@ fn a_new_move_during_a_walk_paths_again_from_where_the_survivor_stands() {
         .simulation()
         .world()
         .walks
-        .get(survivor)
+        .get(actor)
         .unwrap()
         .clone();
     assert_eq!(walk.destination, new_target);
-    // The new path starts next to where the survivor stood, not from the spawn.
+    // The new path starts next to where the actor stood, not from the spawn.
     let room = build_room();
     let first = room.coordinates(lockstep_spatial::Cell(walk.path[0]));
     assert!((first.0 as i32 - midway.x).abs() <= 1 && (first.1 as i32 - midway.y).abs() <= 1);
@@ -423,7 +415,7 @@ fn a_new_move_during_a_walk_paths_again_from_where_the_survivor_stands() {
     }
     assert!(arrived);
     assert_eq!(
-        walker.simulation().world().positions.get(survivor),
+        walker.simulation().world().positions.get(actor),
         Some(&new_target)
     );
 }
@@ -432,32 +424,32 @@ fn a_new_move_during_a_walk_paths_again_from_where_the_survivor_stands() {
 fn a_stop_then_a_move_starts_a_fresh_walk() {
     let seed = seed_spawning_in(0..=3);
     let mut walker = runner(seed);
-    let survivor = walker.simulation().survivor().unwrap();
+    let actor = walker.simulation().actor().unwrap();
     walker.step_once(&[Intent::MoveTo {
-        entity: survivor,
+        entity: actor,
         cell: Cell { x: 14, y: 14 },
         run: false,
     }]);
     for _ in 0..13 {
         walker.step_once(&[]);
     }
-    walker.step_once(&[Intent::Stop { entity: survivor }]);
+    walker.step_once(&[Intent::Stop { entity: actor }]);
     assert!(walker.simulation().world().walks.is_empty());
-    let stopped = *walker.simulation().world().positions.get(survivor).unwrap();
+    let stopped = *walker.simulation().world().positions.get(actor).unwrap();
     for _ in 0..30 {
         walker.step_once(&[]);
     }
     assert_eq!(
-        walker.simulation().world().positions.get(survivor),
+        walker.simulation().world().positions.get(actor),
         Some(&stopped),
-        "a stopped survivor stays put"
+        "a stopped actor stays put"
     );
     let target = Cell {
         x: stopped.x,
         y: (stopped.y + 2).min(15),
     };
     walker.step_once(&[Intent::MoveTo {
-        entity: survivor,
+        entity: actor,
         cell: target,
         run: true,
     }]);

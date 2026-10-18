@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Decision: spoilage adds up exposure as exact integers, raw 16.16 game minutes times a whole
-//! percent, and compares the total with the limit. The same game minutes spoil the same whether
+//! Decision: spoilage adds up exposure as exact integers, raw 16.16 simulated minutes times a whole
+//! percent, and compares the total with the limit. The same simulated minutes spoil the same whether
 //! they come in 30 or 60 steps a second.
 //! Alternative rejected: lowering a freshness fraction each step by `minutes / limit`, which
 //! rounds once per step and drifts with the step rate.
 //! Would change if: a day at 30 and at 60 steps a second leave different exposure or spoil on
-//! different game minutes (the number to beat is zero differences).
+//! different simulated minutes (the number to beat is zero differences).
 
 use crate::common::{whole, Bay};
 use lockstep_core::math::Fixed32;
@@ -14,12 +14,12 @@ use lockstep_core::{Clock, ClockConfiguration};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
 
-/// Runs a ration on the rack through one and a half game days at a step rate. Returns its
-/// exposure after each whole game hour and the game minute it spoiled on.
+/// Runs a ration on the rack through one and a half simulated days at a step rate. Returns its
+/// exposure after each whole simulated hour and the simulated minute it spoiled on.
 fn run(steps_per_second: u32) -> (Vec<u64>, Option<i64>) {
     let mut bay = Bay::new();
     let ration = bay.stock("ration", 1, bay.rack);
-    // A game day lasts 24 real minutes: one game minute a real second.
+    // A simulated day lasts 24 real minutes: one simulated minute a real second.
     let mut clock = Clock::new(
         ClockConfiguration {
             day_length_real_minutes: 24.0,

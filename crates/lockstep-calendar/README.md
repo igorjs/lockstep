@@ -2,7 +2,7 @@
 
 # lockstep-calendar
 
-Seasons for [Lockstep](https://github.com/igorjs/lockstep): which season a game day falls in,
+Seasons for [Lockstep](https://github.com/igorjs/lockstep): which season a simulated day falls in,
 how long its daylight lasts, and how warm it is at a minute of the day.
 
 - `Calendar`: seasons read from JSON and checked. `daylight(day)` gives the sunrise and sunset

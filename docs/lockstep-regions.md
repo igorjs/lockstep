@@ -39,14 +39,14 @@ spent region neither spreads nor takes hold again.
 | Field | Meaning |
 |---|---|
 | `base_permille` | Chance in a thousand, each interval, that an active region starts one clear neighbour in still air at full pace |
-| `interval_minutes` | Game minutes between tries, at least one |
+| `interval_minutes` | Simulated minutes between tries, at least one |
 | `active_intervals` | Intervals a region stays active before it is spent, at least one |
 | `wind_percent_per_metre` | Percent added for each metre a second of wind blowing straight from the active region toward its neighbour, and taken off for wind blowing the other way |
 
 - `start(region, rules, events)` starts a clear region from outside.
-- `advance(regions, rules, breeze, pace_percent, minutes, streams, events)` lets game time pass
+- `advance(regions, rules, breeze, pace_percent, minutes, streams, events)` lets simulated time pass
   one whole interval at a time, carrying any part of an interval to the next call, so the same
-  game time gives the same spread at any step rate (decision 0030). In each interval every
+  simulated time gives the same spread at any step rate (decision 0030). In each interval every
   region that was active when it began tries each clear neighbour once, in region and neighbour
   order, drawing from the `"spread"` stream. A region that takes hold is active from the next
   interval, so a condition crosses at most one link an interval. Then each region active at the

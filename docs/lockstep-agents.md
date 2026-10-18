@@ -45,17 +45,17 @@ See decision 0018.
 ## Weather
 
 `Weather` is the wind over time, advanced by `advance(minutes, rules, streams, events)` one whole
-game second at a time from the `"weather"` stream, so the same game minutes give the same weather
+simulated second at a time from the `"weather"` stream, so the same simulated minutes give the same weather
 at 30 or 60 steps a second. Each second:
 
-- Outside a front, the direction drifts by at most 12 turn units (under 4 degrees a game minute).
+- Outside a front, the direction drifts by at most 12 turn units (under 4 degrees a simulated minute).
 - A front starts on average `fronts_per_day` times a day and swings the direction 90 to 180
-  degrees either way over 8 to 12 game minutes, on a straight schedule, ending exactly where it
+  degrees either way over 8 to 12 simulated minutes, on a straight schedule, ending exactly where it
   swung to (`FrontStarted`, `FrontPassed`).
-- The strength moves a thirtieth of the way to `mean_strength` each game minute (stopping within
+- The strength moves a thirtieth of the way to `mean_strength` each simulated minute (stopping within
   about three hundredths of a metre a second of it, where the step rounds to nothing).
 - A gust starts on average once or twice an hour (1.5 in 3,600 seconds) and adds 50 to 100
-  percent for 30 to 90 game seconds (`GustStarted`, `GustEnded`).
+  percent for 30 to 90 simulated seconds (`GustStarted`, `GustEnded`).
 
 `wind()` is the `Wind` now, gusts included, for `hear`. The reference keeps the weather with the
 regions; it lives here until that crate exists (departure P18). See decision 0022.
@@ -90,16 +90,16 @@ See decision 0019.
 ## Waves
 
 A `Waves` spaces a large arrival into pulses. The pacing is data, `WaveRules`: `pulse_size`
-arrivals fall due every `interval_minutes` game minutes, the first after `start_after_minutes`.
+arrivals fall due every `interval_minutes` simulated minutes, the first after `start_after_minutes`.
 The last pulse is the remainder.
 
-`Waves::advance(rules, minutes, headroom, events)` lets game time pass and admits as many due
+`Waves::advance(rules, minutes, headroom, events)` lets simulated time pass and admits as many due
 arrivals as `headroom` allows, returning the number admitted. `Director::headroom(load)` is the
 budget less the current load. Arrivals the budget turns away wait and are admitted on a later
 step; none is dropped, and the load never passes the budget.
 
-- Pulses fall due by the game minutes since the wave began, counted from the total, so the same
-  game time gives the same pulses at any step rate (decision 0055).
+- Pulses fall due by the simulated minutes since the wave began, counted from the total, so the same
+  simulated time gives the same pulses at any step rate (decision 0055).
 - Events: `Pulse` when a pulse falls due, `Admitted` with the arrivals let in, `Held` once when a
   hold starts, and `Finished` once when every arrival is in.
 - The state is plain data, so a snapshot taken mid-wave restores and carries on exactly.
@@ -148,7 +148,7 @@ half-metre cells with 10 percent walls, each the best of five runs, against the 
 the build. `just bench-baseline` writes a new baseline after an intended change. On the
 development MacBook: every agent looking for ten targets with no staggering, 647 microseconds;
 one 80 metre noise through a 10 metre a second wind, 444; one `think` with a sighting for every
-agent, 150; one `steer` step for every agent, 73; a game day of weather, minute by minute, 2,732.
+agent, 150; one `steer` step for every agent, 73; a simulated day of weather, minute by minute, 2,732.
 Not measured as one step, but summed: with checks staggered one in ten, perceiving, thinking and
 steering 1,000 agents comes to about 0.29 milliseconds a step, and each noise adds about 0.44.
 
@@ -169,7 +169,7 @@ steering 1,000 agents comes to about 0.29 milliseconds a step, and each noise ad
   step rates, the director's budget of eight among twenty, and the leash (decision 0019); 200
   agents through a one-cell doorway without sharing a cell, and a blocked mover past a body in two
   steps (decision 0020); utility ties going to the lowest id, and a refused task naming its
-  weakest reason (decision 0021); one game day of weather from seed 42 equal at 30 and 60 steps a
+  weakest reason (decision 0021); one simulated day of weather from seed 42 equal at 30 and 60 steps a
   second and matching `tests/fixtures/weather.hash` natively and under WebAssembly (decision
   0022).
 - `tests/behaviour/weather.rs`: a day keeping the drift, gust and front bounds, about 36 gusts,

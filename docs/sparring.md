@@ -31,5 +31,5 @@ The spike in `tests/spikes` has 200 partners spar for 10,000 steps and checks ev
 two bodies share a cell and no health goes below zero. It takes about three seconds optimised and
 a minute without, so `just test` runs it with `--release` and a plain `cargo test` skips it.
 
-This example stands in for the reference's survivor against an opponent: two neutral partners,
-so the survivor example stays free of combat (departure P15 in the roadmap).
+This example stands in for the reference's single-actor-against-an-opponent consumer: two neutral partners,
+so the capsule example stays free of combat (departure P15 in the roadmap).

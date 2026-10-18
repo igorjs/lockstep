@@ -2,7 +2,7 @@
 //! The cargo bay: a consumer scenario for `lockstep-inventory` that is not a game.
 //!
 //! A crew works a cargo bay with a rack, a cold store and an airlock locker. Deliveries arrive as
-//! items from `data/catalogue.json`; rations spoil by the game minute at their store's
+//! items from `data/catalogue.json`; rations spoil by the simulated minute at their store's
 //! temperature, so a power cut in the cold store speeds them up. The crew eats rations (a spoiled
 //! one makes them sick), wears suits that raise their oxygen, and a faulty seal binds a suit to
 //! its wearer and lowers the oxygen until it is repaired. Crew attributes come from
@@ -425,7 +425,7 @@ pub fn bay() -> Configuration {
     }
 }
 
-/// A runner at a step rate, where a game day lasts 24 real minutes: one game minute a real second.
+/// A runner at a step rate, where a simulated day lasts 24 real minutes: one simulated minute a real second.
 pub fn runner(configuration: Configuration, seed: u64, steps_per_second: u32) -> Runner<CargoBay> {
     Runner::new(
         configuration,

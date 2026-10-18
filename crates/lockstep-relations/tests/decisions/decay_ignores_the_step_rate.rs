@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Decision: a standing drifts toward its rest by the relation's decay a day, computed afresh
-//! each tick from its value at the last change and the exact game minutes since, so the same
-//! game time decays it the same at any step rate.
+//! each tick from its value at the last change and the exact simulated minutes since, so the same
+//! simulated time decays it the same at any step rate.
 //! Alternative rejected: taking a little off each step, which rounds once per step and drifts
 //! with the frame rate.
-//! Would change if: trust raised to 55 and left for a game day, decaying 10 a day, is not
+//! Would change if: trust raised to 55 and left for a simulated day, decaying 10 a day, is not
 //! exactly 45 at both 30 and 60 steps a second, or falls below trusted on different minutes.
 
 use crate::common::{kinds, three, whole};
@@ -33,7 +33,7 @@ fn run(steps_per_second: u32) -> (Fixed32, Vec<u64>) {
         1.0 / steps_per_second as f32,
     );
     let mut crossed_at = Vec::new();
-    // A game day lasts 24 real minutes: 1,440 seconds of steps.
+    // A simulated day lasts 24 real minutes: 1,440 seconds of steps.
     for step in 1..=(1_440 * steps_per_second as u64) {
         let (_, minutes) = clock.advance_exactly(&mut Vec::new());
         events.clear();
@@ -42,7 +42,7 @@ fn run(steps_per_second: u32) -> (Fixed32, Vec<u64>) {
             .iter()
             .any(|event| matches!(event, RelationEvent::Crossed { upward: false, .. }))
         {
-            // The game minute it crossed on.
+            // The simulated minute it crossed on.
             crossed_at.push(step / steps_per_second as u64);
         }
     }
@@ -57,6 +57,6 @@ fn a_day_of_decay_is_the_same_at_30_and_60_steps_a_second() {
     let slow = run(30);
     assert_eq!(slow, run(60));
     assert_eq!(slow.0, whole(45));
-    // 55 falls below trusted (50) just after half a day: on game minute 720 at both rates.
+    // 55 falls below trusted (50) just after half a day: on simulated minute 720 at both rates.
     assert_eq!(slow.1, vec![720]);
 }

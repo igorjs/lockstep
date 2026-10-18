@@ -113,7 +113,7 @@ impl Calendar {
         self.seasons.get(id.0 as usize)
     }
 
-    /// The season a game day falls in: the year is cut into equal parts, rounding each cut down.
+    /// The season a simulated day falls in: the year is cut into equal parts, rounding each cut down.
     pub fn season(&self, day: u32) -> SeasonId {
         let day_of_year = (day % self.days_per_year) as u64;
         SeasonId((day_of_year * self.seasons.len() as u64 / self.days_per_year as u64) as u16)
@@ -138,7 +138,7 @@ impl Calendar {
         low * 65_536 + (high - low) * fraction
     }
 
-    /// The sunrise and sunset minutes of a game day, whole minutes.
+    /// The sunrise and sunset minutes of a simulated day, whole minutes.
     pub fn daylight(&self, day: u32) -> (u32, u32) {
         let round = |scaled: i64| ((scaled + 32_768) >> 16) as u32;
         (
@@ -147,12 +147,12 @@ impl Calendar {
         )
     }
 
-    /// The average degrees of a game day.
+    /// The average degrees of a simulated day.
     pub fn mean_temperature(&self, day: u32) -> Fixed32 {
         Fixed32::from_raw(self.mix(day, |season| season.mean_celsius as i64) as i32)
     }
 
-    /// The degrees at a minute of a game day: the day's mean plus a swing that is lowest at
+    /// The degrees at a minute of a simulated day: the day's mean plus a swing that is lowest at
     /// 03:00 and highest at 15:00, rising and falling in straight lines.
     pub fn temperature(&self, day: u32, minute: u32) -> Fixed32 {
         let since_coldest = (minute as i64 - COLDEST_MINUTE).rem_euclid(MINUTES_PER_DAY);

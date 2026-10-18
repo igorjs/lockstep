@@ -11,12 +11,12 @@ assigns routes to four drivers, two on the day shift and two on nights.
   taken today. It accepts at 0 or more, delays 30 minutes at -15 or more, and otherwise refuses,
   naming the lower-scoring reason. Trust is read in whole points, rounded down.
 - Trust is a relation in `data/relations.json`: from -100 to 100, starting at 20 and drifting
-  back toward it 5 a game day, with thresholds `trusted` (50), `doubtful` (10) and `hostile`
+  back toward it 5 a simulated day, with thresholds `trusted` (50), `doubtful` (10) and `hostile`
   (-30). A driver's trust in the dispatcher is the pair standing plus how its standing toward the
   dispatcher's shift has moved (`Relations::toward`).
 - Pay on time adds 4 to the driver's trust; late pay takes 12, and takes 3 from each of its shift
   mates' standing toward the dispatcher's shift.
-- Routes taken reset each game day. A delay adds no route.
+- Routes taken reset each simulated day. A delay adds no route.
 
 The fixture hash in `fixtures/dispatch.hash` covers 36,000 steps: now and then a route for a
 random driver, and a third as often pay for one, late one time in five. It is checked by

@@ -4,7 +4,7 @@ use lockstep_core::math::{Fixed32, Turn};
 use lockstep_core::{Message, Streams};
 use serde::{Deserialize, Serialize};
 
-/// Raw 16.16 units of one game minute times 60: one game second.
+/// Raw 16.16 units of one simulated minute times 60: one simulated second.
 const RAW_SECOND: i64 = 65_536;
 /// 4 degrees a minute is 728 turn units; 12 a second stays under it.
 const DRIFT_PER_SECOND: i32 = 12;
@@ -17,7 +17,7 @@ const HALF_TURN: i32 = 32_768;
 pub struct WeatherRules {
     /// The strength the wind drifts toward, metres a second.
     pub mean_strength: Fixed32,
-    /// Fronts a game day, on average.
+    /// Fronts a simulated day, on average.
     pub fronts_per_day: u32,
 }
 
@@ -39,10 +39,10 @@ pub struct Front {
     pub seconds_done: u32,
 }
 
-/// The wind over time: the direction drifts at most 4 degrees a game minute, the strength drifts
-/// toward the mean, gusts add 50 to 100 percent for 30 to 90 game seconds once or twice an hour,
-/// and fronts swing the direction 90 to 180 degrees over 8 to 12 game minutes. It advances one
-/// whole game second at a time, so the same game minutes give the same weather at any step rate.
+/// The wind over time: the direction drifts at most 4 degrees a simulated minute, the strength drifts
+/// toward the mean, gusts add 50 to 100 percent for 30 to 90 simulated seconds once or twice an hour,
+/// and fronts swing the direction 90 to 180 degrees over 8 to 12 simulated minutes. It advances one
+/// whole simulated second at a time, so the same simulated minutes give the same weather at any step rate.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Message)]
 #[message(version = 1)]
 pub struct Weather {
@@ -51,7 +51,7 @@ pub struct Weather {
     pub strength: Fixed32,
     pub gust: Option<Gust>,
     pub front: Option<Front>,
-    /// Raw 16.16 game minutes times 60 not yet a whole second.
+    /// Raw 16.16 simulated minutes times 60 not yet a whole second.
     carried: i64,
 }
 
@@ -85,7 +85,7 @@ impl Weather {
         }
     }
 
-    /// Advances by `minutes` of game time, one whole game second at a time.
+    /// Advances by `minutes` of simulated time, one whole simulated second at a time.
     pub fn advance(
         &mut self,
         minutes: Fixed32,
@@ -141,7 +141,7 @@ impl Weather {
                 }
             }
         }
-        // Strength: a thirtieth of the way to the mean each game minute, a second's share now.
+        // Strength: a thirtieth of the way to the mean each simulated minute, a second's share now.
         let gap = rules.mean_strength.raw() as i64 - self.strength.raw() as i64;
         self.strength = Fixed32::from_raw((self.strength.raw() as i64 + gap / 1_800) as i32);
         // Gusts: once or twice an hour on average, 1.5 in 3,600 seconds.

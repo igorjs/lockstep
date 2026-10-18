@@ -89,7 +89,7 @@ and last `remaining_minutes` (or until removed). `Effects` holds every active ef
 entity, in the order they were applied.
 
 - `add(who, effect, context)` applies it, following its `Stacking` rule, and emits `Applied`.
-- `tick(elapsed_minutes, day, context)` advances every effect by game minutes, in the order they
+- `tick(elapsed_minutes, day, context)` advances every effect by simulated minutes, in the order they
   were applied: drains change their attribute and finished effects emit `Expired`.
 - `remove(handle, context)` and `remove_by_tag(who, tag, context)` emit `Removed`; a bandage removes
   every Bleeding. `remove_entity(who)` forgets a dead entity without events.
@@ -103,7 +103,7 @@ takes one argument for them.
 | `Independent` | is its own effect: two bleeds drain twice |
 | `RefreshDuration` | restarts the first one's timer; the modifier still applies once |
 | `Replace` | removes the first one, then applies |
-| `DailyBudget { cap_per_day }` | is its own effect, but the tag's total change on the entity is capped per game day |
+| `DailyBudget { cap_per_day }` | is its own effect, but the tag's total change on the entity is capped per simulated day |
 
 A drain depends only on the total minutes an effect has run: each tick applies the change in the
 running total `per_minute × minutes`. For an effect on its own, one minute in one tick and in 1,800

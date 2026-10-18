@@ -7,7 +7,7 @@
 //! - one 80 metre noise heard through a 10 metre a second wind,
 //! - one `think` with a sighting for every agent and a budget of eight,
 //! - one `steer` step of every agent down a flow field,
-//! - one game day of weather, minute by minute.
+//! - one simulated day of weather, minute by minute.
 //!
 //! The baseline lives in `benches/baseline.txt` as `name microseconds` lines. The benchmark warns
 //! when a measurement is more than 10 percent slower than its baseline, and never fails the build.

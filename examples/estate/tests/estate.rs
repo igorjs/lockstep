@@ -19,18 +19,18 @@ fn the_fixture_hash_matches_the_committed_value_natively_and_under_webassembly()
     );
 }
 
-/// The gate, a valley rolled from chunks: the fixed chunks are the cloister, every other chunk
-/// is drawn from the garden pool, and a seed rolls the same valley each time.
+/// The gate, a layout rolled from chunks: the fixed chunks are the cloister, every other chunk
+/// is drawn from the garden pool, and a seed rolls the same layout each time.
 #[test]
-fn the_valley_keeps_its_cloisters_and_draws_the_rest_from_the_pool() {
+fn the_layout_keeps_its_cloisters_and_draws_the_rest_from_the_pool() {
     let templates = templates();
     let cloister = templates.template_id("cloister").unwrap();
     let garden: Vec<_> = ["lawn", "orchard", "pond", "hedge"]
         .iter()
         .map(|name| templates.template_id(name).unwrap())
         .collect();
-    let valley = runner(grounds(), DEFAULT_SEED);
-    let layout = &valley.simulation().world().layout;
+    let rolled = runner(grounds(), DEFAULT_SEED);
+    let layout = &rolled.simulation().world().layout;
     for y in 0..layout.height() {
         for x in 0..layout.width() {
             let drawn = layout.template_at(x, y).unwrap();

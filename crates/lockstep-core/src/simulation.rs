@@ -23,7 +23,7 @@ pub struct Context<'a, S: Simulation> {
     pub clock: &'a Clock,
     pub elapsed_game_minutes: f32,
     /// The same minutes as exact 16.16 fixed point. Use this in simulation state: the minutes of
-    /// many steps add up exactly, so nothing that runs on game minutes drifts.
+    /// many steps add up exactly, so nothing that runs on simulated minutes drifts.
     pub elapsed_minutes: Fixed32,
     pub randomness: &'a mut Streams,
     pub events: &'a mut Vec<S::Event>,

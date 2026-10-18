@@ -93,7 +93,7 @@ pub struct World {
     pub relations: Relations,
     /// Routes each driver has accepted today.
     pub routes_today: Column<u32>,
-    /// The game day the counts are for.
+    /// The simulated day the counts are for.
     pub day: u32,
 }
 

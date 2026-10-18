@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Decision: each step also reports its game minutes as exact 16.16 fixed point, the difference of
+//! Decision: each step also reports its simulated minutes as exact 16.16 fixed point, the difference of
 //! two rounded-down positions, so the minutes of any number of steps add up to exactly the minutes
 //! between the first and last position.
 //! Alternative rejected: a fixed per-step amount (1,440 / steps per day) rounded once, which loses
 //! a fraction every step and drifts by minutes over a day; or the float minutes, which differ in
 //! their last bits from platform to platform.
-//! Would change if: a game day of steps, at any multiplier, adds up to anything but exactly 1,440
+//! Would change if: a simulated day of steps, at any multiplier, adds up to anything but exactly 1,440
 //! minutes (the number to beat is zero raw units off).
 
 use lockstep_core::math::Fixed32;
@@ -48,7 +48,7 @@ fn a_day_of_steps_adds_up_to_exactly_1440_minutes_at_any_multiplier() {
 
 #[test]
 fn a_huge_multiplier_on_a_short_day_still_counts_every_minute() {
-    // A ten minute day at a million times would cover 80,000 game minutes a step, past what
+    // A ten minute day at a million times would cover 80,000 simulated minutes a step, past what
     // `Fixed32` holds; the multiplier is capped so a step covers at most 16,384.
     let mut clock = Clock::new(
         ClockConfiguration {

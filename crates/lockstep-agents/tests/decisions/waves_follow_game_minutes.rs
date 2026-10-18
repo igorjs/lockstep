@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Decision: a pulse falls due by the game minutes since the wave began, counted from the total
-//! and not step by step, so the same game time gives the same pulses at any step rate.
+//! Decision: a pulse falls due by the simulated minutes since the wave began, counted from the total
+//! and not step by step, so the same simulated time gives the same pulses at any step rate.
 //! Alternative rejected: a pulse every so many steps, which ties the arrivals to the frame rate.
 //! Would change if: a wave stepped in halves and in quarters of a minute differs in when pulses
 //! fall due or how many arrivals each admits.
@@ -17,7 +17,7 @@ const RULES: WaveRules = WaveRules {
     start_after_minutes: 2,
 };
 
-/// Pulses with the whole game minute each fell due in.
+/// Pulses with the whole simulated minute each fell due in.
 fn timeline(steps_per_minute: i32) -> Vec<(u32, u32, i32)> {
     let mut waves = Waves::new(100);
     let mut timeline = Vec::new();

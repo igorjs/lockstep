@@ -10,10 +10,10 @@ and intents produce the same state and the same hash on every platform.
 | Item | Purpose |
 | --- | --- |
 | `Simulation` | The one trait a game or model implements: `create`, `step`, `snapshot`, `restore`. |
-| `Context` | Everything a simulation may touch during one step: clock, elapsed game minutes (as a float and as exact `Fixed32` in `elapsed_minutes`), streams, events. The fixed point minutes of any number of steps add up exactly, so state that runs on game minutes never drifts. |
+| `Context` | Everything a simulation may touch during one step: clock, elapsed simulated minutes (as a float and as exact `Fixed32` in `elapsed_minutes`), streams, events. The fixed point minutes of any number of steps add up exactly, so state that runs on simulated minutes never drifts. |
 | `Runner` | Owns time. Fixed steps, an accumulator, the clock, the streams, and the intent queue. |
 | `StepConfiguration` | Step length (default one thirtieth of a second) and the cap on steps per advance (default eight). |
-| `Clock`, `ClockConfiguration`, `ClockEvent` | The game clock: a rate with a multiplier, sunrise, sunset, new day. Time of day is an exact integer position, so a day is an exact number of steps. |
+| `Clock`, `ClockConfiguration`, `ClockEvent` | The simulated clock: a rate with a multiplier, sunrise, sunset, new day. Time of day is an exact integer position, so a day is an exact number of steps. |
 | `StableVector`, `Column`, `Handle` | Entities as generational handles; components as columns keyed by those handles. Inserts reuse the lowest free slot, and a restored store continues exactly as the original. The handle `Handle::from_raw(0)` never refers to anything. |
 | `Streams` | Named random streams, each seeded from the master seed and its name. |
 | `Chance`, `SmoothedState`, `CERTAIN` | Percentages as basis points, and the three rolls on `Streams`: `roll`, `roll_with_luck`, `roll_smoothed`. See decision 0007. |
@@ -42,12 +42,12 @@ A percentage crosses the roll boundary as basis points: `Chance(2_500)` is 25 pe
 
 - `roll(name, chance)`: honest and streaky. Use it for loot.
 - `roll_with_luck(name, chance, luck)`: rolls `1 + |luck|` times and keeps the best draw for positive
-  luck, the worst for negative. Luck 3 at 25 percent lands about 68 percent. Show players the nominal
+  luck, the worst for negative. Luck 3 at 25 percent lands about 68 percent. Show participants the nominal
   chance, never this one.
 - `roll_smoothed(name, chance, state)`: a pseudo-random distribution. Attempt n after a success
   succeeds with probability n times an increment, so droughts are short and the long-run rate equals
   the nominal chance. Keep one `SmoothedState` per source and save it with the entity. Use it for hits
-  and criticals, never for farmable rolls, and never for a roll that affects another player in
+  and criticals, never for farmable rolls, and never for a roll that affects another participant in
   multiplayer.
 
 The increment for every basis point is in `fixtures/smoothing.bin`, found once by a search

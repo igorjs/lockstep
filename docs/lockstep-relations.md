@@ -23,7 +23,7 @@ decimal strings.
 ```
 
 - A relation has bounds, a starting value, a rest (the starting value unless set) it drifts back
-  to, a decay in points a game day (none unless set), and named thresholds, kept sorted.
+  to, a decay in points a simulated day (none unless set), and named thresholds, kept sorted.
 - Refused with a reason: repeated names, a minimum above the maximum, a starting value or rest
   outside the bounds, a negative decay, and a threshold outside the bounds.
 
@@ -37,9 +37,9 @@ another entity or a group. How the other stands back is a standing of its own.
 - `change(kinds, relation, from, to, delta, events)` moves it, held within the bounds, and emits
   `Crossed` for each threshold passed, in passing order: downward when it falls below a
   threshold, upward when it reaches one.
-- `tick(kinds, minutes, events)` lets game time pass. Each standing drifts toward its rest by the
+- `tick(kinds, minutes, events)` lets simulated time pass. Each standing drifts toward its rest by the
   relation's decay a day, computed afresh from its value at the last change and the exact game
-  minutes since, so the same game time decays it the same at any step rate and it never passes
+  minutes since, so the same simulated time decays it the same at any step rate and it never passes
   its rest. A change restarts the drift from the new value. A standing nobody has changed stays
   at the starting value: drift begins with the first change, so a first impression holds until
   something happens.

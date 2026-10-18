@@ -30,4 +30,4 @@ tests: the exclusion and the gate refusing with their reasons, unlearning return
 removing the modifier, experience marks, and a restored snapshot continuing exactly.
 
 This example stands in for the reference's progression consumer, a six-node web with one
-keystone in the survivor's world (departure P21 in the roadmap).
+keystone (departure P21 in the roadmap).

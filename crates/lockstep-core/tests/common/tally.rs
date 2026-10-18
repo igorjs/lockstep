@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A small simulation for replay tests. `Tally<PLANT>` adds what it is told, a rare bonus from a
-//! named stream, and its game minutes; from step `PLANT` on it also adds one more each step, a
+//! named stream, and its simulated minutes; from step `PLANT` on it also adds one more each step, a
 //! planted rule change. `Honest` never plants.
 
 use lockstep_core::math::Fixed32;

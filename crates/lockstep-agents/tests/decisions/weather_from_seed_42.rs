@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Decision: the weather advances one whole game second at a time, drawing from the `"weather"`
-//! stream, so the same game minutes give the same weather at any step rate, and one game day
+//! Decision: the weather advances one whole simulated second at a time, drawing from the `"weather"`
+//! stream, so the same simulated minutes give the same weather at any step rate, and one simulated day
 //! from seed 42 hashes to the committed value natively and under WebAssembly.
 //! Alternative rejected: drawing once per step, which ties the weather to the frame rate.
 //! Would change if: a day at 30 and at 60 steps a second differ, or the hash changes without a

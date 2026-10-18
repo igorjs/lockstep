@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Decision: an agent hunts its memory, whose confidence fades linearly with its age in exact
-//! game minutes. Alert turns to Searching once the target has been out of sight for the rules'
+//! simulated minutes. Alert turns to Searching once the target has been out of sight for the rules'
 //! minutes, and anything turns Idle when the memory is forgotten. Each change is timed, so a
 //! crowd ripples instead of flipping at once.
 //! Alternative rejected: tracking the target itself, which makes every agent omniscient; and

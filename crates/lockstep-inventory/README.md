@@ -12,7 +12,7 @@ all in integers.
   `destroy` and `find_by_tag`.
 - Equipment: `equip` and `unequip` add and remove the kind's and the affixes' modifiers on the
   wearer's attributes. An affix that binds keeps the item on until it is removed.
-- Spoilage: `spoil` adds up exact exposure, game minutes times a percent for the temperature, so
+- Spoilage: `spoil` adds up exact exposure, simulated minutes times a percent for the temperature, so
   the same minutes spoil the same at any step rate.
 
 ## Example

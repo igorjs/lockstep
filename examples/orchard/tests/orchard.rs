@@ -33,7 +33,7 @@ fn the_fixture_hash_matches_the_committed_value_natively_and_under_webassembly()
 }
 
 /// The gate, part one: in early summer the blight spreads from the gate to every block in three
-/// game days, and only along the links.
+/// simulated days, and only along the links.
 #[test]
 fn in_summer_a_zone_spreads_across_the_orchard() {
     let mut runner = runner(starting_on(3), 5);

@@ -32,7 +32,7 @@ fractions, as in the attribute registry.
 }
 ```
 
-- A kind has a name, tags, the weight of one unit, a stack size (default one), whole game minutes
+- A kind has a name, tags, the weight of one unit, a stack size (default one), whole simulated minutes
   to spoil at 100 percent (absent: never spoils), the slot it is worn in, a number of affix slots,
   and modifiers for the wearer. A modifier is `add`, `multiply` or `override`, as in
   `lockstep-attributes`.
@@ -73,10 +73,10 @@ or destroyed.
 
 ## Spoilage
 
-`spoil(minutes, outside, catalogue, events)` adds raw 16.16 game minutes times the percent for the
+`spoil(minutes, outside, catalogue, events)` adds raw 16.16 simulated minutes times the percent for the
 item's temperature: its container's, or `outside` when it is loose or worn. The item spoils when
 the total reaches its minutes at 100 percent (`Spoiled`, once); a spoiled item stays and stops
-counting. The totals are exact integers, so the same game minutes spoil the same at 30 or 60
+counting. The totals are exact integers, so the same simulated minutes spoil the same at 30 or 60
 steps a second (decision 0017). `freshness` reads from 1 down to 0, rounded down.
 
 ## Tests

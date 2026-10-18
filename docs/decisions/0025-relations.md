@@ -7,8 +7,8 @@ Status: decided and implemented in milestone M11.
 ## Decision
 
 - A standing is how one entity stands toward another entity or a group, in that direction only.
-- A standing drifts toward its relation's rest by a decay a game day, computed afresh from its
-  value at the last change and the exact game minutes since, so the same game time decays it the
+- A standing drifts toward its relation's rest by a decay a simulated day, computed afresh from its
+  value at the last change and the exact simulated minutes since, so the same simulated time decays it the
   same at any step rate. A change restarts the drift.
 - Thresholds fire once per crossing, in passing order; reaching a threshold from below counts as
   crossing it upward, and falling below it as crossing it downward.
@@ -25,5 +25,5 @@ Status: decided and implemented in milestone M11.
 ## Would change if
 
 `crates/lockstep-relations/tests/decisions/` fails: trust raised to 55 decays to anything but
-exactly 45 in a game day, at 30 or 60 steps a second, or falls below trusted on a different
+exactly 45 in a simulated day, at 30 or 60 steps a second, or falls below trusted on a different
 minute; or raising one entity's trust in another changes the other's trust back.

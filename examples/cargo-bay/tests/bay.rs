@@ -73,7 +73,7 @@ fn the_scripted_session_eats_spoils_faults_repairs_and_cuts_power() {
 }
 
 /// The gate: rations on the rack and in the cold store, with the cold store losing power after
-/// two game hours. At 30 and at 60 steps a second they spoil on the same game minute.
+/// two simulated hours. At 30 and at 60 steps a second they spoil on the same simulated minute.
 #[test]
 fn spoilage_does_not_depend_on_the_step_rate() {
     let run = |rate: u32| {
@@ -101,7 +101,7 @@ fn spoilage_does_not_depend_on_the_step_rate() {
             _ => panic!("not delivered: {events:?}"),
         };
         let mut spoiled = Vec::new();
-        // One step has run; 600 game minutes in all.
+        // One step has run; 600 simulated minutes in all.
         for step in 1..(600 * rate as u64) {
             let intents = if step == 120 * rate as u64 {
                 vec![Intent::Power {
@@ -118,11 +118,11 @@ fn spoilage_does_not_depend_on_the_step_rate() {
                 }
             }
         }
-        // Steps to whole game minutes: one game minute a real second.
+        // Steps to whole simulated minutes: one simulated minute a real second.
         spoiled
             .into_iter()
             .map(|(on_rack, in_cold, steps)| {
-                assert_eq!(steps % rate as u64, 0, "spoils on a whole game minute");
+                assert_eq!(steps % rate as u64, 0, "spoils on a whole simulated minute");
                 (on_rack, in_cold, steps / rate as u64)
             })
             .collect::<Vec<_>>()
@@ -149,7 +149,7 @@ fn a_fresh_ration_nourishes_and_a_spoiled_one_makes_the_crew_sick() {
     }));
     let after = runner.simulation().value(who, "nourishment").unwrap().0;
     assert_eq!(after, start + whole(FRESH_MEAL));
-    // 360 game minutes on the rack spoil the other.
+    // 360 simulated minutes on the rack spoil the other.
     for _ in 0..360 * 30 {
         runner.step_once(&[]);
     }

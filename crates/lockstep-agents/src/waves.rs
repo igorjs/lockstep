@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Waves: a large arrival spaced into pulses, paced by game minutes and held back by a budget.
+//! Waves: a large arrival spaced into pulses, paced by simulated minutes and held back by a budget.
 
 use lockstep_core::math::Fixed32;
 use lockstep_core::Message;
 use serde::{Deserialize, Serialize};
 
 /// How a wave is paced, as data. A pulse of `pulse_size` arrivals falls due every
-/// `interval_minutes` game minutes, the first after `start_after_minutes`.
+/// `interval_minutes` simulated minutes, the first after `start_after_minutes`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WaveRules {
     /// Arrivals in one pulse. At least one.
     pub pulse_size: u32,
-    /// Game minutes between pulses. At least one.
+    /// Simulated minutes between pulses. At least one.
     pub interval_minutes: u32,
     pub start_after_minutes: u32,
 }
@@ -29,14 +29,14 @@ pub enum WaveEvent {
     Finished,
 }
 
-/// One wave in progress: where it is in its total, and the game time since it began.
+/// One wave in progress: where it is in its total, and the simulated time since it began.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Message)]
 #[message(version = 1)]
 pub struct Waves {
     total: u32,
     admitted: u32,
     pulses_due: u32,
-    /// Raw 16.16 game minutes since the wave began, so no pulse time drifts.
+    /// Raw 16.16 simulated minutes since the wave began, so no pulse time drifts.
     elapsed: i64,
     holding: bool,
     finished: bool,
@@ -76,8 +76,8 @@ impl Waves {
         (self.pulses_due as u64 * size).min(self.total as u64) as u32
     }
 
-    /// Lets `minutes` of game time pass and admits as many due arrivals as `headroom` allows
-    /// (see `Director::headroom`). Returns the arrivals admitted. The same game time gives the
+    /// Lets `minutes` of simulated time pass and admits as many due arrivals as `headroom` allows
+    /// (see `Director::headroom`). Returns the arrivals admitted. The same simulated time gives the
     /// same pulses at any step rate; the budget only delays arrivals, never drops them.
     pub fn advance(
         &mut self,

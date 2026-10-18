@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 /// The stream outcomes are drawn from.
 pub const STREAM: &str = "crafting";
 
-/// A job running at a station: the recipe, and the raw 16.16 game minutes still to go.
+/// A job running at a station: the recipe, and the raw 16.16 simulated minutes still to go.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Job {
     pub recipe: RecipeId,
@@ -17,7 +17,7 @@ pub struct Job {
 }
 
 impl Job {
-    /// Game minutes still to go.
+    /// Simulated minutes still to go.
     pub fn remaining_minutes(&self) -> Fixed32 {
         Fixed32::from_raw(self.remaining.min(i32::MAX as u64) as i32)
     }
@@ -171,7 +171,7 @@ impl Crafting {
         Ok(())
     }
 
-    /// Lets `minutes` of game time pass. Each job that runs out ends, in station handle order:
+    /// Lets `minutes` of simulated time pass. Each job that runs out ends, in station handle order:
     /// it draws its outcome from the `"crafting"` stream by weight, and puts the outcome's
     /// outputs into the station's container, or leaves them loose when it has no room.
     pub fn tick(
