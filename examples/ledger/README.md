@@ -5,7 +5,8 @@
 An example for [Lockstep](https://github.com/igorjs/lockstep). Accounts and transfers in whole minor units. A transfer moves exactly the amount or is rejected with a reason, and money is only created by deposits. A recorded session replays to the same hash and renders its timeline as a journal. The consumer scenario that is not a game.
 
 Its fixture hash is committed in `fixtures/ledger.hash` and checked natively and under WebAssembly on
-every change.
+every change. The `bills` module shares bills with the core's `Money`; its hash is in
+`fixtures/ledger-bills.hash`.
 
 ## Run
 

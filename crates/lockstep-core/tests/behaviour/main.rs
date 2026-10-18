@@ -8,6 +8,7 @@ mod chance;
 mod clock;
 mod derive;
 mod math;
+mod money;
 mod queue;
 mod replay;
 mod runner;

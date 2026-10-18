@@ -18,6 +18,7 @@ mod fixed_point_math;
 mod fixed_step;
 mod game_minutes_add_up_exactly;
 mod integer_cordic_tables;
+mod money_shares_never_lose_a_unit;
 mod movement_never_overshoots;
 mod named_streams;
 mod saves_migrate_one_version_at_a_time;

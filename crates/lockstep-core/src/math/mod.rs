@@ -8,6 +8,7 @@
 mod angle;
 mod cordic;
 mod fixed;
+mod money;
 mod vector;
 
 pub use angle::{atan2, cos, sin, unit, unit_circle_table, Turn};
@@ -15,4 +16,5 @@ pub use cordic::{
     generate_atan_octant, generate_quarter_sine, ATAN_OCTANT_ENTRIES, QUARTER_SINE_ENTRIES,
 };
 pub use fixed::{isqrt, Fixed32, ParseFixedError};
+pub use money::{Currency, Money, MoneyError, MAXIMUM_EXPONENT};
 pub use vector::Vector2;
