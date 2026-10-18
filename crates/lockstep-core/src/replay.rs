@@ -150,6 +150,37 @@ impl<S: Simulation> Recorder<S> {
         recorder
     }
 
+    /// Records a runner that is already built and has not stepped. The configuration and seed must
+    /// be the ones the runner was built from, since a recording stores them to build it again.
+    pub fn around(
+        simulation_id: &str,
+        configuration: &S::Configuration,
+        seed: u64,
+        runner: Runner<S>,
+        checkpoint_every: u64,
+    ) -> Self {
+        assert_eq!(runner.step_number(), 0, "a recording starts at step 0");
+        let recording = Recording {
+            simulation_id: simulation_id.to_string(),
+            configuration: encode(configuration),
+            seed,
+            step_configuration: runner.step_configuration(),
+            clock_configuration: runner.clock().configuration(),
+            steps: Vec::new(),
+            checkpoints: Vec::new(),
+            snapshots: Vec::new(),
+        };
+        let mut recorder = Recorder {
+            runner,
+            recording,
+            checkpoint_every: checkpoint_every.max(1),
+            keep_snapshots: false,
+            clock_multiplier: 1.0,
+        };
+        recorder.checkpoint();
+        recorder
+    }
+
     /// Also keeps the snapshot at every checkpoint, so `bisect` can show what differs. Costs a
     /// snapshot per checkpoint in the recording. Call it before the first step.
     pub fn keep_snapshots(mut self) -> Self {
@@ -237,6 +268,62 @@ impl<S: Simulation> Recorder<S> {
                 .snapshots
                 .push((step, encode(&self.runner.snapshot())));
         }
+    }
+}
+
+/// Runs `drive` against a recorder around `runner`, which must not have stepped, and returns the
+/// recording. `keep_snapshots` also keeps the snapshot at every checkpoint.
+pub fn record_session<S: Simulation>(
+    simulation_id: &str,
+    configuration: &S::Configuration,
+    seed: u64,
+    runner: Runner<S>,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+    drive: impl FnOnce(&mut Recorder<S>),
+) -> Recording<S::Intent> {
+    let mut recorder =
+        Recorder::around(simulation_id, configuration, seed, runner, checkpoint_every);
+    if keep_snapshots {
+        recorder = recorder.keep_snapshots();
+    }
+    drive(&mut recorder);
+    recorder.into_recording()
+}
+
+/// Anything that takes steps: a runner, or a recorder around one. A scripted session written
+/// against it can be run or recorded without being written twice.
+pub trait Session<S: Simulation> {
+    fn simulation(&self) -> &S;
+    fn step_once(&mut self, intents: &[S::Intent]);
+    fn set_clock_multiplier(&mut self, multiplier: f32);
+}
+
+impl<S: Simulation> Session<S> for Runner<S> {
+    fn simulation(&self) -> &S {
+        Runner::simulation(self)
+    }
+
+    fn step_once(&mut self, intents: &[S::Intent]) {
+        Runner::step_once(self, intents);
+    }
+
+    fn set_clock_multiplier(&mut self, multiplier: f32) {
+        Runner::set_clock_multiplier(self, multiplier);
+    }
+}
+
+impl<S: Simulation> Session<S> for Recorder<S> {
+    fn simulation(&self) -> &S {
+        self.runner.simulation()
+    }
+
+    fn step_once(&mut self, intents: &[S::Intent]) {
+        Recorder::step_once(self, intents);
+    }
+
+    fn set_clock_multiplier(&mut self, multiplier: f32) {
+        Recorder::set_clock_multiplier(self, multiplier);
     }
 }
 

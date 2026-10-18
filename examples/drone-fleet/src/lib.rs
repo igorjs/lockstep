@@ -14,8 +14,8 @@ use lockstep_attributes::{
 };
 use lockstep_core::math::Fixed32;
 use lockstep_core::{
-    Chance, ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,
-    StepConfiguration, Streams,
+    record_session, Chance, ClockConfiguration, Column, Context, Handle, Message, Recording,
+    Runner, Session, Simulation, StableVector, StepConfiguration, Streams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -437,9 +437,14 @@ pub const DEFAULT_SEED: u64 = 20_261_006;
 pub const DEFAULT_STEPS: u64 = 60_000;
 pub const DRONES: u32 = 6;
 
+/// The fleet the fixture flies.
+pub fn configuration() -> Configuration {
+    Configuration { drones: DRONES }
+}
+
 pub fn runner(seed: u64) -> Runner<Fleet> {
     Runner::new(
-        Configuration { drones: DRONES },
+        configuration(),
         seed,
         StepConfiguration::default(),
         // One game minute per real second: a step is a thirtieth of a minute.
@@ -455,9 +460,8 @@ pub fn runner(seed: u64) -> Runner<Fleet> {
 
 /// The scripted session the fixture hash covers: now and then a random order for a random drone,
 /// drawn from a separate stream set so the script depends only on the seed.
-pub fn run_fixture(seed: u64, steps: u64) -> Runner<Fleet> {
-    let mut runner = runner(seed);
-    let drones = runner.simulation().world().drones.handles();
+fn drive(session: &mut impl Session<Fleet>, seed: u64, steps: u64) {
+    let drones = session.simulation().world().drones.handles();
     let mut script = Streams::new(seed ^ 0x6472_6f6e_6573);
     for _ in 0..steps {
         let mut intents = Vec::new();
@@ -472,9 +476,37 @@ pub fn run_fixture(seed: u64, steps: u64) -> Runner<Fleet> {
                 _ => Intent::Service { drone },
             });
         }
-        runner.step_once(&intents);
+        session.step_once(&intents);
     }
+}
+
+pub fn run_fixture(seed: u64, steps: u64) -> Runner<Fleet> {
+    let mut runner = runner(seed);
+    drive(&mut runner, seed, steps);
     runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "drone-fleet";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = configuration();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, seed, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

@@ -12,8 +12,8 @@
 use lockstep_attributes::{AttributeEvent, AttributeId, Attributes, Registry};
 use lockstep_core::math::Fixed32;
 use lockstep_core::{
-    ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,
-    StepConfiguration, Streams,
+    record_session, ClockConfiguration, Column, Context, Handle, Message, Recording, Runner,
+    Session, Simulation, StableVector, StepConfiguration, Streams,
 };
 use lockstep_progression::{
     award, enrol, refund, unlock, why_not, Graph, NodeId, Owners, Progress, ProgressEvent, Refusal,
@@ -346,14 +346,41 @@ pub fn script(training: &Training, script: &mut Streams) -> Vec<Intent> {
     }
 }
 
-pub fn run_fixture(seed: u64, steps: u64) -> Runner<Training> {
-    let mut runner = runner(workshop(), seed);
+fn drive(session: &mut impl Session<Training>, seed: u64, steps: u64) {
     let mut streams = Streams::new(seed ^ 0x0074_7261_696e);
     for _ in 0..steps {
-        let intents = script(runner.simulation(), &mut streams);
-        runner.step_once(&intents);
+        let intents = script(session.simulation(), &mut streams);
+        session.step_once(&intents);
     }
+}
+
+pub fn run_fixture(seed: u64, steps: u64) -> Runner<Training> {
+    let mut runner = runner(workshop(), seed);
+    drive(&mut runner, seed, steps);
     runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "training";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = workshop();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(configuration.clone(), seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, seed, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

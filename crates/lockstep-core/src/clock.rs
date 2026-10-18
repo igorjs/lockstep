@@ -76,6 +76,11 @@ impl Clock {
         self.configuration.sunset_minute = sunset_minute;
     }
 
+    /// The configuration the clock was built with, with any daylight change since.
+    pub fn configuration(&self) -> ClockConfiguration {
+        self.configuration
+    }
+
     pub fn multiplier(&self) -> f32 {
         self.multiplier_units as f32 / UNITS_PER_STEP as f32
     }

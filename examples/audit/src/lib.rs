@@ -8,8 +8,8 @@
 //! once, across saves too.
 
 use lockstep_core::{
-    ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,
-    StepConfiguration, Streams,
+    record_session, ClockConfiguration, Column, Context, Handle, Message, Recording, Runner,
+    Session, Simulation, StableVector, StepConfiguration, Streams,
 };
 use lockstep_knowledge::{
     enrol, evaluate, notice, receive, Catalogue, Fragment, Knowledge, KnowledgeEvent,
@@ -304,14 +304,41 @@ pub fn script(audit: &Audit, script: &mut Streams) -> Vec<Intent> {
     }]
 }
 
-pub fn run_fixture(seed: u64, steps: u64) -> Runner<Audit> {
-    let mut runner = runner(books(), seed);
+fn drive(session: &mut impl Session<Audit>, seed: u64, steps: u64) {
     let mut streams = Streams::new(seed ^ 0x0061_7564_6974);
     for _ in 0..steps {
-        let intents = script(runner.simulation(), &mut streams);
-        runner.step_once(&intents);
+        let intents = script(session.simulation(), &mut streams);
+        session.step_once(&intents);
     }
+}
+
+pub fn run_fixture(seed: u64, steps: u64) -> Runner<Audit> {
+    let mut runner = runner(books(), seed);
+    drive(&mut runner, seed, steps);
     runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "audit";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = books();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(configuration.clone(), seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, seed, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

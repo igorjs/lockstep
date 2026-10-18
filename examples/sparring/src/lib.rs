@@ -18,8 +18,8 @@ use lockstep_combat::{
 };
 use lockstep_core::math::{Fixed32, Turn};
 use lockstep_core::{
-    Chance, ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,
-    StepConfiguration, Streams,
+    record_session, Chance, ClockConfiguration, Column, Context, Handle, Message, Recording,
+    Runner, Session, Simulation, StableVector, StepConfiguration, Streams,
 };
 use lockstep_spatial::{Cell, GridMap, Occupancy, Pathfinder, Square8};
 use serde::{Deserialize, Serialize};
@@ -568,14 +568,41 @@ pub fn coach(sparring: &Sparring, script: &mut Streams, step: u64) -> Vec<Intent
 }
 
 /// The scripted session the fixture hash covers.
-pub fn run_fixture(configuration: Configuration, seed: u64, steps: u64) -> Runner<Sparring> {
-    let mut runner = runner(configuration, seed);
+fn drive(session: &mut impl Session<Sparring>, seed: u64, steps: u64) {
     let mut script = Streams::new(seed ^ 0x7370_6172);
     for step in 0..steps {
-        let intents = coach(runner.simulation(), &mut script, step);
-        runner.step_once(&intents);
+        let intents = coach(session.simulation(), &mut script, step);
+        session.step_once(&intents);
     }
+}
+
+pub fn run_fixture(configuration: Configuration, seed: u64, steps: u64) -> Runner<Sparring> {
+    let mut runner = runner(configuration, seed);
+    drive(&mut runner, seed, steps);
     runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "sparring";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = duel();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(configuration.clone(), seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, seed, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {
