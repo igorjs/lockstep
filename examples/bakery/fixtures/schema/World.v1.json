@@ -1,0 +1,12 @@
+{
+  "name": "World",
+  "version": 1,
+  "kind": "struct",
+  "form": "named",
+  "fields": [
+    { "name": "places", "type": "StableVector<Place>" },
+    { "name": "inventory", "type": "Inventory" },
+    { "name": "crafting", "type": "Crafting" },
+    { "name": "sold", "type": "u32" }
+  ]
+}

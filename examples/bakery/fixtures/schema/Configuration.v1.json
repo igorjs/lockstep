@@ -1,0 +1,9 @@
+{
+  "name": "Configuration",
+  "version": 1,
+  "kind": "struct",
+  "form": "named",
+  "fields": [
+    { "name": "pantry_slots", "type": "u16" }
+  ]
+}

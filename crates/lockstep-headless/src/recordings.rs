@@ -3,8 +3,8 @@
 //! simulation, and the table below finds the code that can run it.
 
 use lockstep_core::{
-    bisect, hash_of, recorded_simulation_id, replay, replay_from, saved_simulation_id, Migrations,
-    Recording, RecordingSet, ReplayOutcome, Save, Simulation,
+    bisect, hash_of, recorded_simulation_id, replay, replay_from, saved_simulation_id, Message,
+    Migrations, Recording, RecordingSet, ReplayOutcome, Save, Simulation,
 };
 use mars_rovers::{Hex, MarsRovers, Square4, Square8};
 
@@ -21,6 +21,34 @@ pub struct Replayable {
     pub stats: fn(&[u8]) -> Result<String, String>,
     /// The conversions that load this simulation's older saves.
     pub migrations: fn() -> Migrations,
+    /// The schema of each of its four message types, by role.
+    pub schemas: fn() -> Schemas,
+}
+
+/// (role, schema text) for a simulation's intent, event, snapshot and configuration.
+pub type Schemas = Vec<(&'static str, &'static str)>;
+
+/// The schemas of a simulation's four message types (decision 0062).
+pub fn schemas_of<S: Simulation>() -> Schemas {
+    vec![
+        ("intent", <S::Intent as Message>::SCHEMA),
+        ("event", <S::Event as Message>::SCHEMA),
+        ("snapshot", <S::Snapshot as Message>::SCHEMA),
+        ("configuration", <S::Configuration as Message>::SCHEMA),
+    ]
+}
+
+/// The schemas of a fixture's simulation, or `None` for a name that is not a fixture.
+pub fn schemas_for(name: &str) -> Option<Schemas> {
+    let found = replayables()
+        .into_iter()
+        .find(|replayable| replayable.id == name)
+        .map(|replayable| (replayable.schemas)());
+    found.or_else(|| match name {
+        "ledger-bills" => Some(schemas_of::<ledger::Ledger>()),
+        "roster" => Some(schemas_of::<roster::Roster>()),
+        _ => None,
+    })
 }
 
 type ReplayResult = Result<Replayed, String>;
@@ -54,6 +82,7 @@ macro_rules! replayable {
             bisect: bisect_report::<$simulation>,
             stats: stats_report::<$simulation>,
             migrations: $migrations,
+            schemas: schemas_of::<$simulation>,
         }
     };
 }
@@ -91,6 +120,7 @@ pub fn replayables() -> Vec<Replayable> {
             bisect: bisect_set_report,
             stats: stats_set_report,
             migrations: Migrations::new,
+            schemas: schemas_of::<MarsRovers<Square4>>,
         },
     ]
 }

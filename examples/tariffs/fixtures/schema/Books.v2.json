@@ -1,0 +1,14 @@
+{
+  "name": "Books",
+  "version": 2,
+  "kind": "struct",
+  "form": "named",
+  "fields": [
+    { "name": "accounts", "type": "StableVector<String>" },
+    { "name": "balances", "type": "Column<i64>" },
+    { "name": "transfers_applied", "type": "u64" },
+    { "name": "transfers_rejected", "type": "u64" },
+    { "name": "fee_basis_points", "type": "u32" },
+    { "name": "fees_collected_minor", "type": "i64" }
+  ]
+}

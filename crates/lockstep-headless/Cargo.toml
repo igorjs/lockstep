@@ -28,6 +28,7 @@ ledger = { path = "../../examples/ledger" }
 tariffs = { path = "../../examples/tariffs" }
 rates = { path = "../../examples/rates" }
 mars-rovers = { path = "../../examples/mars-rovers" }
+serde_json = { workspace = true }
 
 [features]
 # Run the crowd's path batch on a thread pool. Its fixture hash must not change.

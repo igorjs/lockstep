@@ -291,3 +291,36 @@ fn a_restored_snapshot_continues_exactly_like_the_one_that_kept_running() {
     }
     assert_eq!(hash_of(loaded.world()), hash_of(kept.world()));
 }
+
+/// A message type whose shape changed without a new version fails here, natively and under
+/// WebAssembly (decision 0063): bump `#[message(version = N)]` and save the new schema with
+/// `lockstep-headless schema bakery --out examples/bakery/fixtures/schema`.
+#[test]
+fn the_message_schemas_match_the_saved_ones_natively_and_under_webassembly() {
+    use bakery::{Configuration, World};
+    use lockstep_core::Message;
+    for (name, schema, saved) in [
+        (
+            "Intent",
+            <Intent as Message>::SCHEMA,
+            include_str!("../fixtures/schema/Intent.v1.json"),
+        ),
+        (
+            "Event",
+            <Event as Message>::SCHEMA,
+            include_str!("../fixtures/schema/Event.v1.json"),
+        ),
+        (
+            "World",
+            <World as Message>::SCHEMA,
+            include_str!("../fixtures/schema/World.v1.json"),
+        ),
+        (
+            "Configuration",
+            <Configuration as Message>::SCHEMA,
+            include_str!("../fixtures/schema/Configuration.v1.json"),
+        ),
+    ] {
+        assert_eq!(format!("{schema}\n"), saved, "{name}: bump its version");
+    }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Intent",
+  "version": 1,
+  "kind": "enum",
+  "variants": [
+    {
+      "index": 0,
+      "name": "Deposit",
+      "form": "named",
+      "fields": [
+        { "name": "account", "type": "Handle" },
+        { "name": "amount_minor", "type": "i64" }
+      ]
+    },
+    {
+      "index": 1,
+      "name": "Transfer",
+      "form": "named",
+      "fields": [
+        { "name": "from", "type": "Handle" },
+        { "name": "to", "type": "Handle" },
+        { "name": "amount_minor", "type": "i64" }
+      ]
+    }
+  ]
+}

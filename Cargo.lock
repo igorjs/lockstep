@@ -369,6 +369,7 @@ dependencies = [
  "orchard",
  "rates",
  "roster",
+ "serde_json",
  "sparring",
  "tariffs",
  "training",

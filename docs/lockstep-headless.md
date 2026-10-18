@@ -25,6 +25,7 @@ A fixture hash changes only with a commit message that names the rule that chang
 lockstep-headless record <name> --out <file> [--seed <number>] [--steps <number>] [--every <number>]
 lockstep-headless replay <file> [--until <step>] [--save <file>]
 lockstep-headless resume <save> --recording <file>
+lockstep-headless schema <name> [--out <directory>]
 lockstep-headless bisect <file>
 lockstep-headless stats  <file>
 ```
@@ -47,6 +48,10 @@ lockstep-headless stats  <file>
   `--recording` is for `resume` only.
 - `stats` prints the seed, the length in steps and real seconds, intents per real minute, the steps
   spent at each clock multiplier, and the number of checkpoints and snapshots.
+- `schema` prints the message schemas of a fixture's simulation (intent, event, snapshot and
+  configuration) as one JSON document. `--out <directory>` writes a file for each, named
+  `<Type>.v<version>.json`, with a license sidecar. `bakery` and `tariffs` keep theirs in
+  `fixtures/schema`, and a test fails when a type changes shape without a new version (decision 0063).
 
 `just determinism` records a ledger session and a bakery session and replays them through the binary, and records a
 `tariffs` session, saves it at step 1,200 and resumes it.

@@ -36,6 +36,10 @@ pub trait Message: Serialize + DeserializeOwned + Clone + PartialEq + Debug {
     /// The version of this message shape. A shipped shape is never edited: a change is a new
     /// version plus a conversion.
     const VERSION: u32;
+
+    /// The type's name, version and shape as JSON, written by `#[derive(Message)]` from the field
+    /// types as written. A hand written implementation may leave it empty. See decision 0062.
+    const SCHEMA: &'static str = "";
 }
 
 /// What the timeline indexes an event by: a kind number (an enum's variant index) and the entity

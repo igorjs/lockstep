@@ -1,0 +1,70 @@
+{
+  "name": "Event",
+  "version": 1,
+  "kind": "enum",
+  "variants": [
+    {
+      "index": 0,
+      "name": "Delivered",
+      "form": "named",
+      "fields": [
+        { "name": "kind", "type": "KindId" },
+        { "name": "count", "type": "u16" }
+      ]
+    },
+    {
+      "index": 1,
+      "name": "Turned",
+      "form": "named",
+      "fields": [
+        { "name": "kind", "type": "KindId" }
+      ]
+    },
+    {
+      "index": 2,
+      "name": "Crafting",
+      "form": "tuple",
+      "fields": [
+        { "name": "0", "type": "CraftingEvent" }
+      ]
+    },
+    {
+      "index": 3,
+      "name": "Refused",
+      "form": "named",
+      "fields": [
+        { "name": "reason", "type": "Refusal" }
+      ]
+    },
+    {
+      "index": 4,
+      "name": "Inventory",
+      "form": "tuple",
+      "fields": [
+        { "name": "0", "type": "InventoryEvent" }
+      ]
+    },
+    {
+      "index": 5,
+      "name": "Discarded",
+      "form": "named",
+      "fields": [
+        { "name": "from", "type": "Handle" },
+        { "name": "kind", "type": "KindId" },
+        { "name": "count", "type": "u16" }
+      ]
+    },
+    {
+      "index": 6,
+      "name": "Sold",
+      "form": "unit",
+      "fields": []
+    },
+    {
+      "index": 7,
+      "name": "NothingToSell",
+      "form": "unit",
+      "fields": []
+    }
+  ]
+}

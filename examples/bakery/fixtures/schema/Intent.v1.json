@@ -1,0 +1,34 @@
+{
+  "name": "Intent",
+  "version": 1,
+  "kind": "enum",
+  "variants": [
+    {
+      "index": 0,
+      "name": "Deliver",
+      "form": "named",
+      "fields": [
+        { "name": "kind", "type": "KindId" },
+        { "name": "count", "type": "u16" }
+      ]
+    },
+    {
+      "index": 1,
+      "name": "Mix",
+      "form": "unit",
+      "fields": []
+    },
+    {
+      "index": 2,
+      "name": "Bake",
+      "form": "unit",
+      "fields": []
+    },
+    {
+      "index": 3,
+      "name": "Sell",
+      "form": "unit",
+      "fields": []
+    }
+  ]
+}

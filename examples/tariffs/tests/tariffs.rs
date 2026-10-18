@@ -90,3 +90,36 @@ fn balances_and_fees_together_equal_the_opening_money_plus_deposits() {
     assert_eq!(session.hash(), run_fixture(DEFAULT_SEED, 3_000).hash());
     assert_eq!(FEE_BASIS_POINTS, books.fee_basis_points);
 }
+
+/// A message type whose shape changed without a new version fails here, natively and under
+/// WebAssembly (decision 0063): bump `#[message(version = N)]` and save the new schema with
+/// `lockstep-headless schema tariffs --out examples/tariffs/fixtures/schema`.
+#[test]
+fn the_message_schemas_match_the_saved_ones_natively_and_under_webassembly() {
+    use lockstep_core::Message;
+    use tariffs::{Books, Configuration};
+    for (name, schema, saved) in [
+        (
+            "Intent",
+            <Intent as Message>::SCHEMA,
+            include_str!("../fixtures/schema/Intent.v1.json"),
+        ),
+        (
+            "Event",
+            <Event as Message>::SCHEMA,
+            include_str!("../fixtures/schema/Event.v1.json"),
+        ),
+        (
+            "Books",
+            <Books as Message>::SCHEMA,
+            include_str!("../fixtures/schema/Books.v2.json"),
+        ),
+        (
+            "Configuration",
+            <Configuration as Message>::SCHEMA,
+            include_str!("../fixtures/schema/Configuration.v1.json"),
+        ),
+    ] {
+        assert_eq!(format!("{schema}\n"), saved, "{name}: bump its version");
+    }
+}

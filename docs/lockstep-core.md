@@ -19,7 +19,7 @@ and intents produce the same state and the same hash on every platform.
 | `Chance`, `SmoothedState`, `CERTAIN` | Percentages as basis points, and the three rolls on `Streams`: `roll`, `roll_with_luck`, `roll_smoothed`. See decision 0007. |
 | `hash_of` | xxh3 over fixed-width, little-endian bincode bytes. |
 | `math` | Deterministic math: `Fixed32` (16.16 fixed point), `isqrt`, `Vector2`, and angles as whole turns (`sin`, `cos`, `unit`, `atan2`, `unit_circle_table`). Integer only. See decision 0004. |
-| `Message`, `Indexable` | Marker for anything that crosses the boundary or lands in a save, and what the timeline indexes it by. Write `#[derive(Message)]` with `#[message(version = N)]`, which implements both. See decision 0010. |
+| `Message`, `Indexable` | Marker for anything that crosses the boundary or lands in a save, and what the timeline indexes it by. Write `#[derive(Message)]` with `#[message(version = N)]`, which implements both and writes `Message::SCHEMA`, the name, version and shape as JSON (decision 0062). See decision 0010. |
 
 ## Driving a simulation
 
