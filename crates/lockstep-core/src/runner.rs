@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::clock::{Clock, ClockConfiguration, ClockEvent};
-use crate::hashing::hash_of;
+use crate::hashing::{encode, hash_of};
+use crate::message::Message;
+use crate::save::{Migrations, Save, SaveError, SAVE_FORMAT};
 use crate::simulation::{Context, Simulation};
 use crate::streams::Streams;
 use serde::{Deserialize, Serialize};
@@ -26,6 +28,7 @@ pub struct Runner<S: Simulation> {
     clock: Clock,
     randomness: Streams,
     step_configuration: StepConfiguration,
+    clock_configuration: ClockConfiguration,
     accumulator_seconds: f32,
     step_number: u64,
     /// Queued by the host, consumed by the next step that runs.
@@ -53,11 +56,46 @@ impl<S: Simulation> Runner<S> {
             clock: Clock::new(clock, step.step_seconds),
             randomness,
             step_configuration: step,
+            clock_configuration: clock,
             accumulator_seconds: 0.0,
             step_number: 0,
             pending: Vec::new(),
             clock_events: Vec::new(),
         }
+    }
+
+    /// The whole state at this step boundary, under the simulation's id. Unspent real time and
+    /// queued intents are not part of it (see `Save`).
+    pub fn save(&self, simulation_id: &str) -> Save {
+        Save {
+            format: SAVE_FORMAT,
+            simulation_id: simulation_id.to_string(),
+            snapshot_version: <S::Snapshot as Message>::VERSION,
+            step_configuration: self.step_configuration,
+            clock_configuration: self.clock_configuration,
+            step_number: self.step_number,
+            clock: self.clock.clone(),
+            randomness: self.randomness.clone(),
+            snapshot: encode(&self.simulation.snapshot()),
+        }
+    }
+
+    /// Continues from a save, converting an older snapshot shape through `migrations`. The runner
+    /// starts with no unspent real time and no queued intents.
+    pub fn from_save(save: &Save, migrations: &Migrations) -> Result<Self, SaveError> {
+        save.validate()?;
+        let snapshot: S::Snapshot = migrations.migrate(save.snapshot_version, &save.snapshot)?;
+        Ok(Self {
+            simulation: S::restore(snapshot),
+            clock: save.clock.clone(),
+            randomness: save.randomness.clone(),
+            step_configuration: save.step_configuration,
+            clock_configuration: save.clock_configuration,
+            accumulator_seconds: 0.0,
+            step_number: save.step_number,
+            pending: Vec::new(),
+            clock_events: Vec::new(),
+        })
     }
 
     /// Queue intents from the host. They apply to the next step that runs,

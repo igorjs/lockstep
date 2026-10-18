@@ -85,6 +85,20 @@ impl Clock {
         self.multiplier_units as f32 / UNITS_PER_STEP as f32
     }
 
+    /// Whether the fields a damaged save could set wrongly are within what `new`, `set_multiplier`
+    /// and `advance` keep them in, so a loaded clock never divides by zero or overflows.
+    pub(crate) fn is_consistent(&self) -> bool {
+        let ceiling =
+            self.units_per_day as u128 * MAXIMUM_MINUTES_PER_STEP as u128 / MINUTES_PER_DAY as u128;
+        self.units_per_day != 0
+            && self.units_per_day.is_multiple_of(UNITS_PER_STEP)
+            && self.units_per_day <= u64::MAX / 4
+            && self.position < self.units_per_day
+            && self.multiplier_units as u128 <= ceiling
+            && self.day < u32::MAX
+            && self.game_minutes_per_step.is_finite()
+    }
+
     pub fn minute_of_day(&self) -> f32 {
         (self.position as f64 * MINUTES_PER_DAY as f64 / self.units_per_day as f64) as f32
     }
