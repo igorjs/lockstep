@@ -300,15 +300,14 @@ impl Templates {
         let before = picks[index];
         picks[index] = Some(candidate);
         let mut fits = true;
-        for (_, _, nx, ny) in Self::neighbours(width, height, at) {
-            if picks[(ny * width + nx) as usize].is_some() {
+        for (_, _, neighbour_x, neighbour_y) in Self::neighbours(width, height, at) {
+            if picks[(neighbour_y * width + neighbour_x) as usize].is_some() {
                 continue;
             }
-            if !pool
-                .entries
-                .iter()
-                .any(|(option, _)| self.agrees(picks, width, height, (nx, ny), *option))
-            {
+            if !pool.entries.iter().any(|(option, weight)| {
+                *weight > 0
+                    && self.agrees(picks, width, height, (neighbour_x, neighbour_y), *option)
+            }) {
                 fits = false;
                 break;
             }
@@ -349,8 +348,10 @@ impl Templates {
         };
         Self::neighbours(width, height, at)
             .iter()
-            .all(|(own, theirs, nx, ny)| {
-                match picks[(ny * width + nx) as usize].and_then(|id| self.template(id)) {
+            .all(|(own, theirs, neighbour_x, neighbour_y)| {
+                match picks[(neighbour_y * width + neighbour_x) as usize]
+                    .and_then(|id| self.template(id))
+                {
                     Some(other) => template.socket(*own) == other.socket(*theirs),
                     None => true,
                 }

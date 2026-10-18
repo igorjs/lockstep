@@ -273,11 +273,16 @@ mod file {
                     sockets,
                 });
             }
-            let with_sockets = templates.iter().filter(|t| t.sockets.is_some()).count();
+            let with_sockets = templates
+                .iter()
+                .filter(|template| template.sockets.is_some())
+                .count();
             if with_sockets != 0 && with_sockets != templates.len() {
-                let missing = templates.iter().find(|t| t.sockets.is_none());
+                let missing = templates.iter().find(|template| template.sockets.is_none());
                 return Err(TemplatesError::Sockets(
-                    missing.map(|t| t.name.clone()).unwrap_or_default(),
+                    missing
+                        .map(|template| template.name.clone())
+                        .unwrap_or_default(),
                 ));
             }
             for (index, first) in templates.iter().enumerate() {

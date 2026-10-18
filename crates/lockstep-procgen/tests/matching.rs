@@ -33,7 +33,7 @@ fn plain(text: &str) -> String {
     value.to_string()
 }
 
-/// Wall on the north and south, open on the east and west, and the other way round: a chain of
+/// North and south are always a post; east and west alternate between open and wall: a chain of
 /// tiles that only alternate.
 const ALTERNATING: &str = r###"{
   "side": 2,
@@ -111,7 +111,7 @@ fn an_impossible_layout_is_refused_by_name() {
         templates.roll_matched(1, 4, 1, chain, &[at(0, 0, upright), at(1, 0, upright)]),
         Err(RollError::NoLayout)
     );
-    // The row alternates, so a sideways first and an upright second works, and the rest follows.
+    // The row alternates, so an upright first and a sideways second works, and the rest follows.
     let layout = templates
         .roll_matched(1, 4, 1, chain, &[at(0, 0, upright), at(1, 0, sideways)])
         .unwrap();
@@ -149,7 +149,7 @@ fn sockets_are_all_or_nothing_and_matching_edges_must_look_alike() {
         Templates::from_json(&half),
         Err(TemplatesError::Sockets("meadow".to_string()))
     );
-    // "any" on a marsh edge and on a meadow edge differ in their tiles.
+    // "any" on a rocks edge and on a meadow edge differ in their tiles.
     let mismatch = FREE.replace(
         "\"rocks\", \"rows\": [\"..\", \"..\"]",
         "\"rocks\", \"rows\": [\"##\", \"..\"]",

@@ -161,6 +161,20 @@ fn reserved_chunks_are_kept_and_their_neighbours_join_to_them() {
         .roll_matched(4, WIDTH, HEIGHT, pool, &reserved)
         .unwrap();
     assert_eq!(layout.template_at(3, 2), Some(crossing));
+    for y in 0..HEIGHT {
+        for x in 0..WIDTH {
+            let socket = |x, y, side| {
+                let id = layout.template_at(x, y).unwrap();
+                templates.template(id).unwrap().socket(side)
+            };
+            if x + 1 < WIDTH {
+                assert_eq!(socket(x, y, EAST), socket(x + 1, y, WEST), "({x}, {y})");
+            }
+            if y + 1 < HEIGHT {
+                assert_eq!(socket(x, y, SOUTH), socket(x, y + 1, NORTH), "({x}, {y})");
+            }
+        }
+    }
     let map = built(&templates, &layout);
     let side = templates.side();
     // Every side of a crossing is a gate, so each neighbour is open where it meets it.
