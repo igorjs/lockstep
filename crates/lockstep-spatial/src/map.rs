@@ -277,7 +277,7 @@ impl<T: Topology> GridMap<T> {
 
     /// Whether a body could step from the neighbour `step` describes onto `cell`.
     pub(crate) fn can_take_into(&self, cell: Cell, step: &crate::topology::Step) -> bool {
-        if self.passable[cell.0 as usize] == 0 {
+        if self.passable[cell.0 as usize] == 0 || self.passable[step.to.0 as usize] == 0 {
             return false;
         }
         let climb = self.elevation[cell.0 as usize] as u16;

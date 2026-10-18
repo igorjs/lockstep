@@ -304,3 +304,67 @@ fn two_builds_of_one_map_search_the_same_paths() {
         assert_eq!((one, &x), (two, &y));
     }
 }
+
+#[test]
+fn a_target_walled_in_across_a_chunk_border_is_unreachable_without_searching_the_map() {
+    let mut map: GridMap<Square8> = GridMap::new(128, 128);
+    let target = map.index(96, 100);
+    for (x, y) in [
+        (95, 99),
+        (96, 99),
+        (97, 99),
+        (95, 100),
+        (97, 100),
+        (95, 101),
+        (96, 101),
+        (97, 101),
+    ] {
+        map.set_passable(map.index(x, y), false);
+    }
+    let occupancy = Occupancy::new(&map);
+    let hierarchy = Hierarchy::build(&map, 16);
+    let mut finder = HierarchicalPathfinder::new(&map, &hierarchy);
+    let mut path = vec![Cell(1)];
+    let result = finder.find(
+        &map,
+        &occupancy,
+        &hierarchy,
+        map.index(2, 2),
+        target,
+        PathOptions::default(),
+        &mut path,
+    );
+    assert_eq!(result, PathResult::Unreachable);
+    assert!(
+        finder.last_expansions() < 2_000,
+        "expanded {} cells, as many as a flood of the map",
+        finder.last_expansions()
+    );
+}
+
+#[test]
+fn a_finder_survives_the_hierarchy_being_built_again_with_more_entrances() {
+    let mut map: GridMap<Square8> = GridMap::new(64, 64);
+    for y in 0..64 {
+        map.set_passable(map.index(32, y), false);
+    }
+    let gap = map.index(32, 10);
+    let occupancy = Occupancy::new(&map);
+    let before = Hierarchy::build(&map, 16);
+    let mut finder = HierarchicalPathfinder::new(&map, &before);
+    map.set_passable(gap, true);
+    map.set_passable(map.index(32, 40), true);
+    let after = Hierarchy::build(&map, 8);
+    let mut path = Vec::new();
+    let result = finder.find(
+        &map,
+        &occupancy,
+        &after,
+        map.index(2, 2),
+        map.index(60, 60),
+        PathOptions::default(),
+        &mut path,
+    );
+    assert!(matches!(result, PathResult::Found { .. }));
+    assert_eq!(path.last().copied(), Some(map.index(60, 60)));
+}

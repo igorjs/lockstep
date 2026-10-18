@@ -494,6 +494,7 @@ pub struct HierarchicalPathfinder {
     open: BinaryHeap<Reverse<u64>>,
     expansions: u32,
     greed: u32,
+    side: u32,
 }
 
 impl HierarchicalPathfinder {
@@ -513,6 +514,27 @@ impl HierarchicalPathfinder {
             open: BinaryHeap::new(),
             expansions: 0,
             greed: DEFAULT_GREED,
+            side: hierarchy.side,
+        }
+    }
+
+    /// Resizes the buffers when the hierarchy was built again with other dimensions.
+    fn fit(&mut self, hierarchy: &Hierarchy) {
+        let nodes = hierarchy.nodes.len() + 1;
+        if self.side != hierarchy.side {
+            self.side = hierarchy.side;
+            self.start = Local::new(hierarchy.side);
+            self.finish = Local::new(hierarchy.side);
+            self.refine = Local::new(hierarchy.side);
+        }
+        if self.stamp.len() != nodes {
+            self.stamp.clear();
+            self.stamp.resize(nodes, 0);
+            self.closed.clear();
+            self.closed.resize(nodes, 0);
+            self.cost.resize(nodes, 0);
+            self.parent.resize(nodes, 0);
+            self.via.resize(nodes, 0);
         }
     }
 
@@ -546,6 +568,7 @@ impl HierarchicalPathfinder {
     ) -> PathResult {
         out.clear();
         self.expansions = 0;
+        self.fit(hierarchy);
         if from == to {
             return PathResult::Found { cost: 0 };
         }
