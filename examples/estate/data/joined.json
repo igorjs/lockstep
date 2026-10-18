@@ -1,0 +1,28 @@
+{
+  "side": 8,
+  "templates": [
+    { "name": "crossing",
+      "sockets": { "north": "gate", "east": "gate", "south": "gate", "west": "gate" },
+      "rows": ["##....##", "#......#", "........", "........", "........", "........", "#......#", "##....##"] },
+    { "name": "lane_north_south",
+      "sockets": { "north": "gate", "east": "fence", "south": "gate", "west": "fence" },
+      "rows": ["##....##", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "##....##"] },
+    { "name": "lane_east_west",
+      "sockets": { "north": "fence", "east": "gate", "south": "fence", "west": "gate" },
+      "rows": ["########", "#......#", "........", "........", "........", "........", "#......#", "########"] },
+    { "name": "dead_end",
+      "sockets": { "north": "gate", "east": "fence", "south": "fence", "west": "fence" },
+      "rows": ["##....##", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"] },
+    { "name": "plot",
+      "sockets": { "north": "fence", "east": "fence", "south": "fence", "west": "fence" },
+      "rows": ["########", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"] }
+  ],
+  "pools": [
+    { "name": "paths", "entries": [
+      { "template": "crossing", "weight": 4 },
+      { "template": "lane_north_south", "weight": 3 },
+      { "template": "lane_east_west", "weight": 3 },
+      { "template": "dead_end", "weight": 1 },
+      { "template": "plot", "weight": 2 } ] }
+  ]
+}

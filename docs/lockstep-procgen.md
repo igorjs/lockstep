@@ -51,9 +51,35 @@ through the map's setters, so the map's dirty chunks are marked. A map smaller t
 is refused and left alone. A layout naming a template the templates do not hold is refused
 before anything is written.
 
+## Matching edges
+
+A template may give each side a socket name, so neighbouring chunks join up
+([decision 0051](decisions/0051-matching-template-edges.md)).
+
+```json
+{ "name": "crossing",
+  "sockets": { "north": "gate", "east": "gate", "south": "gate", "west": "gate" },
+  "rows": ["##....##", "#......#", "........", "........", "........", "........", "#......#", "##....##"] }
+```
+
+- Sockets are all or nothing across a set (`TemplatesError::Sockets`), and every edge with the
+  same socket must have the same tiles, read left to right on the north and south sides and top
+  to bottom on the east and west (`TemplatesError::SocketTiles`).
+- `templates.roll_matched(world_seed, width, height, pool, reserved)` returns a layout where the
+  east socket of a chunk equals the west socket of its east neighbour, and the south socket the
+  north socket of the one below. The border of the layout is free. `roll` ignores sockets.
+- Chunks are placed in reading order. Each tries the pool in an order drawn by weight without
+  repeats from its own `chunk_seed` stream, and takes the first template that agrees with
+  placed and reserved neighbours and leaves every free neighbour a template that still agrees.
+  When none fits the search steps back. With nothing in the way the matched roll equals `roll`.
+- The search spends at most `search_budget(chunks)` tries. `RollError::NoLayout` means no layout
+  exists (reservations that cannot sit together are refused before any search);
+  `RollError::SearchLimit` means the budget ran out first; `RollError::NoSockets` means the set
+  has no sockets.
+
 ## Limits
 
-Templates are not matched on their edges: a wall at the border of one chunk may face open ground
-in the next. A consumer that needs a connected map reserves the chunks that connect it (the
-estate fixes a cloister at both ends and in the middle), or checks with a path search. Edge
-matching is a deferral in the roadmap.
+Without `roll_matched`, templates are not matched on their edges. A matched layout can differ
+from the plain one when a try is refused, so a chunk is then no longer independent of its
+neighbours. The search is chronological backtracking with one step of lookahead, not a complete
+solver: a hard set may end in `SearchLimit` although a layout exists.

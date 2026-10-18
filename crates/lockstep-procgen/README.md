@@ -9,6 +9,7 @@ never collides with another.
 - `Templates`: square chunk templates and pools of them, read from JSON and checked.
 - `Templates::roll`: a layout of chunks, each drawn from a pool by weight from its own stream, or
   fixed by a `Reservation`.
+- `Templates::roll_matched`: the same, where neighbouring chunks agree on the socket of the edge they share; refuses with `NoLayout` or `SearchLimit`.
 - `chunk_seed`: the seed of one chunk, a function of the world seed and its place alone.
 - `Layout::apply`: writes the layout onto a `GridMap`, marking the changed chunks dirty.
 
