@@ -32,7 +32,7 @@ A type that keeps handles somewhere the derive cannot see, such as a map, writes
 ## Deferred
 
 The spec also has the derive register the type for schema export. Nothing reads a schema yet, so
-that waits for a consumer, as the backlog rule says.
+that waits for a consumer, as the backlog rule says. (Closed in M16 by decisions 0062 and 0063.)
 
 Conversions between message versions also wait: a shape is frozen once a save holding it ships,
 and no save ships before saves and migrations (milestone M16). Until then a version can change

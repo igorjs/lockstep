@@ -42,7 +42,7 @@ items in a milestone are out of scope here.
 
 | | Deferral | Milestone | Waits for | Record |
 |---|---|---|---|---|
-| D1 | Schema export from `#[derive(Message)]` | M5 | A tool that reads schemas | Decision 0010 |
+| D1 | Schema export from `#[derive(Message)]` | M5 | Closed in M16: `Message::SCHEMA`, `lockstep-headless schema`, saved schemas for `bakery` and `tariffs`; a change inside a nested type that is not a derived message is not seen | Decisions 0062, 0063 |
 | D2 | The crash bundle (a recording, the last good save and the host's log) | M5 | A host, which writes it | Decision 0011 |
 | D3 | `replay --save` and saving mid-recording | M5 | Closed in M16: `replay --until --save`, `resume`, `Recorder::save` | Decision 0036, `docs/lockstep-headless.md` |
 | D4 | Conversions between message versions | M16 | Closed in M16 for snapshots (decision 0035); see D8 for the rest | Decisions 0010, 0035 |

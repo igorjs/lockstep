@@ -1,0 +1,11 @@
+{
+  "name": "Configuration",
+  "version": 1,
+  "kind": "struct",
+  "form": "named",
+  "fields": [
+    { "name": "account_names", "type": "Vec<String>" },
+    { "name": "opening_balance_minor", "type": "i64" },
+    { "name": "fee_basis_points", "type": "u32" }
+  ]
+}

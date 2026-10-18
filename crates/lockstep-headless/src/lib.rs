@@ -202,7 +202,8 @@ const USAGE: &str = "usage: lockstep-headless fixture <name> [--seed <number>] [
        lockstep-headless replay <recording> [--until <step>] [--save <file>]
        lockstep-headless resume <save> --recording <recording>
        lockstep-headless bisect <recording>
-       lockstep-headless stats <recording>";
+       lockstep-headless stats <recording>
+       lockstep-headless schema <name> [--out <directory>]";
 
 /// Checkpoint spacing for `record` when `--every` is not given.
 const DEFAULT_CHECKPOINT_EVERY: u64 = 100;
@@ -271,6 +272,7 @@ fn refuse_unused_options(command: &str, options: &Options) -> Result<(), Command
         "fixture" => &["--seed", "--steps"],
         "verify" => &["--seed", "--steps", "--expect"],
         "record" => &["--seed", "--steps", "--out", "--every"],
+        "schema" => &["--out"],
         "replay" => &["--until", "--save"],
         "resume" => &["--recording"],
         _ => &[],
@@ -393,6 +395,19 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
                 Err(CommandError::Diverged(resumed.report))
             }
         }
+        "schema" => {
+            let schemas = recordings::schemas_for(name)
+                .ok_or_else(|| CommandError::UnknownFixture(name.to_string()))?;
+            if let Some((role, _)) = schemas.iter().find(|(_, schema)| schema.is_empty()) {
+                return Err(CommandError::Recording(format!(
+                    "the {role} of '{name}' has no schema: its Message is written by hand"
+                )));
+            }
+            match &options.out {
+                Some(directory) => write_schemas(directory, &schemas),
+                None => Ok(schemas_json(name, &schemas)),
+            }
+        }
         "replay" | "bisect" | "stats" => {
             let bytes = fs::read(name).map_err(|error| {
                 CommandError::Unreadable(format!("cannot read {name}: {error}"))
@@ -440,4 +455,63 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
             "unknown command {other}\n{USAGE}"
         ))),
     }
+}
+
+/// One JSON document holding a fixture's message schemas, each under its role.
+fn schemas_json(name: &str, schemas: &[(&str, &str)]) -> String {
+    let messages: Vec<String> = schemas
+        .iter()
+        .map(|(role, schema)| {
+            let schema = schema.replace('\n', "\n    ");
+            format!("    {{ \"role\": \"{role}\", \"schema\": {schema} }}")
+        })
+        .collect();
+    format!(
+        "{{\n  \"fixture\": \"{name}\",\n  \"messages\": [\n{}\n  ]\n}}",
+        messages.join(",\n")
+    )
+}
+
+/// The file name a schema is committed under: its type name and version.
+pub fn schema_file_name(schema: &str) -> Result<String, String> {
+    let value: serde_json::Value =
+        serde_json::from_str(schema).map_err(|error| error.to_string())?;
+    match (value["name"].as_str(), value["version"].as_u64()) {
+        (Some(name), Some(version)) => Ok(format!("{name}.v{version}.json")),
+        _ => Err("a schema without a name and a version".to_string()),
+    }
+}
+
+/// Writes each schema as `<Type>.v<N>.json` with its license sidecar, as the committed schema
+/// fixtures are kept (decision 0063).
+fn write_schemas(directory: &str, schemas: &[(&str, &str)]) -> Result<String, CommandError> {
+    let unwritable = |path: &str, error: std::io::Error| {
+        CommandError::Unwritable(format!("cannot write {path}: {error}"))
+    };
+    fs::create_dir_all(directory).map_err(|error| unwritable(directory, error))?;
+    // A saved version is never rewritten: a different shape under the same version is the
+    // mistake the saved schemas exist to catch. Every file is checked before any is written.
+    let mut files = Vec::new();
+    for (_, schema) in schemas {
+        let file = schema_file_name(schema).map_err(CommandError::Recording)?;
+        let path = format!("{directory}/{file}");
+        let text = format!("{schema}\n");
+        if let Ok(saved) = fs::read_to_string(&path) {
+            if saved != text {
+                return Err(CommandError::Recording(format!(
+                    "{path} holds another shape under the same version: bump the version of the type"
+                )));
+            }
+        }
+        files.push((path, text));
+    }
+    let mut lines = Vec::new();
+    for (path, text) in files {
+        fs::write(&path, text).map_err(|error| unwritable(&path, error))?;
+        let sidecar = format!("{path}.license");
+        fs::write(&sidecar, "SPDX-License-Identifier: Apache-2.0\n")
+            .map_err(|error| unwritable(&sidecar, error))?;
+        lines.push(format!("wrote {path}"));
+    }
+    Ok(lines.join("\n"))
 }

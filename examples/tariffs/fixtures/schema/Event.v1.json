@@ -1,0 +1,35 @@
+{
+  "name": "Event",
+  "version": 1,
+  "kind": "enum",
+  "variants": [
+    {
+      "index": 0,
+      "name": "Deposited",
+      "form": "named",
+      "fields": [
+        { "name": "account", "type": "Handle" },
+        { "name": "amount_minor", "type": "i64" }
+      ]
+    },
+    {
+      "index": 1,
+      "name": "Transferred",
+      "form": "named",
+      "fields": [
+        { "name": "from", "type": "Handle" },
+        { "name": "to", "type": "Handle" },
+        { "name": "amount_minor", "type": "i64" },
+        { "name": "fee_minor", "type": "i64" }
+      ]
+    },
+    {
+      "index": 2,
+      "name": "Rejected",
+      "form": "named",
+      "fields": [
+        { "name": "reason", "type": "Reason" }
+      ]
+    }
+  ]
+}

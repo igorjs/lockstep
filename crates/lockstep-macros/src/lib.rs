@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `#[derive(Message)]` for lockstep-core. Use it through `lockstep_core::Message`.
 
+mod schema;
+
 use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as Tokens};
 use quote::{format_ident, quote, quote_spanned};
@@ -11,7 +13,8 @@ use syn::{parse_macro_input, Data, DeriveInput, Fields, Ident, LitInt, Type};
 /// `lockstep_core::Indexable`: the kind is an enum's variant index (0 for a struct), and the
 /// handles are every `Handle` a field holds, directly or inside `Option`, `Vec`, `Box`, an array,
 /// a slice or a tuple, in field order. `#[message(version = N, manual_indexable)]` leaves
-/// `Indexable` to a hand written implementation.
+/// `Indexable` to a hand written implementation. It also writes `Message::SCHEMA`, the type's
+/// name, version and shape as JSON (decision 0062).
 #[proc_macro_derive(Message, attributes(message))]
 pub fn derive_message(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -47,9 +50,11 @@ fn expand(input: &DeriveInput) -> syn::Result<Tokens> {
     }
     let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
     let version = &settings.version;
+    let schema = schema::schema_text(input, settings.version.base10_parse::<u64>()?);
     let message = quote! {
         impl #impl_generics ::lockstep_core::Message for #name #type_generics #where_clause {
             const VERSION: u32 = #version;
+            const SCHEMA: &'static str = #schema;
         }
     };
     if settings.manual_indexable {
