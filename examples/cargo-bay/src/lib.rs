@@ -11,8 +11,8 @@
 use lockstep_attributes::{AttributeEvent, AttributeId, Attributes, Registry};
 use lockstep_core::math::Fixed32;
 use lockstep_core::{
-    ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,
-    StepConfiguration, Streams,
+    record_session, ClockConfiguration, Column, Context, Handle, Message, Recording, Runner,
+    Session, Simulation, StableVector, StepConfiguration, Streams,
 };
 use lockstep_inventory::{
     AffixId, Catalogue, Container, Inventory, InventoryEvent, KindId, Place, Refusal, SlotId,
@@ -514,16 +514,43 @@ pub fn order(bay: &CargoBay, script: &mut Streams) -> Option<Intent> {
     }
 }
 
-pub fn run_fixture(seed: u64, steps: u64) -> Runner<CargoBay> {
-    let mut runner = runner(bay(), seed, 30);
+fn drive(session: &mut impl Session<CargoBay>, seed: u64, steps: u64) {
     let mut script = Streams::new(seed ^ 0x0063_6172_676f);
     for _ in 0..steps {
-        let intents: Vec<Intent> = order(runner.simulation(), &mut script)
+        let intents: Vec<Intent> = order(session.simulation(), &mut script)
             .into_iter()
             .collect();
-        runner.step_once(&intents);
+        session.step_once(&intents);
     }
+}
+
+pub fn run_fixture(seed: u64, steps: u64) -> Runner<CargoBay> {
+    let mut runner = runner(bay(), seed, 30);
+    drive(&mut runner, seed, steps);
     runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "cargo-bay";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = bay();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(configuration.clone(), seed, 30),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, seed, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

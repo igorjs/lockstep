@@ -9,8 +9,8 @@
 //! get from the west cloister to the east one.
 
 use lockstep_core::{
-    ClockConfiguration, Context, Handle, Message, Runner, Simulation, StableVector,
-    StepConfiguration, Streams,
+    record_session, ClockConfiguration, Context, Handle, Message, Recording, Runner, Session,
+    Simulation, StableVector, StepConfiguration, Streams,
 };
 use lockstep_procgen::{Layout, Reservation, Templates};
 use lockstep_spatial::{Cell, GridMap, Occupancy, PathOptions, PathResult, Pathfinder, Square4};
@@ -291,14 +291,41 @@ pub fn script(_estate: &Estate, script: &mut Streams) -> Vec<Intent> {
     }
 }
 
-pub fn run_fixture(seed: u64, steps: u64) -> Runner<Estate> {
-    let mut runner = runner(grounds(), seed);
+fn drive(session: &mut impl Session<Estate>, seed: u64, steps: u64) {
     let mut streams = Streams::new(seed ^ 0x0000_6573_7461_7465);
     for _ in 0..steps {
-        let intents = script(runner.simulation(), &mut streams);
-        runner.step_once(&intents);
+        let intents = script(session.simulation(), &mut streams);
+        session.step_once(&intents);
     }
+}
+
+pub fn run_fixture(seed: u64, steps: u64) -> Runner<Estate> {
+    let mut runner = runner(grounds(), seed);
+    drive(&mut runner, seed, steps);
     runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "estate";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = grounds();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(configuration.clone(), seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, seed, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

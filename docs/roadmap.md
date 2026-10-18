@@ -35,7 +35,7 @@ items in a milestone are out of scope here.
 | G1 | Hexagon distance is 15.47 percent off true distance; the reference asks for 3 percent, which no hexagon step count can meet | Decision 0005 | Open: needs the reference's figure revised |
 | G2 | 500 paths on a 512 by 512 map take about 611 milliseconds serially (88 with the path batch on ten threads); the reference asks for 50 | Decisions 0005, 0006 | Open: needs hierarchical search, bidirectional search or a cheaper step, or a revised target |
 | G3 | `bisect` narrows to the checkpoint, not the step, unless the recording checkpoints every step | Decision 0011 | Accepted: the recording has no hash between checkpoints |
-| G4 | Only the ledger can be recorded by `lockstep-headless record` | `crates/lockstep-headless/src/recordings.rs` | Open: add other simulations as they gain consumers |
+| G4 | `lockstep-headless record` cannot record `mars-rovers` (many sessions in one fixture) or `orchard` (daylight set between steps) | Decision 0043, `crates/lockstep-headless/src/recordings.rs` | Accepted: every other example records; orchard waits for its daylight to move into the simulation |
 
 ## Deferrals: built later, when a consumer pulls them
 

@@ -8,8 +8,8 @@
 
 use lockstep_attributes::Registry;
 use lockstep_core::{
-    ClockConfiguration, Context, Handle, Message, Runner, Simulation, StableVector,
-    StepConfiguration, Streams,
+    record_session, ClockConfiguration, Context, Handle, Message, Recording, Runner, Session,
+    Simulation, StableVector, StepConfiguration, Streams,
 };
 use lockstep_crafting::{Crafting, CraftingEvent, Recipes, Refusal};
 use lockstep_inventory::{Catalogue, Container, Inventory, InventoryEvent, KindId};
@@ -330,14 +330,41 @@ pub fn script(bakery: &Bakery, script: &mut Streams) -> Vec<Intent> {
     }
 }
 
-pub fn run_fixture(seed: u64, steps: u64) -> Runner<Bakery> {
-    let mut runner = runner(shop(), seed);
+fn drive(session: &mut impl Session<Bakery>, seed: u64, steps: u64) {
     let mut streams = Streams::new(seed ^ 0x0062_616b_6572);
     for _ in 0..steps {
-        let intents = script(runner.simulation(), &mut streams);
-        runner.step_once(&intents);
+        let intents = script(session.simulation(), &mut streams);
+        session.step_once(&intents);
     }
+}
+
+pub fn run_fixture(seed: u64, steps: u64) -> Runner<Bakery> {
+    let mut runner = runner(shop(), seed);
+    drive(&mut runner, seed, steps);
     runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "bakery";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = shop();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(configuration.clone(), seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, seed, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

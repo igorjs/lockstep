@@ -21,19 +21,44 @@ pub struct Replayed {
     pub report: String,
 }
 
+/// One table entry for a crate that exports `SIMULATION_ID` and `record_fixture`. The ledger's
+/// snapshots are small and so are the others', so every recording keeps one per checkpoint for
+/// bisect.
+macro_rules! replayable {
+    ($krate:ident, $simulation:ty) => {
+        Replayable {
+            id: $krate::SIMULATION_ID,
+            record: |seed, steps, every| {
+                $krate::record_fixture(seed, steps, every, true)
+                    .to_bytes()
+                    .map_err(|error| error.to_string())
+            },
+            replay: replay_report::<$simulation>,
+            bisect: bisect_report::<$simulation>,
+            stats: stats_report::<$simulation>,
+        }
+    };
+}
+
+/// Every example with a fixture except two that no recording can reproduce: `mars-rovers` runs
+/// many separate sessions in one fixture, and `orchard` sets the clock's daylight from outside
+/// the simulation between steps, which a replay does not do.
 pub fn replayables() -> Vec<Replayable> {
-    vec![Replayable {
-        id: ledger::SIMULATION_ID,
-        record: |seed, steps, every| {
-            // The ledger's snapshot is small, so recordings keep one per checkpoint for bisect.
-            ledger::record_fixture(seed, steps, every, true)
-                .to_bytes()
-                .map_err(|error| error.to_string())
-        },
-        replay: replay_report::<ledger::Ledger>,
-        bisect: bisect_report::<ledger::Ledger>,
-        stats: stats_report::<ledger::Ledger>,
-    }]
+    vec![
+        replayable!(ledger, ledger::Ledger),
+        replayable!(capsule, capsule::Capsule),
+        replayable!(crowd, crowd::Crowd),
+        replayable!(drone_fleet, drone_fleet::Fleet),
+        replayable!(sparring, sparring::Sparring),
+        replayable!(cargo_bay, cargo_bay::CargoBay),
+        replayable!(crater_survey, crater_survey::Survey),
+        replayable!(audit, audit::Audit),
+        replayable!(training, training::Training),
+        replayable!(dispatch, dispatch::Dispatch),
+        replayable!(bakery, bakery::Bakery),
+        replayable!(estate, estate::Estate),
+        replayable!(checkout, checkout::Checkout),
+    ]
 }
 
 /// The simulation id at the front of a recording's bytes.

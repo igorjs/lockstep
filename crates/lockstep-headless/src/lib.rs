@@ -305,7 +305,9 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
                 .into_iter()
                 .find(|replayable| replayable.id == name)
                 .ok_or_else(|| {
-                    CommandError::Recording(format!("fixture '{name}' cannot be recorded yet"))
+                    CommandError::Recording(format!(
+                        "fixture '{name}' cannot be recorded, see decision 0043"
+                    ))
                 })?;
             let out = options.out.clone().ok_or_else(|| {
                 CommandError::Usage(format!("record needs --out <file>\n{USAGE}"))

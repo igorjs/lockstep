@@ -18,8 +18,8 @@ use lockstep_attributes::{
 };
 use lockstep_core::math::Fixed32;
 use lockstep_core::{
-    hash_of, Chance, ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation,
-    StableVector, StepConfiguration, Streams,
+    hash_of, record_session, Chance, ClockConfiguration, Column, Context, Handle, Message,
+    Recording, Runner, Simulation, StableVector, StepConfiguration, Streams,
 };
 use lockstep_spatial::{
     Cell as GridCell, GridMap, Occupancy, PathOptions, PathResult, Pathfinder, Square8,
@@ -583,11 +583,15 @@ pub fn clock_configuration() -> ClockConfiguration {
     }
 }
 
+fn configuration() -> Configuration {
+    Configuration {
+        survivor_name: "Mara".to_string(),
+    }
+}
+
 pub fn runner(seed: u64) -> Runner<Capsule> {
     Runner::new(
-        Configuration {
-            survivor_name: "Mara".to_string(),
-        },
+        configuration(),
         seed,
         StepConfiguration::default(),
         clock_configuration(),
@@ -615,6 +619,29 @@ pub fn default_steps() -> u64 {
 /// depends only on the step number.
 pub fn run_fixture(seed: u64, steps: u64) -> Runner<Capsule> {
     script::run(&committed_script(), Some(seed), Some(steps))
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "capsule";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = configuration();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| script::drive(recorder, &committed_script(), Some(steps)),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

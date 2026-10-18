@@ -61,7 +61,9 @@ A `Recorder` wraps a runner; the host uses it exactly as it would use the runner
 the configuration's bytes, the seed, the step and clock configuration, every step's intents with
 the clock multiplier the host had set, and the runner hash at step 0 and every `checkpoint_every`
 steps. Inputs are all a replay needs, so a long session stays small. `keep_snapshots()` also keeps
-the snapshot at each checkpoint, for `bisect`.
+the snapshot at each checkpoint, for `bisect`. A scripted session written against the `Session`
+trait (`simulation`, `step_once`, `set_clock_multiplier`, implemented by `Runner` and `Recorder`)
+runs or records from one loop; `record_session` records one around a built runner.
 
 - `replay::<S>(&recording)` runs it again and returns the runner and `Identical`, or
   `Diverged { at_step, expected, actual }` at the first checkpoint whose hash differs.

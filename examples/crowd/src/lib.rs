@@ -8,8 +8,8 @@
 //! either way, which is what this scenario proves.
 
 use lockstep_core::{
-    ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation, StableVector,
-    StepConfiguration, Streams,
+    record_session, ClockConfiguration, Column, Context, Handle, Message, Recording, Runner,
+    Session, Simulation, StableVector, StepConfiguration, Streams,
 };
 use lockstep_spatial::{
     find_paths, Cell, GridMap, Occupancy, PathOptions, PathRequest, PathResult, Square8,
@@ -196,12 +196,39 @@ pub fn runner(seed: u64) -> Runner<Crowd> {
     )
 }
 
+fn drive(session: &mut impl Session<Crowd>, steps: u64) {
+    for _ in 0..steps {
+        session.step_once(&[]);
+    }
+}
+
 pub fn run_fixture(seed: u64, steps: u64) -> Runner<Crowd> {
     let mut runner = runner(seed);
-    for _ in 0..steps {
-        runner.step_once(&[]);
-    }
+    drive(&mut runner, steps);
     runner
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "crowd";
+
+/// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
+/// snapshot at each checkpoint when `keep_snapshots` is set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> Recording<Intent> {
+    let configuration = configuration();
+    record_session(
+        SIMULATION_ID,
+        &configuration,
+        seed,
+        runner(seed),
+        checkpoint_every,
+        keep_snapshots,
+        |recorder| drive(recorder, steps),
+    )
 }
 
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {

@@ -14,7 +14,7 @@
 //! once, and a line may not carry extra words. A `ParseError` with line 0 refers to the whole file.
 
 use crate::{runner, Capsule, Cell, Intent};
-use lockstep_core::Runner;
+use lockstep_core::{Runner, Session};
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -181,8 +181,14 @@ fn expect_survivor(word: Option<&str>, line: usize) -> Result<(), ParseError> {
 /// Runs a script from the start. `seed` and `steps` override the file's values when given.
 pub fn run(script: &Script, seed: Option<u64>, steps: Option<u64>) -> Runner<Capsule> {
     let mut runner = runner(seed.unwrap_or(script.seed));
-    let Some(survivor) = runner.simulation().survivor() else {
-        return runner;
+    drive(&mut runner, script, steps);
+    runner
+}
+
+/// Plays a script on a runner, or on a recorder around one.
+pub fn drive(session: &mut impl Session<Capsule>, script: &Script, steps: Option<u64>) {
+    let Some(survivor) = session.simulation().survivor() else {
+        return;
     };
     // Group by step once, keeping file order within a step, so each step is a lookup.
     let mut by_step: BTreeMap<u64, Vec<&Command>> = BTreeMap::new();
@@ -193,7 +199,7 @@ pub fn run(script: &Script, seed: Option<u64>, steps: Option<u64>) -> Runner<Cap
         let mut intents = Vec::new();
         for command in by_step.get(&step).into_iter().flatten() {
             match command {
-                Command::Multiplier(multiplier) => runner.set_clock_multiplier(*multiplier),
+                Command::Multiplier(multiplier) => session.set_clock_multiplier(*multiplier),
                 Command::Move { cell, run } => intents.push(Intent::MoveTo {
                     entity: survivor,
                     cell: *cell,
@@ -205,7 +211,6 @@ pub fn run(script: &Script, seed: Option<u64>, steps: Option<u64>) -> Runner<Cap
                 Command::Pray => intents.push(Intent::Pray { entity: survivor }),
             }
         }
-        runner.step_once(&intents);
+        session.step_once(&intents);
     }
-    runner
 }
