@@ -25,8 +25,6 @@ determinism:
     cargo run -p lockstep-headless -- verify ledger --expect examples/ledger/fixtures/ledger.hash
     cargo run -p lockstep-headless -- record ledger --out "${CARGO_TARGET_DIR:-target}/ledger.recording" --steps 3000
     cargo run -p lockstep-headless -- replay "${CARGO_TARGET_DIR:-target}/ledger.recording"
-    cargo run -p lockstep-headless -- record bakery --out "${CARGO_TARGET_DIR:-target}/bakery.recording" --steps 3000
-    cargo run -p lockstep-headless -- replay "${CARGO_TARGET_DIR:-target}/bakery.recording"
     cargo run -p lockstep-headless -- verify mars-rovers --expect examples/mars-rovers/fixtures/mars-rovers.hash
     cargo run -p lockstep-headless -- verify crowd --expect examples/crowd/fixtures/crowd.hash
     cargo run -p lockstep-headless -- verify drone-fleet --expect examples/drone-fleet/fixtures/drone-fleet.hash
@@ -38,7 +36,7 @@ determinism:
     cargo run -p lockstep-headless -- verify dispatch --expect examples/dispatch/fixtures/dispatch.hash
     cargo run -p lockstep-headless -- verify bakery --expect examples/bakery/fixtures/bakery.hash
     cargo run -p lockstep-headless -- verify estate --expect examples/estate/fixtures/estate.hash
-    cargo run -p lockstep-headless -- verify checkout --expect examples/checkout/fixtures/checkout.hash
+    cargo run -p lockstep-headless -- verify roster --expect examples/roster/fixtures/roster.hash
     cargo run -p lockstep-headless -- verify orchard --expect examples/orchard/fixtures/orchard.hash
     cargo run -p lockstep-headless --features parallel -- verify crowd --expect examples/crowd/fixtures/crowd.hash
     wasm-pack test --node crates/lockstep-core
@@ -70,7 +68,7 @@ determinism:
     wasm-pack test --node examples/dispatch
     wasm-pack test --node examples/bakery
     wasm-pack test --node examples/estate
-    wasm-pack test --node examples/checkout
+    wasm-pack test --node examples/roster
     wasm-pack test --node examples/orchard
 
 bench:

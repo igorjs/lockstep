@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "roster"
+description = "Non-game consumer scenario for lockstep-meta: a crew roster across successive projects, where a retired name is never reused and the lead falls back to the next in line"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+lockstep-core = { path = "../../crates/lockstep-core" }
+lockstep-meta = { path = "../../crates/lockstep-meta" }
+serde = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = { workspace = true }

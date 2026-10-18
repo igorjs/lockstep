@@ -91,10 +91,10 @@ pub fn fixtures() -> Vec<Fixture> {
             run: estate::fixture_hash,
         },
         Fixture {
-            name: "checkout",
-            default_seed: checkout::DEFAULT_SEED,
-            default_steps: checkout::DEFAULT_STEPS,
-            run: checkout::fixture_hash,
+            name: "roster",
+            default_seed: roster::DEFAULT_SEED,
+            default_steps: roster::DEFAULT_STEPS,
+            run: roster::fixture_hash,
         },
         Fixture {
             name: "orchard",
@@ -305,9 +305,7 @@ pub fn run(arguments: &[String]) -> Result<String, CommandError> {
                 .into_iter()
                 .find(|replayable| replayable.id == name)
                 .ok_or_else(|| {
-                    CommandError::Recording(format!(
-                        "fixture '{name}' cannot be recorded, see decision 0043"
-                    ))
+                    CommandError::Recording(format!("fixture '{name}' cannot be recorded yet"))
                 })?;
             let out = options.out.clone().ok_or_else(|| {
                 CommandError::Usage(format!("record needs --out <file>\n{USAGE}"))

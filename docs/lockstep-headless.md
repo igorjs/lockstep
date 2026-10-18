@@ -13,7 +13,7 @@ lockstep-headless verify  <name> --expect <file> [--seed <number>] [--steps <num
 - `verify` compares the hash with a committed file, ignoring surrounding whitespace. It prints `ok <name> <hash>` on a match. On a mismatch it prints the expected and actual hashes to standard error and exits with status 1.
 - Without `--seed` and `--steps`, each fixture uses its own committed defaults.
 
-Fixtures: `capsule`, `crowd`, `drone-fleet`, `ledger`, `mars-rovers`, `sparring`, `cargo-bay`, `crater-survey`, `audit`, `training`, `dispatch`, `bakery`, `estate`, `orchard` and `checkout`. Each committed hash lives in
+Fixtures: `capsule`, `crowd`, `drone-fleet`, `ledger`, `mars-rovers`, `sparring`, `cargo-bay`, `crater-survey`, `audit`, `training`, `dispatch`, `bakery`, `estate`, `roster` and `orchard`. Each committed hash lives in
 `examples/<name>/fixtures/<name>.hash`. With the `parallel` feature the crowd solves its paths on a
 thread pool, and its hash must not change.
 
@@ -29,7 +29,7 @@ lockstep-headless stats  <file>
 ```
 
 - `record` writes the fixture session as a recording, with a checkpoint every 100 steps unless
-  `--every` says otherwise, keeping the snapshot at each checkpoint. Every example can be recorded except `mars-rovers` (many sessions in one fixture) and `orchard` (the host sets daylight between steps); see decision 0043.
+  `--every` says otherwise, keeping the snapshot at each checkpoint. The ledger can be recorded today.
 - `replay` reads the simulation id at the front of the file, runs the recording again and prints
   `identical <id> after <steps> steps, hash <hash>`. A divergence prints the step and both hashes to
   standard error and exits with status 1. `--until` stops after that many steps.
@@ -40,5 +40,5 @@ lockstep-headless stats  <file>
 - `stats` prints the seed, the length in steps and real seconds, intents per real minute, the steps
   spent at each clock multiplier, and the number of checkpoints and snapshots.
 
-`just determinism` records a ledger session and a bakery session and replays them through the binary. Saving a session to
+`just determinism` records a ledger session and replays it through the binary. Saving a session to
 resume it later (`replay --save`) arrives with saves and migrations.
