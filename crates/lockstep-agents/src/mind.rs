@@ -31,7 +31,7 @@ pub enum Alertness {
 pub struct Mind {
     pub alertness: Alertness,
     pub memory: Option<LastKnown>,
-    /// Game minutes since the target was last seen, while Alert.
+    /// Simulated minutes since the target was last seen, while Alert.
     pub unseen_minutes: Fixed32,
     /// The target the director is holding this agent back from, so `Held` fires once per hold.
     pub held_from: Option<Handle>,
@@ -48,7 +48,7 @@ impl Default for Mind {
     }
 }
 
-/// How long things take, in game minutes.
+/// How long things take, in simulated minutes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MindRules {
     /// A memory's confidence falls from 1 to 0 over this long, and then it is forgotten.

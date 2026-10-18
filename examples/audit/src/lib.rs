@@ -24,7 +24,7 @@ pub const EVENT_KINDS: &[(&str, u16)] = &[("transferred", 0), ("reviewed", 1)];
 
 /// A round amount is a whole hundred, in minor units.
 pub const ROUND_MINOR: i64 = 10_000;
-/// Transfers before this game minute of the day are in the small hours.
+/// Transfers before this simulated minute of the day are in the small hours.
 pub const SMALL_HOURS_END: u16 = 300;
 /// A receiver paid by this many distinct senders is a shared receiver.
 pub const SHARED_SENDERS: usize = 3;

@@ -12,12 +12,12 @@ hear through the air, all in integers. Nothing knows where anything is unless it
 - `Noise` and `Wind`: a noise carries `loudness × (1 + 0.04 × strength × cos θ)` metres, exactly,
   and the wind raises every listener's threshold by 0.3 metres per metre a second. `hear` lists
   the listeners in range, muffled by walls. Psychic noise ignores the wind.
-- `think`: each agent's `Mind` hunts a memory that fades in exact game minutes, moving between
+- `think`: each agent's `Mind` hunts a memory that fades in exact simulated minutes, moving between
   Idle, Curious, Alert and Searching; a `Director` lets at most its budget be Alert on one target,
   and a `Leash` keeps an agent from reacting to anything far from home.
-- `Waves`: a large arrival spaced into pulses by game minutes, admitted only as far as the
+- `Waves`: a large arrival spaced into pulses by simulated minutes, admitted only as far as the
   director's `headroom` allows, never dropped.
-- `Weather`: the wind drifting, gusting and swinging with fronts, one game second at a time, the
+- `Weather`: the wind drifting, gusting and swinging with fronts, one simulated second at a time, the
   same at any step rate.
 - `steer`: agents move down a flow field through occupancy, sharing `sidestep` with fighters.
 - `choose` and `evaluate_task`: integer utility, ties to the lowest id, and delegation that

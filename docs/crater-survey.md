@@ -11,7 +11,7 @@ metres) and three roam.
 - Every fifth step, staggered, each rover looks for landers with a 40 metre cone (60 degrees
   either side) and 6 metres all around; a sighting is a `Saw` stimulus.
 - `think` turns those into memory and alertness; the director lets at most two rovers be Alert
-  on one lander. Memories are forgotten after 30 game minutes.
+  on one lander. Memories are forgotten after 30 simulated minutes.
 - Every 15 steps each rover picks where to go: an accepted survey order first; otherwise, while
   not Idle, its memory when the utility of investigating (confidence times 100, plus half the
   battery) beats holding (40); otherwise home, when leashed and away. Rovers with the same goal
@@ -39,5 +39,5 @@ upwind one as far away misses, a low battery refusing a survey with its reason, 
 reach refused, landers departing in landing order, a rover parking beside a lander, and a restored
 snapshot continuing exactly.
 
-This example stands in for the reference's agent consumers, a survivor's opponent perceiving it
+This example stands in for the reference's agent consumers, one actor's opponent perceiving it
 and a rover leashed to its crater (departure P19 in the roadmap).

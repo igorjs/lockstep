@@ -24,7 +24,7 @@ estate` and by a WebAssembly test.
 
 The milestone gate is two tests. `a_barrier_blocks_and_a_collapse_opens_and_both_report_the_chunks`:
 a barrier across the border of two chunks blocks its cells and reports both chunks, and when it
-collapses the cells open and both are reported again. `the_valley_keeps_its_cloisters_and_draws_the_rest_from_the_pool`
+collapses the cells open and both are reported again. `the_layout_keeps_its_cloisters_and_draws_the_rest_from_the_pool`
 together with `chunk_seeds_never_collide` (200 world seeds times 128 by 128 places, all
 different) covers the generation. Other tests: refused barriers, mending, a closed estate that
 opens when its barrier gives way, and the session reaching every branch.
@@ -39,5 +39,5 @@ with the pathfinder that a walker reaches exactly the chunks of its own path net
 of another. Other tests cover reservations, a refused layout (`NoLayout`) and a search that
 ends in `SearchLimit`. The estate's own fixture hash does not change.
 
-This example stands in for the reference's barricade and generated valley consumers
+This example stands in for the reference's barrier and generated-layout consumers
 (departure P24 in the roadmap).

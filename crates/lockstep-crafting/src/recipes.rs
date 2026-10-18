@@ -30,7 +30,7 @@ pub struct Recipe {
     pub name: String,
     pub station: StationId,
     pub inputs: Vec<Amount>,
-    /// Whole game minutes the job takes.
+    /// Whole simulated minutes the job takes.
     pub minutes: u32,
     pub outcomes: Vec<Outcome>,
 }
@@ -53,7 +53,7 @@ pub struct Recipes {
 /// three hundredths of a percent.
 pub const MAXIMUM_TOTAL_WEIGHT: u32 = 1_000_000;
 
-/// The longest recipe, in whole game minutes: what a job's remaining time can report.
+/// The longest recipe, in whole simulated minutes: what a job's remaining time can report.
 pub const MAXIMUM_MINUTES: u32 = 32_767;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -11,7 +11,7 @@ pub struct SpreadRules {
     /// The chance in a thousand, each interval, that an active region starts one clear neighbour
     /// in still air, at full pace, in a fully receptive region.
     pub base_permille: u32,
-    /// Game minutes between tries. At least one.
+    /// Simulated minutes between tries. At least one.
     pub interval_minutes: u32,
     /// Intervals a region stays active before it is spent. At least one.
     pub active_intervals: u32,
@@ -58,7 +58,7 @@ pub enum SpreadEvent {
 #[message(version = 1)]
 pub struct Spread {
     conditions: Vec<Condition>,
-    /// Raw 16.16 game minutes not yet a whole interval.
+    /// Raw 16.16 simulated minutes not yet a whole interval.
     carried: i64,
 }
 
@@ -113,7 +113,7 @@ impl Spread {
         true
     }
 
-    /// Lets `minutes` of game time pass, an interval at a time. In each interval every region
+    /// Lets `minutes` of simulated time pass, an interval at a time. In each interval every region
     /// that was active when it began tries each clear neighbour, in order, once; one that takes
     /// hold becomes active for the next interval. `pace_percent` (0 to 100) scales every chance,
     /// so a season can slow or stop the spread. Then each region active at the start of the

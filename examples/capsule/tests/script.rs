@@ -45,15 +45,15 @@ fn bad_lines_are_reported_with_their_line_number() {
         ("seed x", 1),
         ("steps 3\nwalk away", 2),
         ("1 move someone 1 1 walk", 1),
-        ("1 move survivor 1 walk", 1),
-        ("1 move survivor 1 1 hop", 1),
+        ("1 move actor 1 walk", 1),
+        ("1 move actor 1 1 hop", 1),
         ("1 dance", 1),
         ("1 multiplier fast", 1),
         ("seed 1\nseed 2", 2),
         ("steps 1\nsteps 2", 2),
         ("3 stop anyone", 1),
         ("3 stop", 1),
-        ("10 move survivor 15 15 walk run", 1),
+        ("10 move actor 15 15 walk run", 1),
         ("seed 1 2", 1),
         ("5 multiplier 20 x", 1),
     ] {
@@ -74,8 +74,8 @@ fn a_file_without_seed_or_steps_is_refused_for_the_whole_file() {
 
 #[test]
 fn commands_at_one_step_apply_in_file_order() {
-    let first = parse("seed 1\nsteps 5\n2 move survivor 3 3 walk\n2 stop survivor\n").unwrap();
-    let second = parse("seed 1\nsteps 5\n2 stop survivor\n2 move survivor 3 3 walk\n").unwrap();
+    let first = parse("seed 1\nsteps 5\n2 move actor 3 3 walk\n2 stop actor\n").unwrap();
+    let second = parse("seed 1\nsteps 5\n2 stop actor\n2 move actor 3 3 walk\n").unwrap();
     assert_ne!(
         run(&first, None, None).hash(),
         run(&second, None, None).hash()
@@ -103,31 +103,29 @@ fn overrides_replace_the_seed_and_the_step_count() {
 
 #[test]
 fn a_stop_command_cancels_a_walk() {
-    let walking = parse("seed 1\nsteps 100\n1 move survivor 15 15 walk\n").unwrap();
-    let stopped =
-        parse("seed 1\nsteps 100\n1 move survivor 15 15 walk\n3 stop survivor\n").unwrap();
+    let walking = parse("seed 1\nsteps 100\n1 move actor 15 15 walk\n").unwrap();
+    let stopped = parse("seed 1\nsteps 100\n1 move actor 15 15 walk\n3 stop actor\n").unwrap();
     let walking_runner = run(&walking, None, None);
     let stopped_runner = run(&stopped, None, None);
-    let survivor = walking_runner.simulation().survivor().unwrap();
+    let actor = walking_runner.simulation().actor().unwrap();
     let walked = walking_runner
         .simulation()
         .world()
         .positions
-        .get(survivor)
+        .get(actor)
         .copied();
     let halted = stopped_runner
         .simulation()
         .world()
         .positions
-        .get(survivor)
+        .get(actor)
         .copied();
     assert_ne!(walked, halted);
 }
 
 #[test]
-fn wound_bandage_and_pray_name_the_survivor_and_nothing_else() {
-    let script =
-        parse("seed 1\nsteps 2\n0 wound survivor\n1 bandage survivor\n1 pray survivor\n").unwrap();
+fn wound_bandage_and_pray_name_the_actor_and_nothing_else() {
+    let script = parse("seed 1\nsteps 2\n0 wound actor\n1 bandage actor\n1 pray actor\n").unwrap();
     assert_eq!(
         script.commands,
         [
@@ -136,7 +134,7 @@ fn wound_bandage_and_pray_name_the_survivor_and_nothing_else() {
             (1, Command::Pray)
         ]
     );
-    for bad in ["0 wound", "0 pray rover", "0 bandage survivor twice"] {
+    for bad in ["0 wound", "0 pray rover", "0 bandage actor twice"] {
         let text = format!("seed 1\nsteps 2\n{bad}\n");
         assert_eq!(parse(&text).unwrap_err().line, 3, "{bad}");
     }

@@ -49,7 +49,7 @@ fn the_journal_of_a_replay_matches_the_live_session_line_for_line() {
     assert!(lines
         .iter()
         .any(|line| line.contains("rejected: InsufficientFunds")));
-    // A ledger game minute is a real minute, 1,800 steps, and an entry's time is read when its
+    // A ledger simulated minute is a real minute, 1,800 steps, and an entry's time is read when its
     // step ends: the 1,800th step (step 1,799) is the first at 00:01.
     assert!(lines[1_798].starts_with("day 0 00:00"), "{}", lines[1_798]);
     assert!(lines[1_799].starts_with("day 0 00:01"), "{}", lines[1_799]);

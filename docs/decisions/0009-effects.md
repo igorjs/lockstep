@@ -1,13 +1,13 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# 0009 Effects tick by game minutes, with four stacking rules (decided)
+# 0009 Effects tick by simulated minutes, with four stacking rules (decided)
 
 Status: decided and implemented in milestone M4.
 
 ## Decision
 
 Timed effects live in one `Effects` store for every entity, in the order they were applied, and
-advance by game minutes, not by steps.
+advance by simulated minutes, not by steps.
 
 - A drain applies the change in its running total (`per_minute × minutes since applied`), not
   `per_minute × elapsed` per tick. An effect on its own depends only on the total minutes, so the
@@ -18,8 +18,8 @@ advance by game minutes, not by steps.
   nothing.
 - Stacking is per tag on an entity: `Independent`, `RefreshDuration` (the modifier applies once, the
   timer restarts), `Replace`, and `DailyBudget` (the tag's total change on the entity is capped per
-  game day; the excess is lost, not owed).
-- `tick` takes the game day for budgets, and every call takes an `EffectContext` (attributes,
+  simulated day; the excess is lost, not owed).
+- `tick` takes the simulated day for budgets, and every call takes an `EffectContext` (attributes,
   registry and both event lists) instead of the four separate arguments the spec sketched.
 
 ## Alternatives rejected

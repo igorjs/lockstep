@@ -31,7 +31,7 @@ fn within_gives_the_same_answer_whatever_the_placement_history() {
 
         // The same layout reached through churn: bodies land on detours outside the final layout,
         // some leave and come back while others are still placed (so removals really swap slots),
-        // and the survivors walk to their final cells with move_to.
+        // and the actors walk to their final cells with move_to.
         let mut churned = Occupancy::new(&map);
         let mut order: Vec<usize> = (0..who.len()).collect();
         for index in (1..order.len()).rev() {

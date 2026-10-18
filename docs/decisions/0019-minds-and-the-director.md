@@ -7,7 +7,7 @@ Status: decided and implemented in milestone M8.
 ## Decision
 
 - An agent hunts its last known position, not its target. The memory's confidence fades linearly
-  with its age in exact game minutes, from its starting confidence (1 for a sighting, less for a
+  with its age in exact simulated minutes, from its starting confidence (1 for a sighting, less for a
   noise) to zero, and is then forgotten.
 - Alert turns Searching once the target has been out of sight for the rules' minutes, and any
   agent whose memory is forgotten turns Idle. A noise never pulls an Alert agent away.

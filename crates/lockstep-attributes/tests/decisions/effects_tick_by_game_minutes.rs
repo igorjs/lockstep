@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Decision: an effect's drain depends only on the total game minutes it has run. Each tick
+//! Decision: an effect's drain depends only on the total simulated minutes it has run. Each tick
 //! applies the change in the running total (`per_minute × minutes`), so splitting the same minutes
 //! into more ticks changes nothing.
 //! Alternative rejected: applying `per_minute × elapsed` per tick, which rounds once per tick and

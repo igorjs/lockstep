@@ -18,7 +18,7 @@ auditor reviews every transfer as it happens.
 - The world stores the catalogue's hash. `Audit::load` refuses a save made with another
   catalogue with `OtherCatalogue`; `restore` panics on one.
 
-The fixture hash in `fixtures/audit.hash` covers 60,000 steps (2,000 game minutes, about 1.4 days)
+The fixture hash in `fixtures/audit.hash` covers 60,000 steps (2,000 simulated minutes, about 1.4 days)
 of transfers between random accounts, one in eight a round amount. It is checked by
 `lockstep-headless verify audit` and by a WebAssembly test.
 
@@ -30,4 +30,4 @@ since the question opens early (it has its own test). Other tests: a clean day e
 and a save from another catalogue refused at load.
 
 This example stands in for the reference's knowledge consumer, the first question of a question
-ledger in the survivor's world (departure P20 in the roadmap).
+ledger for one actor (departure P20 in the roadmap).

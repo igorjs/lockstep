@@ -21,7 +21,7 @@ Status: decided and implemented in milestone M8.
 - Deciding every move first and applying them together: it needs a separate pass to settle two
   agents wanting one cell.
 - Waiting until the way clears: one standing body locks a crowd behind it.
-- A sidestep of agents' own: the reference asks for one function shared with player movement.
+- A sidestep of agents' own: the reference asks for one function shared with operator-controlled movement.
 
 ## Would change if
 

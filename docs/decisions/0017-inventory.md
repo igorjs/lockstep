@@ -6,7 +6,7 @@ Status: decided and implemented in milestone M7.
 
 ## Decision
 
-- Spoilage adds up exposure as an exact integer: raw 16.16 game minutes times a whole percent for
+- Spoilage adds up exposure as an exact integer: raw 16.16 simulated minutes times a whole percent for
   the temperature. An item spoils when the total reaches its minutes at 100 percent. The same game
   minutes spoil the same at any step rate.
 - Units merged into one stack share the higher exposure: a stack spoils as its stalest unit.

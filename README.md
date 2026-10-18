@@ -16,7 +16,7 @@ Games are the first use, but the same machine runs a ledger, a fleet of rovers, 
 
 | Crate | What it is |
 |---|---|
-| [`lockstep-core`](crates/lockstep-core) | The `Simulation` trait, the `Runner`, the game clock, entity storage, named random streams, chance rolls, hashing, and integer math. |
+| [`lockstep-core`](crates/lockstep-core) | The `Simulation` trait, the `Runner`, the simulated clock, entity storage, named random streams, chance rolls, hashing, and integer math. |
 | [`lockstep-spatial`](crates/lockstep-spatial) | Grids: topologies, maps with elevation, occupancy, A* paths, path batches on a thread pool, flow fields, line of sight. |
 | [`lockstep-combat`](crates/lockstep-combat) | Real-time combat in integers: damage in a fixed order, hit shapes on any topology, knockback, actions and dodges with commitment, projectiles, and movement with stamina and noise. |
 | [`lockstep-inventory`](crates/lockstep-inventory) | Items as entities, containers with slots and weight, stacking, equipment whose modifiers reach the wearer's attributes, binding affixes, and spoilage by temperature that ignores the step rate. |
@@ -24,7 +24,7 @@ Games are the first use, but the same machine runs a ledger, a fleet of rovers, 
 | [`lockstep-knowledge`](crates/lockstep-knowledge) | Facts learned from fragments of distinct sources, questions that open after enough evidence, and revelations, secrets and achievements as data predicates that fire once. |
 | [`lockstep-progression`](crates/lockstep-progression) | Node graphs bought with points from named triggers: requirements, exclusions that lock both ways, attribute gates, irreversible keystones, refunds and modifiers. |
 | [`lockstep-relations`](crates/lockstep-relations) | Directional standings toward entities and groups, such as trust and reputation, with thresholds and decay toward rest that ignores the step rate. |
-| [`lockstep-crafting`](crates/lockstep-crafting) | Recipes that consume inputs all or nothing, take game time at a station, and end in a weighted outcome with failure branches. |
+| [`lockstep-crafting`](crates/lockstep-crafting) | Recipes that consume inputs all or nothing, take simulated time at a station, and end in a weighted outcome with failure branches. |
 | [`lockstep-meta`](crates/lockstep-meta) | What outlives a run: a cross-run chronicle saved in a versioned envelope, control that falls back when the one in control is lost, and archetypes with point-buy. |
 | [`lockstep-regions`](crates/lockstep-regions) | A graph of anchored regions and a condition that spreads across it by chance each interval, helped downwind and scaled by a pace the caller sets. |
 | [`lockstep-calendar`](crates/lockstep-calendar) | Seasons from JSON: daylight and temperature by day and minute in integers, handed to the core clock, with a season change event. |
@@ -49,7 +49,7 @@ WebAssembly on every change.
 
 | Example | Shows |
 |---|---|
-| [`capsule`](examples/capsule) | A survivor walks a walled room along A* paths; needs, health and sanity are attributes from JSON, and decay, bleeding and prayer are effects. |
+| [`capsule`](examples/capsule) | An actor walks a walled room along A* paths; needs, health and sanity are attributes from JSON, and decay, bleeding and prayer are effects. |
 | [`ledger`](examples/ledger) | Accounts and transfers: exact money, rejected transfers with reasons. Not a game. |
 | [`mars-rovers`](examples/mars-rovers) | The Mars Rovers kata on any topology, with collisions as occupancy and rovers that ram each other. |
 | [`drone-fleet`](examples/drone-fleet) | Delivery drones whose batteries charge, drain and wear: attributes from JSON, effects, a ratchet, and fault rolls. Not a game. |

@@ -26,7 +26,7 @@ pub struct Kind {
     pub weight: Fixed32,
     /// The most units one item holds. One means the kind never stacks.
     pub stack: u16,
-    /// Whole game minutes to spoil at 100 percent; `None` never spoils.
+    /// Whole simulated minutes to spoil at 100 percent; `None` never spoils.
     pub spoils_after_minutes: Option<u32>,
     /// The slot it is worn in, when it can be worn.
     pub slot: Option<SlotId>,

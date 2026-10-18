@@ -2,17 +2,17 @@
 # The scripted capsule session. lockstep-headless runs this file and prints its state hash,
 # which must match the committed value on every platform.
 #
-# Lines: seed <number> | steps <number> | <step> move survivor <x> <y> walk|run
-#        <step> stop|wound|bandage|pray survivor | <step> multiplier <number>
+# Lines: seed <number> | steps <number> | <step> move actor <x> <y> walk|run
+#        <step> stop|wound|bandage|pray actor | <step> multiplier <number>
 seed 20260925
 steps 10000
-10 move survivor 15 15 walk
-200 wound survivor
-260 wound survivor
-330 wound survivor
-400 move survivor 0 3 run
-600 bandage survivor
-700 move survivor 99 99 run
+10 move actor 15 15 walk
+200 wound actor
+260 wound actor
+330 wound actor
+400 move actor 0 3 run
+600 bandage actor
+700 move actor 99 99 run
 800 multiplier 20
-1000 pray survivor
-1100 pray survivor
+1000 pray actor
+1100 pray actor

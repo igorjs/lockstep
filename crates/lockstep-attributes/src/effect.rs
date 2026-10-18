@@ -25,7 +25,7 @@ pub enum Stacking {
     /// A new application removes the old one first.
     Replace,
     /// Each application is its own effect, but the tag's total change on the entity is capped per
-    /// game day: prayer's hope. Past the cap it gives nothing until the next day.
+    /// simulated day: prayer's hope. Past the cap it gives nothing until the next day.
     DailyBudget { cap_per_day: Fixed32 },
 }
 
@@ -34,7 +34,7 @@ pub struct Effect {
     pub attribute: AttributeId,
     /// Held while the effect is active.
     pub modifier: Option<Modifier>,
-    /// Applied every tick, scaled by the elapsed game minutes.
+    /// Applied every tick, scaled by the elapsed simulated minutes.
     pub per_minute: Option<Fixed32>,
     /// `None` lasts until removed.
     pub remaining_minutes: Option<Fixed32>,
@@ -70,7 +70,7 @@ struct Active {
     who: Handle,
     effect: Effect,
     modifier: Option<ModifierHandle>,
-    /// Game minutes since it was applied or refreshed, in raw 16.16 units, capped at the duration.
+    /// Simulated minutes since it was applied or refreshed, in raw 16.16 units, capped at the duration.
     elapsed: i64,
     /// The drain applied so far, in raw units. Each tick applies the change in the cumulative
     /// total, so splitting the same minutes into more ticks changes nothing.
@@ -195,7 +195,7 @@ impl Effects {
         self.budgets.retain(|budget| budget.who != who);
     }
 
-    /// Advances every effect by `elapsed_minutes` of game time on game day `day`, in the order they
+    /// Advances every effect by `elapsed_minutes` of simulated time on simulated day `day`, in the order they
     /// were applied: drains change their attribute, and finished effects expire. An effect on its
     /// own depends only on the total minutes, so one tick of a minute and 1,800 shorter ticks agree.
     /// Effects that meet at a clamp or share a budget are settled tick by tick, so for them the

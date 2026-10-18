@@ -5,7 +5,7 @@ use lockstep_core::{Handle, Message};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-/// Raw 16.16 game minutes in a day, times the 16.16 scale of a rate: the divisor that turns a
+/// Raw 16.16 simulated minutes in a day, times the 16.16 scale of a rate: the divisor that turns a
 /// rate per day times raw minutes into raw points.
 const DAY_SCALE: i128 = 1_440 * 65_536;
 
@@ -16,13 +16,13 @@ pub enum Target {
     Group(GroupId),
 }
 
-/// One standing: its value at the last change, and the exact game minutes since, from which the
+/// One standing: its value at the last change, and the exact simulated minutes since, from which the
 /// value now is computed afresh each tick, so decay never drifts with the step rate.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Standing {
     pub value: Fixed32,
     base: Fixed32,
-    /// Raw 16.16 game minutes since the last change.
+    /// Raw 16.16 simulated minutes since the last change.
     elapsed: u64,
 }
 
@@ -130,7 +130,7 @@ impl Relations {
         crossed(definition, key, before, after, events);
     }
 
-    /// Lets `minutes` of game time pass: every standing that has been changed drifts toward its
+    /// Lets `minutes` of simulated time pass: every standing that has been changed drifts toward its
     /// relation's rest by its decay a day, computed from the exact minutes since its last change,
     /// and emits the thresholds it crosses. A standing nobody has changed stays at the starting
     /// value: drift begins with the first change.

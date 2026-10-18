@@ -80,7 +80,7 @@ pub struct Configuration {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
 #[message(version = 1)]
 pub enum Intent {
-    /// Fly for this many game minutes.
+    /// Fly for this many simulated minutes.
     Launch { drone: Handle, minutes: u16 },
     /// Come home early, or bring a stranded drone back (which adds wear).
     Dock { drone: Handle },
@@ -447,7 +447,7 @@ pub fn runner(seed: u64) -> Runner<Fleet> {
         configuration(),
         seed,
         StepConfiguration::default(),
-        // One game minute per real second: a step is a thirtieth of a minute.
+        // One simulated minute per real second: a step is a thirtieth of a minute.
         ClockConfiguration {
             day_length_real_minutes: 24.0,
             sunrise_minute: 360,

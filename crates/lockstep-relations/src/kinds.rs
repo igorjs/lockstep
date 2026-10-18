@@ -25,7 +25,7 @@ pub struct Relation {
     pub starting: Fixed32,
     /// Where a standing drifts back to.
     pub rest: Fixed32,
-    /// Points a game day a standing drifts toward rest.
+    /// Points a simulated day a standing drifts toward rest.
     pub decay_per_day: Fixed32,
     /// Sorted by `at`.
     pub thresholds: Vec<Threshold>,

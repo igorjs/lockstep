@@ -32,7 +32,7 @@ the phases; it never decides when a hit lands.
 ## Alternatives rejected
 
 - Interrupting at any phase: an attack would commit to nothing.
-- Measuring the perfect window from the start of invulnerability: the press is what a player times.
+- Measuring the perfect window from the start of invulnerability: the press is what an operator times.
 - Dropping orders sent while busy: input a frame early would be lost.
 - Damage applied inside the crate: every simulation keeps health differently.
 

@@ -2,7 +2,7 @@
 //! Checkout: a consumer scenario for the waves in `lockstep-agents` that is not a game.
 //!
 //! A store announces a surge of shoppers. The surge (`data/surge.json`) is spaced into pulses by
-//! game minutes. The queue has a budget (`data/queue.json`), kept by the director: a pulse only
+//! simulated minutes. The queue has a budget (`data/queue.json`), kept by the director: a pulse only
 //! joins as far as the queue has room, and the rest wait outside. Each open lane serves one
 //! shopper every service interval.
 
@@ -20,7 +20,7 @@ pub const QUEUE_JSON: &str = include_str!("../data/queue.json");
 pub struct QueueRules {
     pub queue_budget: u16,
     pub lanes_at_the_start: u16,
-    /// Game minutes one lane takes to serve one shopper. At least one.
+    /// Simulated minutes one lane takes to serve one shopper. At least one.
     pub service_minutes: u32,
 }
 
@@ -70,7 +70,7 @@ pub struct World {
     pub served: u32,
     /// The longest the queue has been.
     pub peak_queue: u32,
-    /// Raw 16.16 game minutes not yet a whole service interval.
+    /// Raw 16.16 simulated minutes not yet a whole service interval.
     service_carry: i64,
 }
 
@@ -180,7 +180,7 @@ impl Simulation for Checkout {
 }
 
 pub const DEFAULT_SEED: u64 = 20_261_019;
-/// One game day of 3,600 steps.
+/// One simulated day of 3,600 steps.
 pub const DEFAULT_STEPS: u64 = 3_600;
 
 pub fn store() -> Configuration {
@@ -189,7 +189,7 @@ pub fn store() -> Configuration {
     }
 }
 
-/// A runner starting at 07:00. A day is 2 real minutes, so a step is 0.4 game minutes.
+/// A runner starting at 07:00. A day is 2 real minutes, so a step is 0.4 simulated minutes.
 pub fn runner(configuration: Configuration, seed: u64) -> Runner<Checkout> {
     Runner::new(
         configuration,

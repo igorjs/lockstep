@@ -5,7 +5,7 @@
 The consumer scenario for `lockstep-crafting`, and not a game. A pantry, a mixer and an oven,
 each with a container.
 
-- The kinds, in `data/catalogue.json`: flour (spoils in 3 game days), water, yeast (1 day),
+- The kinds, in `data/catalogue.json`: flour (spoils in 3 simulated days), water, yeast (1 day),
   dough (4 hours), bread (1 day) and charcoal. The bakery is at 22 degrees.
 - The recipes, in `data/recipes.json`: the mixer makes dough from 2 flour, a water and a yeast in
   10 minutes (risen 95, flat 5: nothing); the oven bakes a dough in 30 minutes (good 85: two
@@ -13,11 +13,11 @@ each with a container.
 - Orders: deliver flour, water or yeast to the pantry (any other kind, or a delivery it has no
   room for, is turned away); mix from the pantry; bake from the mixer's dough; sell a loaf off
   the oven's rack.
-- Each step runs the orders, then spoils everything by the step's game minutes, then throws out
+- Each step runs the orders, then spoils everything by the step's simulated minutes, then throws out
   every spoiled item (so spoiled dough never fills the mixer's four slots), then lets the jobs
   run, drawing outcomes from the `"crafting"` stream.
 
-The fixture hash in `fixtures/bakery.hash` covers 54,000 steps (about 30 game hours) of
+The fixture hash in `fixtures/bakery.hash` covers 54,000 steps (about 30 simulated hours) of
 deliveries now and then, the mixer and oven asked to work whether or not they can, and loaves
 sold. It is checked by `lockstep-headless verify bakery` and by a WebAssembly test.
 

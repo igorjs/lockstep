@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Decision: a `DailyBudget` caps the total change an entity gets from one tag in a game day.
+//! Decision: a `DailyBudget` caps the total change an entity gets from one tag in a simulated day.
 //! Prayer restores hope, but praying all day gives no more than the cap until the next day.
 //! Alternative rejected: diminishing each application by a factor, which still rewards spamming
 //! and needs a tuned curve.
-//! Would change if: a capped effect gives anything past its cap before the next game day, or the
+//! Would change if: a capped effect gives anything past its cap before the next simulated day, or the
 //! next day's budget does not start fresh.
 
 use crate::common::{column_with, fresh, id, whole};
@@ -13,7 +13,7 @@ use lockstep_attributes::{Effect, EffectContext, EffectTag, Effects, Stacking};
 use wasm_bindgen_test::wasm_bindgen_test as test;
 
 #[test]
-fn a_capped_effect_gives_nothing_past_its_cap_until_the_next_game_day() {
+fn a_capped_effect_gives_nothing_past_its_cap_until_the_next_simulated_day() {
     let (registry, _, who) = fresh();
     let hunger = id(&registry, "hunger");
     let mut attributes = column_with(&registry, who);

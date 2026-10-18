@@ -51,7 +51,7 @@ pub struct Configuration {
     /// The wind at the start.
     pub wind_direction: Turn,
     pub wind_strength: Fixed32,
-    /// The game day the clock starts on, which sets the season.
+    /// The simulated day the clock starts on, which sets the season.
     pub starting_day: u32,
 }
 
@@ -200,7 +200,7 @@ impl Simulation for Orchard {
 }
 
 pub const DEFAULT_SEED: u64 = 20_261_016;
-/// Twelve game days of 3,600 steps: a whole year.
+/// Twelve simulated days of 3,600 steps: a whole year.
 pub const DEFAULT_STEPS: u64 = 43_200;
 pub const STEPS_PER_DAY: u64 = 3_600;
 
@@ -243,7 +243,7 @@ pub fn step(runner: &mut Runner<Orchard>, intents: &[Intent]) -> Vec<Event> {
 }
 
 /// The scripted session the fixture hash covers: the blight reaches the gate on the first step,
-/// then, about every quarter of a game day, a random block from outside.
+/// then, about every quarter of a simulated day, a random block from outside.
 pub fn script(orchard: &Orchard, step_number: u64, script: &mut Streams) -> Vec<Intent> {
     if step_number == 0 {
         return vec![Intent::Infect {

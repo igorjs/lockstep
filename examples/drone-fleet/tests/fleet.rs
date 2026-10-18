@@ -9,7 +9,7 @@ use lockstep_core::{hash_of, Handle, Runner, Simulation};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
 
-/// One game minute is thirty steps.
+/// One simulated minute is thirty steps.
 const STEPS_PER_MINUTE: u64 = 30;
 
 fn whole(value: i32) -> Fixed32 {

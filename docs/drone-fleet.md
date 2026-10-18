@@ -12,9 +12,9 @@ charge, drain and wear. It is the second consumer of `lockstep-attributes` and o
 - Intents: `Launch { drone, minutes }`, `Dock { drone }`, `Service { drone }`.
 - A launch needs a docked drone with at least 25 charge and less than 75 wear: a drone past the
   `retire` mark never launches again, since service cannot take it back under the mark. The flight is an effect that drains 2 charge
-  a game minute for its length, and every launch risks a fault (a 5 percent `Chance` roll on the
+  a simulated minute for its length, and every launch risks a fault (a 5 percent `Chance` roll on the
   `faults` stream) that adds 12 wear.
-- A flight that runs its course lands and docks. Docking is an effect that charges 4 a game minute
+- A flight that runs its course lands and docks. Docking is an effect that charges 4 a simulated minute
   until the next launch.
 - A drone that runs dry in the air is stranded. `Dock` recovers it and adds 8 wear.
 - `Service` removes 20 wear from a docked drone, but never below the last mark passed.

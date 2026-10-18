@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Decision: game time is an exact integer position inside the day, advanced by an integer
+//! Decision: simulated time is an exact integer position inside the day, advanced by an integer
 //! multiplier in 1/65,536ths. Floats appear only where a host reads or sets a value.
 //! Alternative rejected: accumulating minutes in a 32-bit float on every step, which drifted
-//! 1.37 game minutes over one 120 minute day and made a day about 215,800 steps.
+//! 1.37 simulated minutes over one 120 minute day and made a day about 215,800 steps.
 //! Would change if: any day, at any multiplier that divides a day evenly, is not an exact whole
 //! number of steps (the number to beat is zero drift over three days).
 

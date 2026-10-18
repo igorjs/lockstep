@@ -22,7 +22,7 @@ impl Default for StepConfiguration {
     }
 }
 
-/// Owns time: a fixed step, an accumulator, the game clock, and the named random streams.
+/// Owns time: a fixed step, an accumulator, the simulated clock, and the named random streams.
 pub struct Runner<S: Simulation> {
     simulation: S,
     clock: Clock,
