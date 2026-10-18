@@ -3,7 +3,7 @@
 # 0005 The spatial crate (decided, with two open items)
 
 Status: decided and implemented for `lockstep-spatial` and its consumers, with two open items (the hexagon figure and
-the pathfinding benchmark target). The reference calls this crate `lockstep-grid`;
+the pathfinding benchmark target, which decision 0047 meets with a hierarchical search). The reference calls this crate `lockstep-grid`;
 it was renamed to stay generic.
 
 ## Decisions where the reference was silent or ambiguous
@@ -34,7 +34,9 @@ it was renamed to stay generic.
 - **Mars Rovers** (`examples/mars-rovers`) runs on all three topologies. The kata numbers its plateau with y growing northward while the grid's north is a smaller y, so positions are converted at the boundary and the classic answers (1 3 N and 5 1 E) are unchanged. A plateau is stored with a ring of wall cells, so the edge is a wall and every cell a rover stands on has a full neighbour list. Rovers act one instruction per step in handle order: a rover sees the moves of lower handles in the same step, a contested cell goes to the lower handle, and a program added in a step starts in the next one.
 - **The capsule** walks A* paths around a wall across its room. This changed its movement on purpose, so its fixture hash changed from `316b312aae0edd6a` to `5f834ccde46abfef` (rule: a move follows the cheapest path around the wall, and a spawn that lands on the wall is redrawn). The Mars Rovers fixture hash is `df95ff68f0f75c69`.
 
-## Open item: the pathfinding benchmark target
+## Answered item: the pathfinding benchmark target
+
+Answered by decision 0047 for the hierarchical search. What follows is the state when it was open; the exact search is unchanged.
 
 The reference gives 50 milliseconds as the target for 500 paths on a 512 by 512 map with 20 percent
 walls on the development MacBook. Measured on an Apple M1 Pro with the release profile: 611

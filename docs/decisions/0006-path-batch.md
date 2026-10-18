@@ -33,8 +33,8 @@ The first version gave each piece of work its own search buffers (four megabytes
 95 milliseconds. Chunking the requests, a few chunks per thread with one set of buffers each, brought it
 to 87.
 
-The reference's target of 50 milliseconds is still not met. Hierarchical search or a cheaper step would
-close the rest. See the open item in decision 0005.
+The reference's target of 50 milliseconds is not met by the exact search on any number of threads here.
+Decision 0047 meets it with a hierarchical search (about 23 milliseconds serially, paths 6.4 percent dearer).
 
 ## Alternatives
 

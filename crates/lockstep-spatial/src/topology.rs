@@ -2,6 +2,19 @@
 use crate::cell::Cell;
 use lockstep_core::math::{Fixed32, Vector2};
 
+/// One step out of a cell, with what a search needs to judge it: the neighbour, the step cost in
+/// tenths, and, for a diagonal step, the two cells beside the corner that must both be open.
+#[derive(Clone, Copy, Debug)]
+#[doc(hidden)]
+pub struct Step {
+    pub to: Cell,
+    pub cost: u32,
+    /// How far the neighbour is from the cell in columns and rows of the stored grid.
+    pub column_change: i8,
+    pub row_change: i8,
+    pub corners: Option<[Cell; 2]>,
+}
+
 /// How cells connect. Determinism depends on the fixed order of `neighbours`.
 ///
 /// Distances and costs are in tenths of a straight step: 10 per straight step, 14 per diagonal
@@ -12,6 +25,33 @@ pub trait Topology: Copy + Default {
 
     /// The neighbours inside the map, in a fixed order. Clears `out` first.
     fn neighbours(cell: Cell, width: u32, height: u32, out: &mut Vec<Cell>);
+
+    /// The steps out of a cell in the order of `neighbours`. Clears `out` first. The provided
+    /// version asks `neighbours` and `step_cost`; square topologies override it to avoid
+    /// recomputing coordinates for every neighbour.
+    #[doc(hidden)]
+    fn steps_from(cell: Cell, width: u32, height: u32, out: &mut Vec<Step>) {
+        let mut cells = Vec::with_capacity(Self::NEIGHBOURS);
+        Self::neighbours(cell, width, height, &mut cells);
+        out.clear();
+        for to in cells {
+            let cost = Self::step_cost(cell, to, width);
+            let corners = (cost > 10).then(|| {
+                let (from_x, from_y) = split(cell, width);
+                let (to_x, to_y) = split(to, width);
+                [join(to_x, from_y, width), join(from_x, to_y, width)]
+            });
+            let (to_x, to_y) = split(to, width);
+            let (from_x, from_y) = split(cell, width);
+            out.push(Step {
+                to,
+                cost,
+                column_change: (to_x - from_x) as i8,
+                row_change: (to_y - from_y) as i8,
+                corners,
+            });
+        }
+    }
 
     /// The cost of the cheapest path between two cells on an empty map, in tenths.
     fn distance(a: Cell, b: Cell, width: u32) -> u32;
@@ -61,6 +101,30 @@ fn square_neighbours(
         let (nx, ny) = (x + dx, y + dy);
         if inside(nx, ny, width, height) {
             out.push(join(nx, ny, width));
+        }
+    }
+}
+
+fn square_steps(
+    directions: &[(i64, i64)],
+    cell: Cell,
+    width: u32,
+    height: u32,
+    out: &mut Vec<Step>,
+) {
+    out.clear();
+    let (x, y) = split(cell, width);
+    for (dx, dy) in directions {
+        let (nx, ny) = (x + dx, y + dy);
+        if inside(nx, ny, width, height) {
+            let diagonal = *dx != 0 && *dy != 0;
+            out.push(Step {
+                to: join(nx, ny, width),
+                cost: if diagonal { 14 } else { 10 },
+                column_change: *dx as i8,
+                row_change: *dy as i8,
+                corners: diagonal.then(|| [join(nx, y, width), join(x, ny, width)]),
+            });
         }
     }
 }
@@ -128,6 +192,10 @@ impl Topology for Square8 {
         square_neighbours(&EIGHT_DIRECTIONS, cell, width, height, out);
     }
 
+    fn steps_from(cell: Cell, width: u32, height: u32, out: &mut Vec<Step>) {
+        square_steps(&EIGHT_DIRECTIONS, cell, width, height, out);
+    }
+
     fn distance(a: Cell, b: Cell, width: u32) -> u32 {
         let ((ax, ay), (bx, by)) = (split(a, width), split(b, width));
         let (dx, dy) = (
@@ -166,6 +234,10 @@ impl Topology for Square4 {
 
     fn neighbours(cell: Cell, width: u32, height: u32, out: &mut Vec<Cell>) {
         square_neighbours(&FOUR_DIRECTIONS, cell, width, height, out);
+    }
+
+    fn steps_from(cell: Cell, width: u32, height: u32, out: &mut Vec<Step>) {
+        square_steps(&FOUR_DIRECTIONS, cell, width, height, out);
     }
 
     fn distance(a: Cell, b: Cell, width: u32) -> u32 {

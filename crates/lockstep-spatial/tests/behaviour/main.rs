@@ -6,6 +6,7 @@ mod common;
 
 mod batch;
 mod flow;
+mod hierarchy;
 mod map;
 mod occupancy;
 mod pathfinder;
