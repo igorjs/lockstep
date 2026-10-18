@@ -15,6 +15,8 @@ hear through the air, all in integers. Nothing knows where anything is unless it
 - `think`: each agent's `Mind` hunts a memory that fades in exact game minutes, moving between
   Idle, Curious, Alert and Searching; a `Director` lets at most its budget be Alert on one target,
   and a `Leash` keeps an agent from reacting to anything far from home.
+- `Waves`: a large arrival spaced into pulses by game minutes, admitted only as far as the
+  director's `headroom` allows, never dropped.
 - `Weather`: the wind drifting, gusting and swinging with fronts, one game second at a time, the
   same at any step rate.
 - `steer`: agents move down a flow field through occupancy, sharing `sidestep` with fighters.

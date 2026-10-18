@@ -38,6 +38,7 @@ determinism:
     cargo run -p lockstep-headless -- verify dispatch --expect examples/dispatch/fixtures/dispatch.hash
     cargo run -p lockstep-headless -- verify bakery --expect examples/bakery/fixtures/bakery.hash
     cargo run -p lockstep-headless -- verify estate --expect examples/estate/fixtures/estate.hash
+    cargo run -p lockstep-headless -- verify checkout --expect examples/checkout/fixtures/checkout.hash
     cargo run -p lockstep-headless -- verify orchard --expect examples/orchard/fixtures/orchard.hash
     cargo run -p lockstep-headless --features parallel -- verify crowd --expect examples/crowd/fixtures/crowd.hash
     wasm-pack test --node crates/lockstep-core
@@ -69,6 +70,7 @@ determinism:
     wasm-pack test --node examples/dispatch
     wasm-pack test --node examples/bakery
     wasm-pack test --node examples/estate
+    wasm-pack test --node examples/checkout
     wasm-pack test --node examples/orchard
 
 bench:
