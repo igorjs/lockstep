@@ -7,8 +7,8 @@
 //! single currency, which also shows the core needs nothing game-specific.
 
 use lockstep_core::{
-    ClockConfiguration, Column, Context, Handle, Message, Recorder, Recording, Runner, Simulation,
-    StableVector, StepConfiguration, Streams, Timeline,
+    ClockConfiguration, Column, Context, Handle, Message, Recorder, Recording, Runner, Session,
+    Simulation, StableVector, StepConfiguration, Streams, Timeline,
 };
 use serde::{Deserialize, Serialize};
 
@@ -255,13 +255,17 @@ fn script_intent(script: &mut Streams, accounts: &[Handle]) -> Intent {
 /// separate stream set so the script depends only on the seed.
 pub fn run_fixture(seed: u64, steps: u64) -> Runner<Ledger> {
     let mut runner = runner(seed);
-    let accounts = runner.simulation().books().accounts.handles();
+    drive(&mut runner, seed, steps);
+    runner
+}
+
+fn drive(session: &mut impl Session<Ledger>, seed: u64, steps: u64) {
+    let accounts = session.simulation().books().accounts.handles();
     let mut script = script_streams(seed);
     for _ in 0..steps {
         let intent = script_intent(&mut script, &accounts);
-        runner.step_once(&[intent]);
+        session.step_once(&[intent]);
     }
-    runner
 }
 
 /// The same session, recorded with a checkpoint every `checkpoint_every` steps, keeping the
@@ -284,12 +288,7 @@ pub fn record_fixture(
     if keep_snapshots {
         recorder = recorder.keep_snapshots();
     }
-    let accounts = recorder.runner().simulation().books().accounts.handles();
-    let mut script = script_streams(seed);
-    for _ in 0..steps {
-        let intent = script_intent(&mut script, &accounts);
-        recorder.step_once(&[intent]);
-    }
+    drive(&mut recorder, seed, steps);
     recorder.into_recording()
 }
 

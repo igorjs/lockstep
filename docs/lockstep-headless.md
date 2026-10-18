@@ -40,5 +40,5 @@ lockstep-headless stats  <file>
 - `stats` prints the seed, the length in steps and real seconds, intents per real minute, the steps
   spent at each clock multiplier, and the number of checkpoints and snapshots.
 
-`just determinism` records a ledger session and a bakery session and replays it through the binary. Saving a session to
+`just determinism` records a ledger session and a bakery session and replays them through the binary. Saving a session to
 resume it later (`replay --save`) arrives with saves and migrations.

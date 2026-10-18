@@ -47,20 +47,21 @@ fn every_recording_replays_to_its_fixture_hash() {
         let file = scratch(id);
         let path = file.to_string_lossy().into_owned();
         run(&arguments(&[
-            "record", id, "--out", &path, "--steps", "400", "--every", "100",
+            "record", id, "--out", &path, "--steps", "1000", "--every", "100",
         ]))
         .unwrap_or_else(|error| panic!("{id}: {error}"));
-        let expected = run(&arguments(&["fixture", id, "--steps", "400"])).unwrap();
-        let replayed = run(&arguments(&["replay", &path])).unwrap_or_else(|e| panic!("{id}: {e}"));
+        let expected = run(&arguments(&["fixture", id, "--steps", "1000"])).unwrap();
+        let replayed =
+            run(&arguments(&["replay", &path])).unwrap_or_else(|error| panic!("{id}: {error}"));
         assert_eq!(
             replayed,
-            format!("identical {id} after 400 steps, hash {expected}"),
+            format!("identical {id} after 1000 steps, hash {expected}"),
             "{id}"
         );
         let bisected = run(&arguments(&["bisect", &path])).unwrap();
-        assert_eq!(bisected, format!("no divergence in 400 steps of {id}"));
+        assert_eq!(bisected, format!("no divergence in 1000 steps of {id}"));
         let stats = run(&arguments(&["stats", &path])).unwrap();
-        assert!(stats.contains("steps 400"), "{id}: {stats}");
+        assert!(stats.contains("steps 1000"), "{id}: {stats}");
         std::fs::remove_file(&file).unwrap();
     }
 }
@@ -69,14 +70,17 @@ fn every_recording_replays_to_its_fixture_hash() {
 fn a_recording_taken_with_another_seed_replays_to_that_seed() {
     for replayable in replayables() {
         let id = replayable.id;
-        let bytes = (replayable.record)(7, 300, 100).unwrap();
+        let bytes = (replayable.record)(7, 1000, 100).unwrap();
         let replayed = (replayable.replay)(&bytes, None).unwrap();
-        let fixture = fixtures().into_iter().find(|f| f.name == id).unwrap();
+        let fixture = fixtures()
+            .into_iter()
+            .find(|fixture| fixture.name == id)
+            .unwrap();
         assert!(replayed.identical, "{id}: {}", replayed.report);
         assert!(
             replayed
                 .report
-                .ends_with(&format_hash((fixture.run)(7, 300))),
+                .ends_with(&format_hash((fixture.run)(7, 1000))),
             "{id}: {}",
             replayed.report
         );
