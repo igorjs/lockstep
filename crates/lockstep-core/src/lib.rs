@@ -8,6 +8,7 @@ pub mod math;
 mod message;
 mod replay;
 mod runner;
+mod save;
 mod simulation;
 mod store;
 mod streams;
@@ -29,10 +30,11 @@ pub mod __private {
 }
 pub use message::{Indexable, Message};
 pub use replay::{
-    bisect, record_session, recorded_simulation_id, replay, Bisection, RecordedStep, Recorder,
-    Recording, ReplayError, ReplayOutcome, Session,
+    bisect, record_session, recorded_simulation_id, replay, replay_from, Bisection, RecordedStep,
+    Recorder, Recording, ReplayError, ReplayOutcome, Session,
 };
 pub use runner::{Advanced, Runner, StepConfiguration};
+pub use save::{saved_simulation_id, Migrations, Save, SaveError, SAVE_FORMAT};
 pub use simulation::{Context, Simulation};
 pub use store::{Column, Handle, StableVector};
 pub use streams::Streams;

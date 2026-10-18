@@ -26,7 +26,7 @@ items in a milestone are out of scope here.
 | M13 Regions and calendar | Done | `lockstep-regions`: region graph from JSON with anchors, receptiveness, hops and nearest, a condition that spreads by chance each interval helped downwind and scaled by a pace (decisions 0029, 0030); `lockstep-calendar`: seasons from JSON, daylight and temperature by day and minute, the clock's daylight, season events (decision 0027); orchard | Met: the mean spread time is within 3 percent of the inverse of the chance; winter has the shortest days and a midwinter blight does not spread; the calendar, spread and orchard hashes are equal natively and under WebAssembly |
 | M14 Structures and procedural generation | Done | `lockstep-structures`: durable multi-cell structures that wall a map, wear down, mend and collapse; `lockstep-procgen`: chunk templates and weighted pools from JSON, reserved chunks, a layout rolled with a seed per chunk, applied to a map; estate | Met: a barrier across a chunk border and its collapse each report both chunks dirty; chunk seeds never collide across 200 world seeds times 128 by 128 places. Deferral D6 is closed by decision 0051: `roll_matched` joins template edges by socket, opt-in, bounded, with `NoLayout` and `SearchLimit` refusals, checked on the estate's joined templates |
 | M15 Meta, lineage, templates | Done | `lockstep-meta`: the chronicle (the cross-run record) saved in a versioned envelope, control transfer with a caller-ordered fall-back, archetypes and point-buy from JSON (decision 0031); roster | Met: the chronicle survives a new project. A name retired in the first project of `roster` is refused in the second after the chronicle was sealed and opened, the lead falls back to the next hired and never to the one who left, and the roster hash is equal natively and under WebAssembly (`8969859445141e9b`) |
-| M16 Hardening | Not started | Saves, migrations, fuzzing and Miri, and money are framework items | |
+| M16 Hardening | In progress | Done in core: saves with a versioned envelope, migrations between snapshot versions, `Recorder::save` and `replay_from` (decisions 0035, 0036). Still to land: headless `--save` and `resume` with the `tariffs` consumer and its committed old save, data tables with hot reload, fuzzing and Miri, money | Open until every framework part lands |
 
 ## Gaps: short of the reference
 
@@ -43,9 +43,10 @@ items in a milestone are out of scope here.
 |---|---|---|---|---|
 | D1 | Schema export from `#[derive(Message)]` | M5 | A tool that reads schemas | Decision 0010 |
 | D2 | The crash bundle (a recording, the last good save and the host's log) | M5 | A host, which writes it | Decision 0011 |
-| D3 | `replay --save` and saving mid-recording | M5 | Saves and migrations (M16) | `docs/lockstep-headless.md`, `docs/lockstep-core.md` |
-| D4 | Conversions between message versions | M16 | Saves: until a save ships, no version has shipped | Decision 0010 |
+| D3 | `replay --save` and saving mid-recording | M5 | Core part closed in M16 (`Recorder::save`, `replay_from`); the headless commands follow | `docs/lockstep-headless.md`, `docs/lockstep-core.md` |
+| D4 | Conversions between message versions | M16 | Closed in M16 for snapshots (decision 0035); see D7 and D8 for the rest | Decisions 0010, 0035 |
 | D7 | Conversions between versions of a saved chronicle: the envelope refuses another message version and does not convert it | M15 | Saves and migrations (M16), as D4 | Decision 0031, `docs/lockstep-meta.md` |
+| D8 | Conversions for intents, events and configurations, so recordings made by an older shape still replay | M16 | A consumer that keeps old recordings | Decision 0035 |
 
 ## Departures: where the work differs from the reference on purpose
 

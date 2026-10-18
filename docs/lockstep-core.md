@@ -76,7 +76,30 @@ runs or records from one loop; `record_session` records one around a built runne
   order or past the last step is an error, not a pass. `encode` and `decode` are the
   same functions for any value.
 
-See decision 0011. Saving mid-session arrives with saves and migrations.
+See decision 0011. For saving mid-session see the next section.
+
+## Saves and migrations
+
+`Runner::save(id)` (and `Recorder::save`) writes a `Save`: the envelope format, the simulation id,
+the snapshot's version, the step and clock configuration, the step number, the clock, the streams
+and the snapshot as bytes. `Save::to_bytes` and `from_bytes` use the same fixed-endian bytes as
+recordings, refuse trailing bytes and an unknown envelope format, and `saved_simulation_id` reads
+the id without decoding the rest. `Runner::from_save(&save, &migrations)` continues from it. A save
+is taken at a step boundary and holds no unspent real time or queued intents (decision 0036).
+
+An older snapshot shape loads through `Migrations`, one typed conversion per version:
+
+```rust
+let migrations = Migrations::new()
+    .step(|old: BooksV1| Books { /* fields, and the value that keeps the old behaviour */ })
+    .step(|old: BooksV2| BooksV3 { /* ... */ });
+```
+
+The shapes that shipped stay in the code, frozen. A missing link, a newer save, or bytes that do not
+read as their version are errors (`SaveError`), never guesses (decision 0035). `replay_from(&recording,
+&save, &migrations)` continues a recording from a save and compares every checkpoint from the save's
+step on; a save converted from an older shape is `NotComparable` with the recording's hashes.
+Intents, events and configurations are not converted yet; see the roadmap.
 
 ## Timeline
 
@@ -111,5 +134,5 @@ No hash maps or sets, no wall clocks, no threads, no transcendental float functi
 
 ## Not in milestone M1
 
-Money, grid, attributes, chance rolls (milestone M4), saves and migrations, record and replay and
-the timeline (milestone M5). See the roadmap.
+Money, grid, attributes, chance rolls (milestone M4), record and replay and the timeline (milestone
+M5), saves and migrations (milestone M16, above). See the roadmap.
