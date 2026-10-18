@@ -22,6 +22,7 @@ dispatch = { path = "../../examples/dispatch" }
 bakery = { path = "../../examples/bakery" }
 estate = { path = "../../examples/estate" }
 roster = { path = "../../examples/roster" }
+checkout = { path = "../../examples/checkout" }
 orchard = { path = "../../examples/orchard" }
 ledger = { path = "../../examples/ledger" }
 mars-rovers = { path = "../../examples/mars-rovers" }

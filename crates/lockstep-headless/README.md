@@ -15,7 +15,7 @@ lockstep-headless verify  <name> --expect <file> [--seed <number>] [--steps <num
 - `verify` compares it with a committed file (surrounding whitespace ignored), prints `ok <name> <hash>` on a
   match, and exits with status 1 on a mismatch.
 
-Fixtures: `capsule`, `ledger`, `mars-rovers`, `crowd`, `drone-fleet`, `sparring`, `cargo-bay`, `crater-survey`, `audit`, `training`, `dispatch`, `bakery`, `estate`, `roster` and `orchard`. With the `parallel` feature, the crowd
+Fixtures: `capsule`, `ledger`, `mars-rovers`, `crowd`, `drone-fleet`, `sparring`, `cargo-bay`, `crater-survey`, `audit`, `training`, `dispatch`, `bakery`, `estate`, `orchard`, `checkout` and `roster`. With the `parallel` feature, the crowd
 solves its paths on a thread pool, and its hash must not change:
 
 ```sh
@@ -23,7 +23,7 @@ cargo run -p lockstep-headless -- verify crowd --expect examples/crowd/fixtures/
 cargo run -p lockstep-headless --features parallel -- verify crowd --expect examples/crowd/fixtures/crowd.hash
 ```
 
-It also records and replays sessions:
+It also records and replays sessions of every example except `mars-rovers` and `orchard`:
 
 ```sh
 cargo run -p lockstep-headless -- record ledger --out ledger.recording --steps 3000
