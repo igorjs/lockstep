@@ -39,6 +39,8 @@ pub struct GridMap<T: Topology> {
     step_limit: u8,
     /// One bit per 32 by 32 chunk, for hosts and caches.
     dirty_chunks: Vec<u64>,
+    /// Counts changes, so derived data (landmarks) can tell the map moved on. Not saved or compared.
+    revision: u64,
     topology: PhantomData<T>,
 }
 
@@ -142,6 +144,7 @@ impl<T: Topology> GridMap<T> {
             wall_height: vec![0; cells],
             step_limit: 1,
             dirty_chunks: vec![0; chunks.div_ceil(64)],
+            revision: 0,
             topology: PhantomData,
         }
     }
@@ -188,12 +191,18 @@ impl<T: Topology> GridMap<T> {
         self.wall_height[cell.0 as usize]
     }
 
+    /// How many changes the map has had since it was made or loaded. Not part of a save.
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+
     pub fn step_limit(&self) -> u8 {
         self.step_limit
     }
 
     pub fn set_step_limit(&mut self, step_limit: u8) {
         self.step_limit = step_limit;
+        self.revision += 1;
     }
 
     /// Whether a body can move from one cell to an adjacent one: the target is passable, the climb
@@ -244,6 +253,43 @@ impl<T: Topology> GridMap<T> {
         self.mark_dirty(cell);
     }
 
+    #[doc(hidden)]
+    pub fn steps_from(&self, cell: Cell, out: &mut Vec<crate::topology::Step>) {
+        T::steps_from(cell, self.width, self.height, out);
+    }
+
+    /// `can_step` for a step already described by `steps_from`, without recomputing coordinates.
+    pub(crate) fn can_take(&self, from: Cell, step: &crate::topology::Step) -> bool {
+        let to = step.to.0 as usize;
+        if self.passable[to] == 0 {
+            return false;
+        }
+        if self.elevation[to] as u16
+            > self.elevation[from.0 as usize] as u16 + self.step_limit as u16
+        {
+            return false;
+        }
+        match step.corners {
+            Some([a, b]) => self.is_passable(a) && self.is_passable(b),
+            None => true,
+        }
+    }
+
+    /// Whether a body could step from the neighbour `step` describes onto `cell`.
+    pub(crate) fn can_take_into(&self, cell: Cell, step: &crate::topology::Step) -> bool {
+        if self.passable[cell.0 as usize] == 0 {
+            return false;
+        }
+        let climb = self.elevation[cell.0 as usize] as u16;
+        if climb > self.elevation[step.to.0 as usize] as u16 + self.step_limit as u16 {
+            return false;
+        }
+        match step.corners {
+            Some([a, b]) => self.is_passable(a) && self.is_passable(b),
+            None => true,
+        }
+    }
+
     pub fn neighbours(&self, cell: Cell, out: &mut Vec<Cell>) {
         T::neighbours(cell, self.width, self.height, out);
     }
@@ -284,6 +330,7 @@ impl<T: Topology> GridMap<T> {
     }
 
     fn mark_all_dirty(&mut self) {
+        self.revision += 1;
         let chunks = (self.width.div_ceil(CHUNK) * self.height.div_ceil(CHUNK)) as usize;
         for chunk in 0..chunks {
             self.dirty_chunks[chunk / 64] |= 1 << (chunk % 64);
@@ -291,6 +338,7 @@ impl<T: Topology> GridMap<T> {
     }
 
     fn mark_dirty(&mut self, cell: Cell) {
+        self.revision += 1;
         let chunk = self.chunk_of(cell);
         self.dirty_chunks[chunk / 64] |= 1 << (chunk % 64);
     }

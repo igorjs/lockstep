@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Benchmark for the spatial crate, with a committed baseline.
 //!
-//! Three measurements, each the best of five runs:
-//! - 500 paths on a 512 by 512 map with 20 percent walls (the target is under 50 milliseconds on the
-//!   development MacBook),
+//! Measurements, each the best of five runs:
+//! - 500 paths on a 512 by 512 map with 20 percent walls: exact, as a batch, and through the
+//!   hierarchy (the target is under 50 milliseconds on the development MacBook, which only the
+//!   hierarchy meets; decision 0047),
+//! - building that hierarchy,
 //! - `within` at radius 24 for 1,000 agents,
 //! - one flow field over the whole map.
+//!
+//! `--sweep` also prints the hierarchy's chunk width against its greed.
 //!
 //! The baseline lives in `benches/baseline.txt` as `name microseconds` lines. The benchmark warns
 //! when a measurement is more than 10 percent slower than its baseline, and never fails the build:
@@ -14,9 +18,13 @@
 
 use lockstep_core::{Handle, StableVector, Streams};
 use lockstep_spatial::{
-    find_paths, find_paths_serially, Cell, FlowField, GridMap, Occupancy, PathOptions, PathRequest,
-    Pathfinder, Square8,
+    find_paths, find_paths_serially, Cell, FlowField, GridMap, HierarchicalPathfinder, Hierarchy,
+    Occupancy, PathOptions, PathRequest, PathResult, Pathfinder, Square8,
 };
+
+/// Chunk width of the benchmarked hierarchy (decision 0047 has the sweep that chose it).
+const HIERARCHY_SIDE: u32 = 16;
+const DEFAULT_GREED: u32 = lockstep_spatial::DEFAULT_GREED;
 use std::time::Instant;
 
 const BASELINE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/benches/baseline.txt");
@@ -81,6 +89,76 @@ fn main() {
         total
     });
 
+    // The hierarchy: built once per map, then searched. The exact cost is the yardstick for how
+    // much dearer its paths are.
+    let mut exact_cost = 0u64;
+    let mut unreachable = 0;
+    {
+        let mut path = Vec::new();
+        for (from, to) in &pairs {
+            match pathfinder.find(
+                &map,
+                &occupancy,
+                *from,
+                *to,
+                PathOptions::default(),
+                &mut path,
+            ) {
+                PathResult::Found { cost } => exact_cost += cost as u64,
+                _ => unreachable += 1,
+            }
+        }
+    }
+    let hierarchy_search = |side: u32, greed: u32| {
+        let hierarchy = Hierarchy::build(&map, side);
+        let mut guided = HierarchicalPathfinder::new(&map, &hierarchy);
+        guided.set_greed(greed);
+        let mut cost = 0u64;
+        let mut expanded = 0u64;
+        let (time, _) = best_of_five(|| {
+            let mut path = Vec::new();
+            cost = 0;
+            expanded = 0;
+            for (from, to) in &pairs {
+                let result = guided.find(
+                    &map,
+                    &occupancy,
+                    &hierarchy,
+                    *from,
+                    *to,
+                    PathOptions::default(),
+                    &mut path,
+                );
+                if let PathResult::Found { cost: found } = result {
+                    cost += found as u64;
+                }
+                expanded += guided.last_expansions() as u64;
+            }
+            cost
+        });
+        (time, cost, expanded, hierarchy.node_count())
+    };
+    if std::env::args().any(|argument| argument == "--sweep") {
+        for side in [8, 16, 24, 32] {
+            for greed in [10, 11, 12, 13, 15] {
+                let (time, cost, expanded, nodes) = hierarchy_search(side, greed);
+                println!(
+                    "sweep side {side} greed {greed}: {nodes} entrances, {time} microseconds, {expanded} expanded, {}.{:02} percent dearer",
+                    (cost - exact_cost) * 100 / exact_cost,
+                    ((cost - exact_cost) * 10_000 / exact_cost) % 100
+                );
+            }
+        }
+    }
+    let (build, _) = best_of_five(|| Hierarchy::build(&map, HIERARCHY_SIDE).node_count() as u64);
+    let (hierarchical, hierarchical_cost, hierarchical_expanded, _) =
+        hierarchy_search(HIERARCHY_SIDE, DEFAULT_GREED);
+    println!(
+        "hierarchy: side {HIERARCHY_SIDE}, {hierarchical_expanded} cells and entrances expanded, paths {}.{:02} percent dearer than exact ({unreachable} of 500 unreachable)",
+        (hierarchical_cost - exact_cost) * 100 / exact_cost,
+        ((hierarchical_cost - exact_cost) * 10_000 / exact_cost) % 100
+    );
+
     // The same 500 paths as one batch: on a thread pool with the `parallel` feature, serially
     // without it. Its answers must equal the serial ones, in order.
     let batch: Vec<PathRequest> = pairs
@@ -140,6 +218,8 @@ fn main() {
         ("paths_500_batch", batched),
         ("within_1000_agents", within),
         ("flow_field", flow),
+        ("hierarchy_build", build),
+        ("paths_500_hierarchical", hierarchical),
     ];
     println!(
         "checksums (must not change): paths {path_check}, within {within_check}, flow {flow_check}"
@@ -179,7 +259,8 @@ fn main() {
         }
     }
     println!(
-        "target: 500 paths in under 50 milliseconds, measured {} milliseconds",
-        paths / 1_000
+        "target: 500 paths in under 50 milliseconds; exact {} milliseconds, hierarchical {} milliseconds",
+        paths / 1_000,
+        hierarchical / 1_000
     );
 }

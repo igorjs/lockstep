@@ -58,6 +58,20 @@ start, including the goal) and returns `Found { cost }` (in tenths), `Unreachabl
 `(f_cost, cell)` and neighbours come in a fixed order, so equal-cost paths are identical on every
 platform. `last_expansions()` reports the work of the last search.
 
+## Hierarchical search
+
+`Hierarchy::build(map, side)` finds the entrances between chunks of `side` cells (16 works well) and
+the cost and route between every two entrances of a chunk. `HierarchicalPathfinder::find(map,
+occupancy, hierarchy, from, to, options, out)` has the same shape as `Pathfinder::find` and searches
+the entrances instead of the cells: 500 paths on the benchmark map take about 23 milliseconds against
+611 for the exact search, with paths 6.4 percent dearer in total. The reported cost is the cost of the
+path returned. `set_greed(tenths)` trades speed for cost (10 is the plain estimate, the default 12).
+Build the hierarchy again after the map changes; a search given a stale hierarchy, bodies counted
+as walls, or an expansion limit is the exact search. Targets and starts walled into their chunk come
+back `Unreachable` without searching the map. `Pathfinder` stays exact and is the default. See
+decision 0047 for the options measured and rejected, and `examples/crowd/tests/long_routes.rs` for a
+consumer scenario.
+
 ## Batches
 
 `find_paths(map, occupancy, requests, options)` solves a batch of `PathRequest { from, to }` and returns
@@ -88,12 +102,14 @@ and the ground does not see up over it. `line_of_sight_symmetric` needs both dir
 `just bench` runs `benches/spatial.rs` and compares with `benches/baseline.txt`, warning when anything
 is more than 10 percent slower. `just bench-baseline` writes a new baseline after an intended change.
 It measures 500 paths on a 512 by 512 map with 20 percent walls, `within` at radius 24 for 1,000 agents,
-and one flow field. See decision 0005 for the paths measurement against the reference's target.
+and one flow field, then the hierarchy's build and the same 500 paths through it. `cargo bench -p
+lockstep-spatial -- --sweep` also prints chunk width against greed. See decisions 0005 and 0047 for
+the paths measurement against the reference's target.
 
 ## Tests
 
-- `tests/behaviour`: topologies, the map, occupancy against a plain model over random histories, the pathfinder (including a cross-check against the flow field), flow fields, and line of sight.
-- `tests/decisions`: the circle measure for topologies, sorted queries, atomic footprints, elevation and sight, flow fields, and the path tie break with its committed hash.
+- `tests/behaviour`: topologies, the map, occupancy against a plain model over random histories, the pathfinder (including a cross-check against the flow field), the hierarchical search against the exact one, flow fields, and line of sight.
+- `tests/decisions`: the circle measure for topologies, sorted queries, atomic footprints, elevation and sight, flow fields, and the path tie break with its committed hash, the hierarchical search with its committed hash, and the hexagon error.
 - `tests/spikes`: forcing the generation counter to wrap.
 - Every test also runs under WebAssembly, with and without the `hex` feature.
 - The `hex` tests run with `cargo test -p lockstep-spatial --features hex`, which `just test` does.

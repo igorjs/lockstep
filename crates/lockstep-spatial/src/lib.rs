@@ -4,6 +4,7 @@
 mod batch;
 mod cell;
 mod flow;
+mod hierarchy;
 mod map;
 mod occupancy;
 mod pathfinder;
@@ -13,11 +14,12 @@ mod topology;
 pub use batch::{find_paths, find_paths_serially, PathAnswer, PathRequest};
 pub use cell::Cell;
 pub use flow::FlowField;
+pub use hierarchy::{HierarchicalPathfinder, Hierarchy, DEFAULT_GREED};
 pub use map::{GridMap, CHUNK};
 pub use occupancy::{Occupancy, Occupied};
 pub use pathfinder::{PathOptions, PathResult, Pathfinder};
 pub use sight::{line_of_sight, line_of_sight_symmetric};
-pub use topology::{Square4, Square8, Topology};
+pub use topology::{Square4, Square8, Step, Topology};
 
 #[cfg(feature = "hex")]
 pub use topology::Hex;
