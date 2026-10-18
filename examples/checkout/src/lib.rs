@@ -132,7 +132,11 @@ impl Simulation for Checkout {
         for intent in intents {
             match *intent {
                 Intent::Announce { shoppers } => {
-                    let busy = self.world.surge.as_ref().is_some_and(|s| !s.is_finished());
+                    let busy = self
+                        .world
+                        .surge
+                        .as_ref()
+                        .is_some_and(|surge| !surge.is_finished());
                     if busy || shoppers == 0 {
                         context.events.push(Event::Ignored);
                     } else {

@@ -68,7 +68,7 @@ impl Waves {
 
     /// Arrivals that have fallen due and are not yet admitted.
     pub fn waiting(&self, rules: &WaveRules) -> u32 {
-        self.due(rules) - self.admitted
+        self.due(rules).saturating_sub(self.admitted)
     }
 
     fn due(&self, rules: &WaveRules) -> u32 {
@@ -103,7 +103,7 @@ impl Waves {
                 events.push(WaveEvent::Pulse { index, arrivals });
             }
         }
-        let waiting = self.due(rules) - self.admitted;
+        let waiting = self.due(rules).saturating_sub(self.admitted);
         let admitting = waiting.min(headroom);
         if admitting > 0 {
             self.admitted += admitting;

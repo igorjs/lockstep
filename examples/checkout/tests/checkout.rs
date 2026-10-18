@@ -38,14 +38,25 @@ fn the_queue_never_exceeds_the_budget_across_the_session() {
 
 #[test]
 fn every_announced_shopper_is_served_in_the_end() {
-    let runner = run_fixture(DEFAULT_SEED, DEFAULT_STEPS);
+    let mut runner = runner(store(), DEFAULT_SEED);
+    let mut streams = Streams::new(DEFAULT_SEED ^ 0x0063_6865_636b);
+    let mut admitted = 0;
+    for step_number in 0..DEFAULT_STEPS {
+        for event in step(&mut runner, &checkout::script(step_number, &mut streams)) {
+            if let Event::Surge(WaveEvent::Admitted { arrivals }) = event {
+                admitted += arrivals;
+            }
+        }
+    }
     let world = runner.simulation().world();
     let surge = world.surge.as_ref().expect("a second surge");
     assert!(surge.is_finished());
     assert_eq!(runner.simulation().waiting_outside(), 0);
     assert_eq!(world.queue, 0);
     assert!((300..500).contains(&surge.total()));
-    assert!(world.served > surge.total());
+    // Both surges were let in whole, and everyone let in was served.
+    assert!(admitted > surge.total());
+    assert_eq!(world.served, admitted);
 }
 
 #[test]

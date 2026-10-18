@@ -45,7 +45,10 @@ fn the_last_pulse_is_the_remainder_and_the_wave_finishes_once() {
     assert_eq!(sizes, vec![10, 10, 5]);
     assert!(waves.is_finished());
     assert_eq!(
-        events.iter().filter(|e| **e == WaveEvent::Finished).count(),
+        events
+            .iter()
+            .filter(|event| **event == WaveEvent::Finished)
+            .count(),
         1
     );
 }
