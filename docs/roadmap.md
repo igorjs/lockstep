@@ -13,7 +13,7 @@ items in a milestone are out of scope here.
 |---|---|---|---|
 | M1 Core | Done | Workspace, continuous integration on three platforms, `Simulation`, `Runner`, `Clock`, store, `Streams`, hashing, `Message`; capsule and ledger | Met: `just ci` green on Linux, macOS, Windows; hashes equal natively and under WebAssembly |
 | M2 Host | Out of scope | Lives with the host, not in this repository | Not applicable here |
-| M3 Grid and math | Done, two open items | `lockstep-spatial`: topologies, map, occupancy, A*, hierarchical search, path batch, flow field, line of sight; `Fixed32`, `Vector2`, angles; benchmark; mars-rovers, crowd | Tie-breaking holds; isotropy holds for squares, not for hexagons (gap G1); 500 paths in 23 milliseconds through the hierarchy, not by the exact search (gap G2); baseline committed |
+| M3 Grid and math | Done, one open item | `lockstep-spatial`: topologies, map, occupancy, A*, hierarchical search, path batch, flow field, line of sight; `Fixed32`, `Vector2`, angles; benchmark; mars-rovers, crowd | Tie-breaking holds; isotropy holds for squares, not for hexagons (departure P48, pinned by a test); 500 paths in 23 milliseconds through the hierarchy, not by the exact search (gap G2); baseline committed |
 | M4 Attributes | Done | `Chance` and three rolls; `lockstep-attributes`: registry from JSON, modifiers, thresholds, derived curves, effects with four stacking rules; exact game minutes; capsule needs, bleeding and prayer as data; drone-fleet | Met: stacking, crossing, frame-rate independence tests green |
 | M5 Timeline, replay, derive | Done, three deferrals (D1 to D3) | `#[derive(Message)]` and `Indexable`; recorder, replay, bisect; timeline with compaction; ledger journal; headless `record`, `replay`, `bisect`, `stats` | Met: a planted rule change is found at the right checkpoint |
 | M6 Combat and movement | Done | `lockstep-combat`: damage order, hit shapes, knockback, actions, dodges, projectiles, movement; sparring; rovers ram | Met: the duel fixture hash is equal natively and under WebAssembly; 200 partners spar for 10,000 steps without sharing a cell or going below zero health |
@@ -32,7 +32,6 @@ items in a milestone are out of scope here.
 
 | | Gap | Where | Status |
 |---|---|---|---|
-| G1 | Hexagon distance is 15.47 percent off true distance; the reference asks for 3 percent, which no hexagon step count can meet | Decision 0005 | Open: needs the reference's figure revised |
 | G2 | The exact search takes about 611 milliseconds for 500 paths on a 512 by 512 map with 20 percent walls (88 with the path batch on ten threads); the reference asks for 50. Measured: 23 milliseconds through the hierarchical search (decision 0047), with paths 6.4 percent dearer in total and a 230 millisecond build per map; exact searches measured and rejected: tighter state, no division, depth tie break, landmarks (1.4 times fewer expansions) | Decisions 0005, 0006, 0047 | Open for exact paths (about 12 times over); the target is met only by the approximate search (departure P47) |
 | G3 | `bisect` narrows to the checkpoint, not the step, unless the recording checkpoints every step | Decision 0011 | Accepted: the recording has no hash between checkpoints |
 | G4 | `lockstep-headless record` cannot record `mars-rovers` (many sessions in one fixture), `roster` (two successive projects) or `orchard` (daylight set between steps) | Decision 0043, `crates/lockstep-headless/src/recordings.rs` | Accepted: every other example records; orchard waits for its daylight to move into the simulation |
@@ -57,6 +56,7 @@ items in a milestone are out of scope here.
 | P3 | The core crate is `lockstep-core`; the spatial crate is `lockstep-spatial` (the reference says `lockstep-grid`) | Decisions 0003, 0005 |
 | P13 | `abs` and negation wrap instead of panicking, `Vector2::length` works in 64 bits, and `from_ratio` rounds ties away from zero | Decision 0004 |
 | P47 | Long paths on large maps may use a hierarchical search (`Hierarchy`, `HierarchicalPathfinder`) whose paths are not always the cheapest: 6.4 percent dearer in total on the benchmark map, 13.2 percent on hilly muddy maps, in return for 23 instead of 611 milliseconds. `Pathfinder` stays exact and the default, so no existing path or hash changed | Decision 0047, gap G2 |
+| P48 | Hexagon distance is 15.47 percent off true distance, not the reference's 3 percent: no hexagon step count can meet it, and the best constant factor still leaves 7.2 percent. Kept as the cube distance | Decision 0048 |
 | P4 | A path batch may run on a thread pool, the one place threads are allowed | Decision 0006 |
 | P5 | A ratchet attribute raises its minimum to each threshold it rises through | Decision 0008 |
 | P6 | Thresholds fire in the order the value passes them, not definition order | Decision 0008 |
