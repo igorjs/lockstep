@@ -18,6 +18,10 @@ Status: decided and implemented (`find_jump_paths`). It closes gap G2 for exact 
 | Plain batch for comparison | 88 to 91 milliseconds | |
 | Bucket open set, early target-region pruning | not built: after the batch passes the target the serial gain no longer decides G2 | no |
 
+## Alternative rejected, and what would change it
+
+Rejected: a hierarchy-style approximate batch (departure P47) as the way to meet the target; this batch is exact. Would change if: a jump batch ever gives another result or cost than the plain batch, or different cells on pools of different sizes or from one reused search, or the benchmark batch passes 50 milliseconds on the development machine.
+
 ## What remains
 
 A single thread takes 317 milliseconds, 6 times over 50; non-uniform ground and bodies as walls use the plain search. The 46 millisecond result depends on ten cores and has little margin.

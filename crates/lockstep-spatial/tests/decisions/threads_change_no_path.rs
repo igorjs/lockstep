@@ -86,7 +86,7 @@ fn uniform_batches() -> Vec<(GridMap<Square8>, Vec<PathRequest>)> {
 /// results and costs.
 #[test]
 fn a_jump_batch_gives_the_plain_results_and_costs_on_any_pool() {
-    use lockstep_spatial::{find_jump_paths, PathResult};
+    use lockstep_spatial::{find_jump_paths, JumpPathfinder};
     for (index, (map, batch)) in uniform_batches().iter().enumerate() {
         let occupancy = Occupancy::new(map);
         let plain = find_paths_serially(map, &occupancy, batch, PathOptions::default());
@@ -94,13 +94,24 @@ fn a_jump_batch_gives_the_plain_results_and_costs_on_any_pool() {
         assert_eq!(jump.len(), plain.len());
         for ((got, _), (wanted, _)) in jump.iter().zip(&plain) {
             assert_eq!(got, wanted, "map {index}");
-            let _ = PathResult::Unreachable;
         }
-        assert_eq!(
-            jump,
-            find_jump_paths(map, &occupancy, batch, PathOptions::default()).unwrap(),
-            "map {index}"
-        );
+        let mut single = JumpPathfinder::new(map).unwrap();
+        let reused: Vec<_> = batch
+            .iter()
+            .map(|request| {
+                let mut path = Vec::new();
+                let result = single.find(
+                    map,
+                    &occupancy,
+                    request.from,
+                    request.to,
+                    PathOptions::default(),
+                    &mut path,
+                );
+                (result, path)
+            })
+            .collect();
+        assert_eq!(jump, reused, "map {index}");
     }
 }
 
