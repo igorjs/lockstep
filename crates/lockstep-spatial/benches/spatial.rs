@@ -19,7 +19,7 @@
 use lockstep_core::{Handle, StableVector, Streams};
 use lockstep_spatial::{
     find_paths, find_paths_serially, Cell, FlowField, GridMap, HierarchicalPathfinder, Hierarchy,
-    Occupancy, PathOptions, PathRequest, PathResult, Pathfinder, Square8,
+    JumpPathfinder, Occupancy, PathOptions, PathRequest, PathResult, Pathfinder, Square8,
 };
 
 /// Chunk width of the benchmarked hierarchy (decision 0047 has the sweep that chose it).
@@ -89,6 +89,30 @@ fn main() {
         total
     });
 
+    // The jump search: exact, so its total cost must equal the plain search's.
+    let mut jump_cost = 0u64;
+    let mut jump_pathfinder = JumpPathfinder::new(&map).expect("the benchmark map is uniform");
+    let mut jump_expansions = 0u64;
+    let (jump, _) = best_of_five(|| {
+        jump_cost = 0;
+        jump_expansions = 0;
+        let mut path = Vec::new();
+        for (from, to) in &pairs {
+            if let PathResult::Found { cost } = jump_pathfinder.find(
+                &map,
+                &occupancy,
+                *from,
+                *to,
+                PathOptions::default(),
+                &mut path,
+            ) {
+                jump_cost += cost as u64;
+            }
+            jump_expansions += jump_pathfinder.last_expansions() as u64;
+        }
+        jump_cost
+    });
+
     // The hierarchy: built once per map, then searched. The exact cost is the yardstick for how
     // much dearer its paths are.
     let mut exact_cost = 0u64;
@@ -109,6 +133,11 @@ fn main() {
             }
         }
     }
+    assert_eq!(
+        jump_cost, exact_cost,
+        "the jump search found a different cost"
+    );
+    println!("jump: {jump_expansions} jump points expanded");
     let hierarchy_search = |side: u32, greed: u32| {
         let hierarchy = Hierarchy::build(&map, side);
         let mut guided = HierarchicalPathfinder::new(&map, &hierarchy);
@@ -220,6 +249,7 @@ fn main() {
         ("flow_field", flow),
         ("hierarchy_build", build),
         ("paths_500_hierarchical", hierarchical),
+        ("paths_500_jump", jump),
     ];
     println!(
         "checksums (must not change): paths {path_check}, within {within_check}, flow {flow_check}"

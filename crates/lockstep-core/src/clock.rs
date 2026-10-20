@@ -42,7 +42,7 @@ pub struct Clock {
     /// Position inside the current day, in `[0, units_per_day)`.
     position: u64,
     day: u32,
-    game_minutes_per_step: f32,
+    simulated_minutes_per_step: f32,
     /// The multiplier in 1/65,536ths.
     multiplier_units: u64,
 }
@@ -59,7 +59,7 @@ impl Clock {
             position: (configuration.starting_minute as u64 % MINUTES_PER_DAY) * units_per_day
                 / MINUTES_PER_DAY,
             day: configuration.starting_day,
-            game_minutes_per_step: MINUTES_PER_DAY as f32 / steps_per_day as f32,
+            simulated_minutes_per_step: MINUTES_PER_DAY as f32 / steps_per_day as f32,
             multiplier_units: UNITS_PER_STEP,
         }
     }
@@ -101,7 +101,7 @@ impl Clock {
             && self.position < self.units_per_day
             && self.multiplier_units as u128 <= ceiling
             && self.day <= u32::MAX - 16
-            && self.game_minutes_per_step.is_finite()
+            && self.simulated_minutes_per_step.is_finite()
     }
 
     pub fn minute_of_day(&self) -> f32 {
@@ -148,11 +148,11 @@ impl Clock {
 
     /// Advance one step. Returns the elapsed simulated minutes as a float and as exact 16.16 fixed
     /// point, and pushes any boundary crossed. The fixed point minutes of many steps add up to
-    /// exactly the minutes between the first and last position, so effects that run on game
+    /// exactly the minutes between the first and last position, so effects that run on simulated
     /// minutes never drift with the step count.
     pub fn advance_exactly(&mut self, events: &mut Vec<ClockEvent>) -> (f32, Fixed32) {
         let minutes_before = self.minutes_raw();
-        let elapsed = self.game_minutes_per_step * self.multiplier();
+        let elapsed = self.simulated_minutes_per_step * self.multiplier();
         let before = self.position;
         let mut after = before + self.multiplier_units;
         let sunrise = self.minute_to_units(self.configuration.sunrise_minute);

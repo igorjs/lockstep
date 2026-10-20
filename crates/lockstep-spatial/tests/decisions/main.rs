@@ -11,6 +11,7 @@ mod flow_fields_for_hordes;
 mod heap_key_cell_tie_break;
 mod hexagon_error_is_a_departure;
 mod hierarchical_search_for_long_paths;
+mod jump_search_keeps_the_cost;
 mod queries_sort_their_output;
 mod square8_for_rectangular_streets;
 mod threads_change_no_path;

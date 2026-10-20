@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Decision: a `RefreshDuration` effect applied again restarts its timer and keeps its one
 //! modifier.
-//! Alternative rejected: stacking each application, which turns a repeated blessing into an
+//! Alternative rejected: stacking each application, which turns a repeated boost into an
 //! unbounded bonus.
 //! Would change if: a refreshed effect applies its modifier more than once, or expires on its old
 //! timer.
@@ -27,18 +27,18 @@ fn a_refreshed_effect_applies_its_modifier_once_and_restarts_its_timer() {
         attribute_events: &mut attribute_events,
         effect_events: &mut effect_events,
     };
-    let blessed = Effect {
+    let boosted = Effect {
         attribute: health,
         modifier: Some(Modifier::Add(whole(20))),
         per_minute: None,
         remaining_minutes: Some(whole(10)),
-        tag: EffectTag::new("blessed"),
+        tag: EffectTag::new("boosted"),
         stacking: Stacking::RefreshDuration,
     };
-    let first = effects.add(who, blessed.clone(), &mut context);
+    let first = effects.add(who, boosted.clone(), &mut context);
     effects.tick(whole(8), 0, &mut context);
-    let second = effects.add(who, blessed.clone(), &mut context);
-    let third = effects.add(who, blessed, &mut context);
+    let second = effects.add(who, boosted.clone(), &mut context);
+    let third = effects.add(who, boosted, &mut context);
     assert_eq!((first, second), (first, third), "one effect, refreshed");
     let maximum =
         |context: &EffectContext<'_>| context.attributes.get(who).unwrap().get(health).maximum();
@@ -49,7 +49,7 @@ fn a_refreshed_effect_applies_its_modifier_once_and_restarts_its_timer() {
     assert_eq!(maximum(&context), whole(120));
     effects.tick(whole(1), 0, &mut context);
     assert_eq!(maximum(&context), whole(100));
-    let tag = EffectTag::new("blessed");
+    let tag = EffectTag::new("boosted");
     assert_eq!(
         context.effect_events.as_slice(),
         [

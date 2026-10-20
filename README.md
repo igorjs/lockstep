@@ -49,7 +49,7 @@ WebAssembly on every change.
 
 | Example | Shows |
 |---|---|
-| [`capsule`](examples/capsule) | An actor walks a walled room along A* paths; needs, health and sanity are attributes from JSON, and decay, bleeding and prayer are effects. |
+| [`capsule`](examples/capsule) | An actor walks a walled room along A* paths; needs, health and sanity are attributes from JSON, and decay, bleeding and restoration are effects. |
 | [`ledger`](examples/ledger) | Accounts and transfers: exact money, rejected transfers with reasons. Not a game. |
 | [`mars-rovers`](examples/mars-rovers) | The Mars Rovers kata on any topology, with collisions as occupancy and rovers that ram each other. |
 | [`drone-fleet`](examples/drone-fleet) | Delivery drones whose batteries charge, drain and wear: attributes from JSON, effects, a ratchet, and fault rolls. Not a game. |

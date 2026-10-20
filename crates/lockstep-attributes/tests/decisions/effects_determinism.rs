@@ -16,7 +16,7 @@ use wasm_bindgen_test::wasm_bindgen_test as test;
 
 const TWELVE: &str = r#"{ "attributes": [
   { "name": "health", "minimum": 0, "maximum": 100, "starting": 100, "on_maximum_change": "scale_current",
-    "thresholds": [ { "at": 50, "name": "hurt" }, { "at": 20, "name": "wounded" } ] },
+    "thresholds": [ { "at": 50, "name": "hurt" }, { "at": 20, "name": "damaged" } ] },
   { "name": "hunger", "minimum": 0, "maximum": 100, "starting": 90,
     "thresholds": [ { "at": 60, "name": "peckish" }, { "at": 20, "name": "starving" } ] },
   { "name": "thirst", "minimum": 0, "maximum": 100, "starting": 90 },
@@ -31,7 +31,7 @@ const TWELVE: &str = r#"{ "attributes": [
     "derived": { "inputs": ["strength"], "curve": { "piecewise": { "knots": [[0, 20], [10, 120], [20, 160]] } } } },
   { "name": "critical_chance", "minimum": 0, "maximum": 100, "starting": 0,
     "derived": { "inputs": ["luck"], "curve": { "linear": { "per_point": "1.5", "offset": 5 } } } },
-  { "name": "prayer_efficiency", "minimum": 0, "maximum": 100, "starting": 0,
+  { "name": "restoration_efficiency", "minimum": 0, "maximum": 100, "starting": 0,
     "derived": { "inputs": ["hope", "sanity"], "curve": "product" } }
 ] }"#;
 
@@ -104,7 +104,7 @@ fn run() -> u64 {
             None,
             Some((3, 2)),
             Some(20),
-            "prayer",
+            "restoration",
             Stacking::DailyBudget {
                 cap_per_day: Fixed32::from_int(12),
             },

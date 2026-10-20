@@ -14,7 +14,7 @@ advance by simulated minutes, not by steps.
   frame rate and the clock multiplier cannot change it. Effects that meet at a clamp (a regen and a
   bleed on a full bar) or share a budget are settled tick by tick, and for them the tick size can
   matter.
-- A budget is spent by what lands after the attribute clamps, so a prayer at full hope spends
+- A budget is spent by what lands after the attribute clamps, so a restoration at full hope spends
   nothing.
 - Stacking is per tag on an entity: `Independent`, `RefreshDuration` (the modifier applies once, the
   timer restarts), `Replace`, and `DailyBudget` (the tag's total change on the entity is capped per

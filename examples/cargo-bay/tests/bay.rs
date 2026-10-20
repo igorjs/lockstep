@@ -311,7 +311,7 @@ fn step(
     let mut events = Vec::new();
     let mut context = Context {
         clock,
-        elapsed_game_minutes: minutes,
+        elapsed_simulated_minutes: minutes,
         elapsed_minutes: exact,
         randomness,
         events: &mut events,

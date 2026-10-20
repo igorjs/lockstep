@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Decision: a `DailyBudget` caps the total change an entity gets from one tag in a simulated day.
-//! Prayer restores hope, but praying all day gives no more than the cap until the next day.
+//! Restoration gives hope, but restoring all day gives no more than the cap until the next day.
 //! Alternative rejected: diminishing each application by a factor, which still rewards spamming
 //! and needs a tuned curve.
 //! Would change if: a capped effect gives anything past its cap before the next simulated day, or the
@@ -36,30 +36,30 @@ fn a_capped_effect_gives_nothing_past_its_cap_until_the_next_simulated_day() {
         &mut Vec::new(),
     );
     assert_eq!(current(&context), whole(10));
-    let prayer = Effect {
+    let restoration = Effect {
         attribute: hunger,
         modifier: None,
         per_minute: Some(whole(2)),
         remaining_minutes: Some(whole(10)),
-        tag: EffectTag::new("prayer"),
+        tag: EffectTag::new("restoration"),
         stacking: Stacking::DailyBudget {
             cap_per_day: whole(15),
         },
     };
-    // Three prayers on day 0 would give 60; the budget allows 15.
+    // Three restorations on day 0 would give 60; the budget allows 15.
     for _ in 0..3 {
-        effects.add(who, prayer.clone(), &mut context);
+        effects.add(who, restoration.clone(), &mut context);
         effects.tick(whole(10), 0, &mut context);
     }
     assert_eq!(current(&context), whole(25));
 
     // The next day starts a fresh budget.
-    effects.add(who, prayer.clone(), &mut context);
+    effects.add(who, restoration.clone(), &mut context);
     effects.tick(whole(10), 1, &mut context);
     assert_eq!(current(&context), whole(40));
 
     // A drain under the same tag spends the same budget.
-    let mut penance = prayer;
+    let mut penance = restoration;
     penance.per_minute = Some(whole(-3));
     effects.add(who, penance, &mut context);
     effects.tick(whole(10), 1, &mut context);
@@ -89,17 +89,17 @@ fn a_gain_that_lands_on_a_full_attribute_spends_nothing() {
         &mut Vec::new(),
     );
     assert_eq!(current(&context), whole(100), "full");
-    let prayer = Effect {
+    let restoration = Effect {
         attribute: hunger,
         modifier: None,
         per_minute: Some(whole(2)),
         remaining_minutes: Some(whole(10)),
-        tag: EffectTag::new("prayer"),
+        tag: EffectTag::new("restoration"),
         stacking: Stacking::DailyBudget {
             cap_per_day: whole(15),
         },
     };
-    effects.add(who, prayer.clone(), &mut context);
+    effects.add(who, restoration.clone(), &mut context);
     effects.tick(whole(10), 0, &mut context);
     assert_eq!(current(&context), whole(100));
     // Later the same day the whole budget is still there.
@@ -110,7 +110,7 @@ fn a_gain_that_lands_on_a_full_attribute_spends_nothing() {
         &registry,
         &mut Vec::new(),
     );
-    effects.add(who, prayer, &mut context);
+    effects.add(who, restoration, &mut context);
     effects.tick(whole(10), 0, &mut context);
     assert_eq!(current(&context), whole(65));
 }

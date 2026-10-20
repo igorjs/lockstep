@@ -28,7 +28,7 @@ pub trait Simulation: Sized {
 /// Everything a simulation may touch during one step.
 pub struct Context<'a, S: Simulation> {
     pub clock: &'a Clock,
-    pub elapsed_game_minutes: f32,
+    pub elapsed_simulated_minutes: f32,
     /// The same minutes as exact 16.16 fixed point. Use this in simulation state: the minutes of
     /// many steps add up exactly, so nothing that runs on simulated minutes drifts.
     pub elapsed_minutes: Fixed32,

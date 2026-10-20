@@ -21,5 +21,5 @@ Status: decided and implemented in milestone M8, closing deferral D5.
 
 ## Would change if
 
-`waves_follow_game_minutes.rs` fails: a wave stepped in whole, half and quarter minutes differs
+`waves_follow_simulated_minutes.rs` fails: a wave stepped in whole, half and quarter minutes differs
 in when pulses fall due, in `crates/lockstep-agents/tests/decisions/`.

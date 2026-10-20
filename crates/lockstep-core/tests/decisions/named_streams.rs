@@ -13,7 +13,7 @@ use wasm_bindgen_test::wasm_bindgen_test as test;
 fn a_thousand_other_streams_leave_one_stream_untouched() {
     let mut alone = Streams::new(8);
     let expected: Vec<i32> = (0..100)
-        .map(|_| alone.range("loot", 0, 1_000_000))
+        .map(|_| alone.range("draws", 0, 1_000_000))
         .collect();
 
     let mut crowded = Streams::new(8);
@@ -21,7 +21,7 @@ fn a_thousand_other_streams_leave_one_stream_untouched() {
         crowded.unit(&format!("stream-{index}"));
     }
     let actual: Vec<i32> = (0..100)
-        .map(|_| crowded.range("loot", 0, 1_000_000))
+        .map(|_| crowded.range("draws", 0, 1_000_000))
         .collect();
     assert_eq!(actual, expected);
 }

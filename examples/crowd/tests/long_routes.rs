@@ -105,3 +105,21 @@ fn the_same_map_plans_the_same_routes_every_time() {
     let second = plan(&map, &Hierarchy::build(&map, 16));
     assert_eq!(first, second);
 }
+
+/// The jump search (decision 0075) plans the same routes at the same cost as the exact search.
+#[test]
+fn the_jump_search_plans_routes_of_the_cheapest_cost() {
+    let map = depot_map();
+    let occupancy = Occupancy::new(&map);
+    let mut exact = Pathfinder::new(&map);
+    let mut jump =
+        lockstep_spatial::JumpPathfinder::new(&map).expect("the depot ground is uniform");
+    for (from, to) in couriers(&map) {
+        let (mut cheapest, mut route) = (Vec::new(), Vec::new());
+        let options = PathOptions::default();
+        assert_eq!(
+            jump.find(&map, &occupancy, from, to, options, &mut route),
+            exact.find(&map, &occupancy, from, to, options, &mut cheapest)
+        );
+    }
+}

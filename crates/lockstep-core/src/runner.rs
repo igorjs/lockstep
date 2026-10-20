@@ -155,11 +155,11 @@ impl<S: Simulation> Runner<S> {
         if let Some((sunrise, sunset)) = self.simulation.daylight(self.clock.day()) {
             self.clock.set_daylight(sunrise, sunset);
         }
-        let (elapsed_game_minutes, elapsed_minutes) =
+        let (elapsed_simulated_minutes, elapsed_minutes) =
             self.clock.advance_exactly(&mut self.clock_events);
         let mut context = Context {
             clock: &self.clock,
-            elapsed_game_minutes,
+            elapsed_simulated_minutes,
             elapsed_minutes,
             randomness: &mut self.randomness,
             events,

@@ -145,8 +145,8 @@ impl Simulation for Estate {
 
     fn create(_configuration: Configuration, randomness: &mut Streams) -> Self {
         let templates = templates();
-        let seed = ((randomness.range("valley", 0, i32::MAX) as u64) << 32)
-            | (randomness.range("valley", 0, i32::MAX) as u64);
+        let seed = ((randomness.range("terrain", 0, i32::MAX) as u64) << 32)
+            | (randomness.range("terrain", 0, i32::MAX) as u64);
         let pool = templates.pool_id("garden").expect("defined");
         let layout = templates
             .roll(

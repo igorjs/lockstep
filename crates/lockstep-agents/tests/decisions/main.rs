@@ -13,7 +13,7 @@ mod director_never_exceeds_its_budget;
 mod memory_fades_to_searching_then_idle;
 mod staggered_checks;
 mod utility_ties_and_refusals;
-mod waves_follow_game_minutes;
+mod waves_follow_simulated_minutes;
 mod waves_never_exceed_the_budget;
 mod weather_from_seed_42;
 mod wind_ranges;

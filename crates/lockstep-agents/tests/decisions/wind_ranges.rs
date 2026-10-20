@@ -66,7 +66,7 @@ fn a_fourteen_metre_gale_masks_walking() {
         Fixed32::from_ratio(18, 10)
     );
     assert_eq!(audible_metres(&footstep(false), gale, WEST), Fixed32::ZERO);
-    // A prayer ping ignores the wind: 6 metres every way.
+    // A restoration ping ignores the wind: 6 metres every way.
     for toward in [EAST, NORTH, WEST] {
         assert_eq!(audible_metres(&footstep(true), gale, toward), metres(6));
     }
