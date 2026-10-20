@@ -60,9 +60,9 @@ platform. `last_expansions()` reports the work of the last search.
 
 ## Jump search
 
-`JumpPathfinder::new(map)` returns `None` unless every passable cell has the same terrain cost and
+`JumpPathfinder::new(map)` returns `None` unless every passable cell has normal terrain cost and the same
 elevation (a map of open ground and walls). Its `find` has the same shape as `Pathfinder::find` and
-returns the same result and the same cost on every query, as the seeded property test of decision
+returns the same result and the same cost on every query with an unlimited budget, as the seeded property test of decision
 0075 checks, but it jumps along straight and diagonal runs (64 cells per word) to the next cell where
 a forced neighbour appears, instead of expanding every cell. Among paths of equal cost it may choose
 other cells than `Pathfinder`, so a fixture made with one is not valid for the other; `Pathfinder`

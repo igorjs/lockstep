@@ -13,8 +13,8 @@ const NONE: u32 = u32::MAX;
 ///
 /// It returns a path of the same cost as `Pathfinder` (decision 0075) while expanding far fewer
 /// cells: instead of every neighbour, it jumps along straight and diagonal lines to the next cell
-/// where a choice of route could matter. It needs a map where every passable cell has the same
-/// terrain cost and the same elevation, which is what `new` checks; any other map gets `None`
+/// where a choice of route could matter. It needs a map where every passable cell has normal
+/// terrain cost (1) and the same elevation, which is what `new` checks; any other map gets `None`
 /// and should use `Pathfinder`.
 ///
 /// The cells of the returned path may differ from `Pathfinder`'s when several paths cost the same
@@ -52,7 +52,11 @@ impl JumpPathfinder {
             if !map.is_passable(cell) {
                 continue;
             }
-            let ground = (map.cost(cell).max(1), map.elevation(cell));
+            // Cost 1 only: the distances here are not scaled by a terrain cost.
+            if map.cost(cell).max(1) != 1 {
+                return None;
+            }
+            let ground = (1, map.elevation(cell));
             match reference {
                 None => reference = Some(ground),
                 Some(known) if known != ground => return None,
@@ -136,7 +140,7 @@ impl JumpPathfinder {
         10 * dx.max(dy) + 4 * dx.min(dy)
     }
 
-    /// Whether a diagonal step of `(column, row)` offset `delta` from `at` is allowed: the
+    /// Whether a diagonal step of `(column, row)` from `at` is allowed: the
     /// target and both corner cells are open.
     fn diagonal_open(&self, at: i64, column: i64, row: i64) -> bool {
         let across = row * self.stride;

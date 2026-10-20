@@ -83,6 +83,14 @@ fn only_uniform_ground_is_accepted() {
     map.set_cost(Cell(10), 3);
     assert!(JumpPathfinder::new(&map).is_none(), "mud is not uniform");
     map.set_cost(Cell(10), 1);
+    let mut muddy: GridMap<Square8> = GridMap::new(4, 4);
+    for index in 0..16 {
+        muddy.set_cost(Cell(index), 3);
+    }
+    assert!(
+        JumpPathfinder::new(&muddy).is_none(),
+        "a uniform cost above 1 would be mispriced"
+    );
     map.set_elevation(Cell(11), 2);
     assert!(JumpPathfinder::new(&map).is_none(), "a hill is not uniform");
     map.set_passable(Cell(11), false);

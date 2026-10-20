@@ -6,7 +6,7 @@ Status: decided and implemented in `lockstep-spatial` (`JumpPathfinder`). It is 
 
 ## Decision
 
-On `Square8` maps whose passable cells all share one terrain cost and one elevation, `JumpPathfinder` runs jump point search without corner cutting (a diagonal step needs both side cells open, as `GridMap::can_step` says). It returns the same `PathResult` as `Pathfinder` for every query, including the same cost, and a walkable path.
+On `Square8` maps whose passable cells all have normal terrain cost (1) and one elevation, `JumpPathfinder` runs jump point search without corner cutting (a diagonal step needs both side cells open, as `GridMap::can_step` says). It returns the same `PathResult` as `Pathfinder` for every query with an unlimited expansion budget, including the same cost, and a walkable path.
 
 `Pathfinder` stays the default. The two searches may choose different cells among paths of equal cost: the plain search breaks ties by cell index, while the jumps skip the cells that decide that tie break. To keep every fixture hash unchanged, the jump search is a separate type, and a fixture made with one search is not valid for the other. `JumpPathfinder::new` returns `None` for any other ground, and a search that counts bodies as walls, or starts inside a wall, is handed to the plain search. `maximum_expansions` counts jump points. A map that changed since construction panics (rebuild).
 
