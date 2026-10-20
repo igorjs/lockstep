@@ -123,3 +123,20 @@ fn the_jump_search_plans_routes_of_the_cheapest_cost() {
         );
     }
 }
+
+/// The jump batch (decision 0077) answers every courier with the exact search's result.
+#[test]
+fn the_jump_batch_answers_every_courier_like_the_exact_search() {
+    use lockstep_spatial::{find_jump_paths, find_paths_serially, PathRequest};
+    let map = depot_map();
+    let occupancy = Occupancy::new(&map);
+    let requests: Vec<PathRequest> = couriers(&map)
+        .into_iter()
+        .map(|(from, to)| PathRequest { from, to })
+        .collect();
+    let jump = find_jump_paths(&map, &occupancy, &requests, PathOptions::default()).unwrap();
+    let exact = find_paths_serially(&map, &occupancy, &requests, PathOptions::default());
+    for ((got, _), (wanted, _)) in jump.iter().zip(&exact) {
+        assert_eq!(got, wanted);
+    }
+}

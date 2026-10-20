@@ -18,8 +18,9 @@
 
 use lockstep_core::{Handle, StableVector, Streams};
 use lockstep_spatial::{
-    find_paths, find_paths_serially, Cell, FlowField, GridMap, HierarchicalPathfinder, Hierarchy,
-    JumpPathfinder, Occupancy, PathOptions, PathRequest, PathResult, Pathfinder, Square8,
+    find_jump_paths, find_paths, find_paths_serially, Cell, FlowField, GridMap,
+    HierarchicalPathfinder, Hierarchy, JumpPathfinder, Occupancy, PathOptions, PathRequest,
+    PathResult, Pathfinder, Square8,
 };
 
 /// Chunk width of the benchmarked hierarchy (decision 0047 has the sweep that chose it).
@@ -210,6 +211,21 @@ fn main() {
         "the batch answered in a different order"
     );
 
+    let (jump_batched, jump_batch_cost) = best_of_five(|| {
+        find_jump_paths(&map, &occupancy, &batch, PathOptions::default())
+            .expect("the benchmark map is uniform")
+            .iter()
+            .map(|(result, _)| match result {
+                PathResult::Found { cost } => *cost as u64,
+                _ => 0,
+            })
+            .sum()
+    });
+    assert_eq!(
+        jump_batch_cost, exact_cost,
+        "the jump batch found a different cost"
+    );
+
     let mut crowd = Occupancy::new(&map);
     let mut entities = StableVector::new();
     let agents: Vec<Handle> = (0..1_000).map(|_| entities.insert(())).collect();
@@ -250,6 +266,7 @@ fn main() {
         ("hierarchy_build", build),
         ("paths_500_hierarchical", hierarchical),
         ("paths_500_jump", jump),
+        ("paths_500_jump_batch", jump_batched),
     ];
     println!(
         "checksums (must not change): paths {path_check}, within {within_check}, flow {flow_check}"

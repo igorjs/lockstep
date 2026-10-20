@@ -9,6 +9,12 @@ use std::collections::BinaryHeap;
 
 const NONE: u32 = u32::MAX;
 
+/// The estimate in the high half and the cell in the low half, so one integer comparison orders
+/// by estimate and then by cell, as a pair would.
+fn pack(estimate: u32, cell: u32) -> u64 {
+    ((estimate as u64) << 32) | cell as u64
+}
+
 /// Exact jump point search for uniform open ground on `Square8`.
 ///
 /// It returns a path of the same cost as `Pathfinder` (decision 0075) while expanding far fewer
@@ -36,7 +42,7 @@ pub struct JumpPathfinder {
     closed: Vec<u32>,
     cost: Vec<u32>,
     parent: Vec<u32>,
-    heap: BinaryHeap<Reverse<(u32, u32)>>,
+    heap: BinaryHeap<Reverse<u64>>,
     fallback: Option<Pathfinder>,
     expansions: u32,
 }
@@ -108,6 +114,29 @@ impl JumpPathfinder {
             fallback: None,
             expansions: 0,
         })
+    }
+
+    /// A jump pathfinder for the same map with fresh search buffers, without scanning the map
+    /// again: one per thread of a batch.
+    pub fn fork(&self) -> Self {
+        let padded = self.open.len();
+        Self {
+            stride: self.stride,
+            open: self.open.clone(),
+            rows: self.rows.clone(),
+            columns: self.columns.clone(),
+            row_words: self.row_words,
+            column_words: self.column_words,
+            revision: self.revision,
+            generation: 0,
+            stamp: vec![0; padded],
+            closed: vec![0; padded],
+            cost: vec![0; padded],
+            parent: vec![NONE; padded],
+            heap: BinaryHeap::new(),
+            fallback: None,
+            expansions: 0,
+        }
     }
 
     /// How many jump points the last search expanded.
@@ -255,9 +284,10 @@ impl JumpPathfinder {
         self.cost[start as usize] = 0;
         self.parent[start as usize] = NONE;
         self.heap
-            .push(Reverse((self.distance(start, goal), start as u32)));
+            .push(Reverse(pack(self.distance(start, goal), start as u32)));
         let mut expansions = 0;
-        while let Some(Reverse((_, current))) = self.heap.pop() {
+        while let Some(Reverse(key)) = self.heap.pop() {
+            let current = key as u32;
             let at = current as i64;
             if at == goal {
                 self.reconstruct(map, start, goal, out);
@@ -293,7 +323,7 @@ impl JumpPathfinder {
                     self.cost[target as usize] = tentative;
                     self.parent[target as usize] = current;
                     let estimate = tentative.saturating_add(self.distance(target, goal));
-                    self.heap.push(Reverse((estimate, target as u32)));
+                    self.heap.push(Reverse(pack(estimate, target as u32)));
                 }
             }
         }

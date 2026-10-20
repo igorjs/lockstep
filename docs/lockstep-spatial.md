@@ -71,6 +71,11 @@ stays the default. Bodies counted as walls and a start inside a wall are answere
 On the benchmark map it takes about 370 milliseconds for 500 paths against 610 to 690 for the plain
 search: gap G2 stays open for exact paths. Consumer scenario: `examples/crowd/tests/long_routes.rs`.
 
+`find_jump_paths(map, occupancy, requests, options)` is the batch form (decision 0077): it returns
+`None` on non-uniform ground and otherwise the answers in request order, one forked search per chunk
+on the thread pool. 500 paths on the benchmark map take about 46 milliseconds on ten threads, 317
+serially.
+
 ## Hierarchical search
 
 `Hierarchy::build(map, side)` finds the entrances between chunks of `side` cells (16 works well) and
