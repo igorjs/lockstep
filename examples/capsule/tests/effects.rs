@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The capsule as the consumer of lockstep-attributes: needs, health and sanity come from
-//! `data/attributes.json`, and decay, bleeding, starvation and prayer are effects.
+//! `data/attributes.json`, and decay, bleeding, starvation and restoration are effects.
 
 use capsule::{registry, runner, Capsule, Event, Intent, ATTRIBUTES_JSON};
 use lockstep_attributes::EffectTag;
@@ -44,13 +44,13 @@ fn the_attributes_come_from_the_committed_json() {
 }
 
 #[test]
-fn a_wound_bleeds_by_a_roll_and_a_bandage_stops_every_bleed() {
-    // Find a seed where the first wound bleeds; the roll is the capsule's only use of "wounds".
+fn an_injury_bleeds_by_a_roll_and_a_treatment_stops_every_bleed() {
+    // Find a seed where the first injury bleeds; the roll is the capsule's only use of "injuries".
     let (mut session, actor) = (1..200)
         .map(|seed| {
             let mut session = runner(seed);
             let actor = session.simulation().actor().unwrap();
-            let events = run_with(&mut session, &[Intent::Wound { entity: actor }], 1);
+            let events = run_with(&mut session, &[Intent::Injure { entity: actor }], 1);
             (session, actor, events)
         })
         .find(|(_, actor, events)| events.contains(&Event::Bleeding { entity: *actor }))
@@ -68,26 +68,26 @@ fn a_wound_bleeds_by_a_roll_and_a_bandage_stops_every_bleed() {
         "{after_bleeding:?}"
     );
 
-    let events = run_with(&mut session, &[Intent::Bandage { entity: actor }], 1_800);
-    assert!(events.contains(&Event::Bandaged {
+    let events = run_with(&mut session, &[Intent::Treat { entity: actor }], 1_800);
+    assert!(events.contains(&Event::Treated {
         entity: actor,
-        wounds: 1
+        treated: 1
     }));
     assert!(!session.simulation().world().effects.has(actor, &bleeding));
-    let after_bandage = session.simulation().world().value(actor, health).unwrap();
+    let after_treatment = session.simulation().world().value(actor, health).unwrap();
     assert!(
-        after_bleeding - after_bandage < Fixed32::from_ratio(1, 50),
+        after_bleeding - after_treatment < Fixed32::from_ratio(1, 50),
         "no more bleeding"
     );
 }
 
 #[test]
-fn wounds_bleed_about_sixty_percent_of_the_time() {
+fn injuries_bleed_about_sixty_percent_of_the_time() {
     let mut bled = 0;
     for seed in 0..500 {
         let mut session = runner(seed);
         let actor = session.simulation().actor().unwrap();
-        let events = run_with(&mut session, &[Intent::Wound { entity: actor }], 1);
+        let events = run_with(&mut session, &[Intent::Injure { entity: actor }], 1);
         if events.contains(&Event::Bleeding { entity: actor }) {
             bled += 1;
         } else {
@@ -98,26 +98,29 @@ fn wounds_bleed_about_sixty_percent_of_the_time() {
 }
 
 #[test]
-fn prayer_restores_sanity_but_no_more_than_ten_a_day() {
-    // Two identical sessions at twenty times: one prays three times, one does not. Ten simulated hours
+fn restoration_restores_sanity_but_no_more_than_ten_a_day() {
+    // Two identical sessions at twenty times: one restores three times, one does not. Ten simulated hours
     // of dread first, so sanity has room to rise.
     let sessions: Vec<_> = [true, false]
         .into_iter()
-        .map(|praying| {
+        .map(|restoring| {
             let mut session = runner(3);
             let actor = session.simulation().actor().unwrap();
             session.set_clock_multiplier(20.0);
             run_with(&mut session, &[], 4_500);
             let day = session.clock().day();
-            // Three prayers of twenty simulated minutes each would restore 60.
+            // Three restorations of twenty simulated minutes each would restore 60.
             for _ in 0..3 {
-                let intents = if praying {
-                    vec![Intent::Pray { entity: actor }]
+                let intents = if restoring {
+                    vec![Intent::Restore { entity: actor }]
                 } else {
                     vec![]
                 };
                 let events = run_with(&mut session, &intents, 150);
-                assert_eq!(events.contains(&Event::Prayed { entity: actor }), praying);
+                assert_eq!(
+                    events.contains(&Event::Restored { entity: actor }),
+                    restoring
+                );
             }
             assert_eq!(session.clock().day(), day, "still the same simulated day");
             let sanity = session.simulation().ids().sanity;
@@ -145,9 +148,9 @@ fn intents_for_someone_who_is_gone_are_rejected() {
     let stranger = store.insert(());
     assert_ne!(stranger, actor);
     for intent in [
-        Intent::Wound { entity: stranger },
-        Intent::Bandage { entity: stranger },
-        Intent::Pray { entity: stranger },
+        Intent::Injure { entity: stranger },
+        Intent::Treat { entity: stranger },
+        Intent::Restore { entity: stranger },
     ] {
         let events = run_with(&mut session, &[intent], 1);
         assert_eq!(events, [Event::Rejected { entity: stranger }]);

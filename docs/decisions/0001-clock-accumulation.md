@@ -18,7 +18,7 @@ Consequences:
 - The public methods are unchanged. `minute_of_day()` is now derived from the integer position and is for display and reading, not for equality.
 - `Clock::position_units()` is new. The runner hash uses it instead of the minute-of-day float bits, so two different positions can never hash alike.
 - The reference hashed the float bits of the minute. This is a deliberate change of the hash definition.
-- Elapsed simulated minutes per step are still `game_minutes_per_step * multiplier` as a 32-bit float, for systems that drain by rate.
+- Elapsed simulated minutes per step are still `simulated_minutes_per_step * multiplier` as a 32-bit float, for systems that drain by rate.
 
 Alternatives rejected: keeping the 32-bit float and relaxing the claim, and 64-bit floats (smaller drift, still not exact at the boundary).
 

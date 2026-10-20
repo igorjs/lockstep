@@ -121,11 +121,11 @@ fn drive(
     intents: &[Intent],
 ) -> Vec<Event> {
     let mut events = Vec::new();
-    let (elapsed_game_minutes, elapsed_minutes) = clock.advance_exactly(&mut Vec::new());
+    let (elapsed_simulated_minutes, elapsed_minutes) = clock.advance_exactly(&mut Vec::new());
     orchard.step(
         &mut Context {
             clock,
-            elapsed_game_minutes,
+            elapsed_simulated_minutes,
             elapsed_minutes,
             randomness,
             events: &mut events,

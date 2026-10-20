@@ -9,7 +9,7 @@ pub const REGISTRY: &str = r#"{
   "attributes": [
     { "name": "health", "minimum": 0, "maximum": 100, "starting": 50,
       "on_maximum_change": "scale_current",
-      "thresholds": [ { "at": 20, "name": "wounded" } ] },
+      "thresholds": [ { "at": 20, "name": "damaged" } ] },
     { "name": "hunger", "minimum": 0, "maximum": 100, "starting": 80,
       "thresholds": [ { "at": 60, "name": "peckish" }, { "at": 40, "name": "hungry" },
                       { "at": 20, "name": "starving" }, { "at": 5, "name": "dying" } ] },

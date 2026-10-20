@@ -40,7 +40,7 @@ After a hitch longer than the cap, the extra time is dropped, never owed.
 A percentage crosses the roll boundary as basis points: `Chance(2_500)` is 25 percent, and
 `Chance::percent(25)` builds the same value. Every roll compares integer draws.
 
-- `roll(name, chance)`: honest and streaky. Use it for loot.
+- `roll(name, chance)`: honest and streaky. Use it for independent draws.
 - `roll_with_luck(name, chance, luck)`: rolls `1 + |luck|` times and keeps the best draw for positive
   luck, the worst for negative. Luck 3 at 25 percent lands about 68 percent. Show participants the nominal
   chance, never this one.

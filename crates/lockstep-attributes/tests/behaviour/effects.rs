@@ -236,14 +236,14 @@ fn an_entity_without_attributes_or_one_that_is_gone_is_left_alone() {
 fn saved_effects_continue_exactly_like_the_originals() {
     let mut original = World::new();
     original.add(bleeding(&original.registry, Some(30)));
-    let mut prayer = bleeding(&original.registry, Some(40));
-    prayer.attribute = original.registry.id("hunger").unwrap();
-    prayer.per_minute = Some(Fixed32::from_ratio(1, 3));
-    prayer.tag = EffectTag::new("prayer");
-    prayer.stacking = Stacking::DailyBudget {
+    let mut restoration = bleeding(&original.registry, Some(40));
+    restoration.attribute = original.registry.id("hunger").unwrap();
+    restoration.per_minute = Some(Fixed32::from_ratio(1, 3));
+    restoration.tag = EffectTag::new("restoration");
+    restoration.stacking = Stacking::DailyBudget {
         cap_per_day: whole(5),
     };
-    original.add(prayer);
+    original.add(restoration);
     original.tick(7);
 
     let mut restored = World::new();

@@ -11,7 +11,7 @@ mod add_then_multiply_then_override;
 mod daily_budget;
 mod derived_follows_inputs;
 mod effects_determinism;
-mod effects_tick_by_game_minutes;
+mod effects_tick_by_simulated_minutes;
 mod ratchet;
 mod refresh_does_not_stack;
 mod scale_versus_clamp;

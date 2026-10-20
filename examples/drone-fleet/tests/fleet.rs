@@ -233,7 +233,7 @@ fn a_saved_fleet_continues_exactly_like_the_one_in_memory() {
             let mut events = Vec::new();
             let mut context = lockstep_core::Context {
                 clock: &clock,
-                elapsed_game_minutes: minutes,
+                elapsed_simulated_minutes: minutes,
                 elapsed_minutes: exact,
                 randomness,
                 events: &mut events,

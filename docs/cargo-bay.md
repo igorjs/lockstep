@@ -6,7 +6,7 @@ The consumer scenario for `lockstep-inventory`, and not a game. A crew of three 
 with a rack (8 slots, 60 weight, 18 degrees), a cold store (6 slots, 3 degrees) and an airlock
 locker (4 slots, 40 weight, 30 degrees).
 
-- The catalogue (`data/catalogue.json`) has rations that stack to six and spoil after 360 game
+- The catalogue (`data/catalogue.json`) has rations that stack to six and spoil after 360 simulated
   minutes at 100 percent, water, suits that add 50 to the wearer's oxygen maximum, and drills.
   Spoilage runs at 20 percent below 5 degrees, 100 percent below 25, and 250 percent from 25 up.
 - The crew attributes (`data/attributes.json`) are oxygen and nourishment; nourishment falling
