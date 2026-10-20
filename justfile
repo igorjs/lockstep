@@ -20,6 +20,11 @@ check:
     ./scripts/lint-determinism.sh
     ./scripts/check-spdx.sh
 
+# Lints the workflows with a pinned zizmor, run through uvx so nothing is installed. It needs
+# network access to fetch the tool, so it is not part of check; CI runs it (docs/ci.md).
+zizmor:
+    uvx zizmor@1.31.1 --offline --min-severity low .github
+
 determinism:
     cargo run -p lockstep-headless -- verify capsule --expect examples/capsule/fixtures/capsule.hash
     cargo run -p lockstep-headless -- verify ledger --expect examples/ledger/fixtures/ledger.hash

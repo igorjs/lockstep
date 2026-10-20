@@ -8,19 +8,23 @@ name: determinism
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions: {}
 on:
   pull_request:
   push:
     branches: [main]
 jobs:
   scope:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.pick.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+          persist-credentials: false
       - id: pick
         env:
           EVENT: ${{ github.event_name }}
@@ -36,6 +40,8 @@ jobs:
             echo 'matrix=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
           fi
   verify:
+    permissions:
+      contents: read
     needs: scope
     strategy:
       fail-fast: false
@@ -43,14 +49,18 @@ jobs:
         os: ${{ fromJSON(needs.scope.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           components: rustfmt, clippy
           targets: wasm32-unknown-unknown
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@dd310ad5a97d8e7b41793f8ef055398d51ad4de6 # v2
+        with:
+          just-version: 1.58.0
       # A prebuilt, pinned wasm-pack instead of compiling it on every job.
-      - uses: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
         with:
           tool: wasm-pack@0.15.0
       - run: just ci
@@ -58,12 +68,18 @@ jobs:
   # operation. It is slow and needs the nightly compiler, so it is advisory: it never blocks a
   # merge. See docs/decisions/0041-miri-scope.md.
   miri:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@2c76c034f9e32a5d6e2c104dc4df23a22476db04 # nightly
         with:
           components: miri
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@dd310ad5a97d8e7b41793f8ef055398d51ad4de6 # v2
+        with:
+          just-version: 1.58.0
       - run: just miri
