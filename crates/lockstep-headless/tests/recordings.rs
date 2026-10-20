@@ -140,7 +140,7 @@ fn files_that_are_not_recordings_are_refused() {
     assert!(matches!(missing, CommandError::Unreadable(_)), "{missing}");
     let unknown = run(&arguments(&[
         "record",
-        "no-such-simulation",
+        "ledger-bills",
         "--out",
         "/nowhere/never.recording",
     ]))
