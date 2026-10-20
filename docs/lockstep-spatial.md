@@ -58,6 +58,19 @@ start, including the goal) and returns `Found { cost }` (in tenths), `Unreachabl
 `(f_cost, cell)` and neighbours come in a fixed order, so equal-cost paths are identical on every
 platform. `last_expansions()` reports the work of the last search.
 
+## Jump search
+
+`JumpPathfinder::new(map)` returns `None` unless every passable cell has the same terrain cost and
+elevation (a map of open ground and walls). Its `find` has the same shape as `Pathfinder::find` and
+returns the same result and the same cost on every query, as the seeded property test of decision
+0075 checks, but it jumps along straight and diagonal runs (64 cells per word) to the next cell where
+a forced neighbour appears, instead of expanding every cell. Among paths of equal cost it may choose
+other cells than `Pathfinder`, so a fixture made with one is not valid for the other; `Pathfinder`
+stays the default. Bodies counted as walls and a start inside a wall are answered by the plain search.
+`maximum_expansions` counts jump points. It panics on a map changed since it was made (rebuild it).
+On the benchmark map it takes about 370 milliseconds for 500 paths against 610 to 690 for the plain
+search: gap G2 stays open for exact paths. Consumer scenario: `examples/crowd/tests/long_routes.rs`.
+
 ## Hierarchical search
 
 `Hierarchy::build(map, side)` finds the entrances between chunks of `side` cells (16 works well) and
