@@ -12,7 +12,7 @@ mod pathfinder;
 mod sight;
 mod topology;
 
-pub use batch::{find_paths, find_paths_serially, PathAnswer, PathRequest};
+pub use batch::{find_jump_paths, find_paths, find_paths_serially, PathAnswer, PathRequest};
 pub use cell::Cell;
 pub use flow::FlowField;
 pub use hierarchy::{HierarchicalPathfinder, Hierarchy, DEFAULT_GREED};
