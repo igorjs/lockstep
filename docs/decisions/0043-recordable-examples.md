@@ -13,7 +13,7 @@ Status: decided and implemented in the headless runner.
   `SIMULATION_ID` and `record_fixture`.
 - `mars-rovers` and `orchard` were excused at first: the first runs many separate sessions in one
   fixture, the second sets the clock's daylight from outside the simulation between steps, which
-  a replay does not do. Decisions 0061 and 0060 made them recordable. `roster` stays excused.
+  a replay does not do. Decisions 0061 and 0060 made them recordable. Decision 0067 made `roster` recordable as a set of its two projects.
 
 ## Alternatives rejected
 

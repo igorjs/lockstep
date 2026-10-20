@@ -8,10 +8,10 @@
 //! retired names from project to project.
 
 use lockstep_core::{
-    hash_of, ClockConfiguration, Column, Context, Handle, Message, Runner, Simulation,
-    StableVector, StepConfiguration, Streams,
+    hash_of, record_session, ClockConfiguration, Column, Context, Handle, Message, Recorder,
+    Recording, RecordingSet, Runner, Session, Simulation, StableVector, StepConfiguration, Streams,
 };
-use lockstep_meta::{open, seal, Chronicle, Control, ControlEvent, Templates};
+use lockstep_meta::{open, seal, Chronicle, Control, ControlEvent, TemplateError, Templates};
 use serde::{Deserialize, Serialize};
 
 pub const TEMPLATES_JSON: &str = include_str!("../data/templates.json");
@@ -68,6 +68,8 @@ pub enum Reason {
     NameInUse,
     OverBudget,
     AboveMaximum,
+    /// The templates themselves failed, for a reason other than the two above.
+    TemplateFailed,
     UnknownMember,
 }
 
@@ -176,15 +178,9 @@ impl Roster {
         );
         let ratings = match built {
             Ok(built) => built.into_iter().map(|(_, value)| value).collect(),
-            Err(lockstep_meta::TemplateError::AboveMaximum(_)) => {
+            Err(error) => {
                 context.events.push(Event::Refused {
-                    reason: Reason::AboveMaximum,
-                });
-                return;
-            }
-            Err(_) => {
-                context.events.push(Event::Refused {
-                    reason: Reason::OverBudget,
+                    reason: refusal_for(&error),
                 });
                 return;
             }
@@ -218,6 +214,15 @@ impl Roster {
         context
             .events
             .extend(control_events.into_iter().map(Event::Control));
+    }
+}
+
+/// The refusal that reports a template error as itself (decision 0068).
+pub fn refusal_for(error: &TemplateError) -> Reason {
+    match error {
+        TemplateError::AboveMaximum(_) => Reason::AboveMaximum,
+        TemplateError::OverBudget { .. } => Reason::OverBudget,
+        _ => Reason::TemplateFailed,
     }
 }
 
@@ -268,7 +273,13 @@ pub fn script(roster: &Roster, script: &mut Streams) -> Vec<Intent> {
             } else {
                 Role::Builder
             },
-            craft_points: script.range("points", 0, 4) as u32,
+            // One hire in eight stretches past a maximum.
+            craft_points: script.range("points", 0, 4) as u32
+                + if script.range("stretch", 0, 8) == 0 {
+                    4
+                } else {
+                    0
+                },
             reliability_points: script.range("points", 0, 3) as u32,
         }],
         30..=37 => {
@@ -284,6 +295,23 @@ pub fn script(roster: &Roster, script: &mut Streams) -> Vec<Intent> {
     }
 }
 
+/// Runs one project's script on anything that takes steps and returns every event it produced.
+fn play<T>(
+    session: &mut T,
+    seed: u64,
+    steps: u64,
+    roster: fn(&T) -> &Roster,
+    step: fn(&mut T, &[Intent]) -> Vec<Event>,
+) -> Vec<Event> {
+    let mut streams = Streams::new(seed ^ 0x0000_726f_7374_6572);
+    let mut events = Vec::new();
+    for _ in 0..steps {
+        let intents = script(roster(session), &mut streams);
+        events.extend(step(session, &intents));
+    }
+    events
+}
+
 /// One project: runs the script for the steps and returns the runner and every event.
 pub fn run_project(
     configuration: Configuration,
@@ -291,27 +319,87 @@ pub fn run_project(
     steps: u64,
 ) -> (Runner<Roster>, Vec<Event>) {
     let mut runner = runner(configuration, seed);
-    let mut streams = Streams::new(seed ^ 0x0000_726f_7374_6572);
-    let mut events = Vec::new();
-    for _ in 0..steps {
-        let intents = script(runner.simulation(), &mut streams);
-        events.extend(runner.step_once(&intents).events);
-    }
+    let events = play(
+        &mut runner,
+        seed,
+        steps,
+        |runner| runner.simulation(),
+        |runner, intents| runner.step_once(intents).events,
+    );
     (runner, events)
+}
+
+/// The name a recording of this simulation carries.
+pub const SIMULATION_ID: &str = "roster";
+
+/// The labels of the two projects in a recording set, in the order they ran.
+pub const PROJECTS: [&str; 2] = ["first", "second"];
+
+/// The two projects, each recorded with a checkpoint every `checkpoint_every` steps and, when
+/// `keep_snapshots` is set, a snapshot at each, with the hash each project ended on. The second
+/// project's recorded configuration is what the chronicle remembered after the first (decision
+/// 0067), so a replay needs no chronicle.
+fn record_projects(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> (Vec<(String, Recording<Intent>)>, Vec<u64>) {
+    let mut chronicle = Chronicle::new();
+    let mut sessions = Vec::new();
+    let mut hashes = Vec::new();
+    for (index, label) in PROJECTS.iter().enumerate() {
+        let seed = seed ^ index as u64;
+        let run = chronicle.begin_run();
+        let configuration = configuration_from(&chronicle);
+        let mut ended = 0;
+        let mut events = Vec::new();
+        let recording = record_session(
+            SIMULATION_ID,
+            &configuration,
+            seed,
+            self::runner(configuration.clone(), seed),
+            checkpoint_every,
+            keep_snapshots,
+            |recorder: &mut Recorder<Roster>| {
+                events = play(
+                    recorder,
+                    seed,
+                    steps,
+                    |recorder| recorder.simulation(),
+                    |recorder, intents| recorder.step_once(intents).events,
+                );
+                ended = recorder.runner().hash();
+            },
+        );
+        fold(&mut chronicle, run, &events);
+        // The chronicle goes through a save between projects, as a host would keep it.
+        chronicle = open(&seal(&chronicle)).expect("the chronicle opens");
+        sessions.push((label.to_string(), recording));
+        hashes.push(ended);
+    }
+    (sessions, hashes)
+}
+
+/// The same two projects, recorded as a set.
+pub fn record_fixture(
+    seed: u64,
+    steps: u64,
+    checkpoint_every: u64,
+    keep_snapshots: bool,
+) -> RecordingSet<Intent> {
+    let (sessions, _) = record_projects(seed, steps, checkpoint_every, keep_snapshots);
+    RecordingSet {
+        simulation_id: SIMULATION_ID.to_string(),
+        sessions,
+    }
 }
 
 /// Two successive projects. The first starts from an empty chronicle; its departures are folded
 /// in, the chronicle is sealed and opened as a save would be, and the second project starts from
-/// it. The hash covers both projects and the chronicle.
+/// it. The hash covers the two projects, which is what a replay of the recording reproduces
+/// (decision 0067); the second project's configuration holds what the chronicle remembered.
 pub fn fixture_hash(seed: u64, steps: u64) -> u64 {
-    let mut chronicle = Chronicle::new();
-    let run = chronicle.begin_run();
-    let (first, events) = run_project(configuration_from(&chronicle), seed, steps);
-    fold(&mut chronicle, run, &events);
-    let saved = seal(&chronicle);
-    let mut chronicle: Chronicle = open(&saved).expect("the chronicle opens");
-    let run = chronicle.begin_run();
-    let (second, events) = run_project(configuration_from(&chronicle), seed ^ 1, steps);
-    fold(&mut chronicle, run, &events);
-    hash_of(&vec![first.hash(), second.hash(), hash_of(&chronicle)])
+    let (_, hashes) = record_projects(seed, steps, steps.max(1), false);
+    hash_of(&hashes)
 }

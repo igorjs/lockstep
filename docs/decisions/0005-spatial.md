@@ -1,9 +1,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# 0005 The spatial crate (decided, with two open items)
+# 0005 The spatial crate (decided, with one open item)
 
-Status: decided and implemented for `lockstep-spatial` and its consumers, with two open items (the hexagon figure and
-the pathfinding benchmark target, which decision 0047 meets with a hierarchical search). The reference calls this crate `lockstep-grid`;
+Status: decided and implemented for `lockstep-spatial` and its consumers, with one open item (the pathfinding benchmark target, gap G2: exact paths are still about 12 times over, and decision 0047 meets it only with an approximate hierarchical search). The hexagon figure is closed as a recorded departure (decision 0048). The reference calls this crate `lockstep-grid`;
 it was renamed to stay generic.
 
 ## Decisions where the reference was silent or ambiguous
@@ -47,7 +46,9 @@ not give. The committed baseline is the honest number. Ways to close the gap, no
 pathfinding, bidirectional search, or a cheaper step (precomputed neighbour tables). This needs the
 owner: relax the target, or choose a technique.
 
-## Open item: the hexagon figure in the circle decision
+## Closed item: the hexagon figure in the circle decision
+
+Closed by decision 0048, which records it as a departure and pins the measurement. What follows is the state when it was open.
 
 The reference's decision test says a path around a circle of radius 50 deviates from the true
 distance by at most 8 percent for `Square8`, at most 3 percent for hexagons, and at least 30 percent
@@ -62,7 +63,6 @@ with the true distance between cell centres:
 
 The hexagon number cannot be met by any hexagon distance. Counting hexagon steps over-counts by a
 factor of 1 / cos 30 degrees, which is 15.47 percent, along the directions halfway between two lattice
-axes, and in true geometry that is also more than the octile error. The decision test records the
-measured value (between 10 and 16 percent) and does not assert 3. This needs the owner: either the
-figure was meant for something else, or hexagons are not more isotropic than `Square8` and the
-reasoning for keeping them as a future option should be restated.
+axes, and in true geometry that is also more than the octile error. The decision test pins the
+measured value (15.40 to 15.55 percent) and does not assert 3. Decision 0048 settled it: the figure
+is a departure, and hexagons are kept for their round shape and six equal neighbours.
