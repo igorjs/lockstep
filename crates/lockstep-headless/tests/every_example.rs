@@ -175,3 +175,25 @@ fn a_recorded_session_set_names_the_session_that_diverged() {
     );
     assert!((replayable.replay)(&bytes, None, true).is_err());
 }
+
+#[test]
+fn a_damaged_roster_set_names_the_project_that_diverged() {
+    let replayable = replayables()
+        .into_iter()
+        .find(|replayable| replayable.id == "roster")
+        .unwrap();
+    let mut set = lockstep_core::RecordingSet::<roster::Intent>::from_bytes(
+        &(replayable.record)(1, 50, 10).unwrap(),
+    )
+    .unwrap();
+    set.sessions[1].1.checkpoints[2].1 ^= 1;
+    let replayed = (replayable.replay)(&set.to_bytes().unwrap(), None, false).unwrap();
+    assert!(!replayed.identical);
+    assert!(
+        replayed
+            .report
+            .starts_with("diverged roster in session 1 (second) at step 20: "),
+        "{}",
+        replayed.report
+    );
+}
