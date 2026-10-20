@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
+# Text is checked out with LF on every platform. Tests compare committed fixtures and schemas
+# byte for byte with generated text, so a Windows checkout must never convert them to CRLF.
+* text=auto eol=lf
