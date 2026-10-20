@@ -57,7 +57,7 @@ fn scan(path: &Path, banned: &[String], found: &mut Vec<String>) {
             return;
         }
         for word in words(&text) {
-            if banned.contains(&word) {
+            if banned.iter().any(|stem| word.starts_with(stem.as_str())) {
                 found.push(format!("{}: {word}", path.display()));
             }
         }
@@ -69,14 +69,7 @@ fn no_game_flavoured_word_is_left_in_code_data_or_prose() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let banned = banned();
     let mut found = Vec::new();
-    for part in [
-        "crates",
-        "examples",
-        "scripts",
-        "README.md",
-        "docs/lockstep-core.md",
-        "docs/capsule.md",
-    ] {
+    for part in ["crates", "examples", "scripts", "README.md", "docs"] {
         let path = root.join(part);
         if path.exists() {
             scan(&path, &banned, &mut found);

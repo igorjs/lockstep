@@ -148,7 +148,7 @@ impl Clock {
 
     /// Advance one step. Returns the elapsed simulated minutes as a float and as exact 16.16 fixed
     /// point, and pushes any boundary crossed. The fixed point minutes of many steps add up to
-    /// exactly the minutes between the first and last position, so effects that run on game
+    /// exactly the minutes between the first and last position, so effects that run on simulated
     /// minutes never drift with the step count.
     pub fn advance_exactly(&mut self, events: &mut Vec<ClockEvent>) -> (f32, Fixed32) {
         let minutes_before = self.minutes_raw();

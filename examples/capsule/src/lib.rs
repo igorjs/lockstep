@@ -38,7 +38,7 @@ pub const WALL_LAST_ROW: i32 = 12;
 /// The attributes, as data. A save holds the values; this file says what they are.
 pub const ATTRIBUTES_JSON: &str = include_str!("../data/attributes.json");
 
-/// The chance that a injury bleeds.
+/// The chance that an injury bleeds.
 pub const BLEED_CHANCE: Chance = Chance(6_000);
 
 pub fn registry() -> Registry {

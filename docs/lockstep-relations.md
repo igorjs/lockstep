@@ -38,7 +38,7 @@ another entity or a group. How the other stands back is a standing of its own.
   `Crossed` for each threshold passed, in passing order: downward when it falls below a
   threshold, upward when it reaches one.
 - `tick(kinds, minutes, events)` lets simulated time pass. Each standing drifts toward its rest by the
-  relation's decay a day, computed afresh from its value at the last change and the exact game
+  relation's decay a day, computed afresh from its value at the last change and the exact simulated
   minutes since, so the same simulated time decays it the same at any step rate and it never passes
   its rest. A change restarts the drift from the new value. A standing nobody has changed stays
   at the starting value: drift begins with the first change, so a first impression holds until

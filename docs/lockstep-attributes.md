@@ -124,7 +124,7 @@ Needs decay is a set of effects with `per_minute` drains and no system code.
   every stacking rule, expiry, removal, and saved attributes and effects continuing exactly like the
   originals.
 - `tests/decisions`: Add then Multiply then Override, scale versus clamp, thresholds once per crossing,
-  derived values following their inputs, and the ratchet (decision 0008); effects ticking by game
+  derived values following their inputs, and the ratchet (decision 0008); effects ticking by simulated
   minutes, refresh not stacking, the daily budget, and determinism (decision 0009).
 - `fixtures/effects.hash`: twelve attributes, five effects and 1,000 ticks, asserted natively and
   under WebAssembly.
