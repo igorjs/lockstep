@@ -9,6 +9,7 @@ path is the same cell by cell on every platform.
 - `GridMap`: passable, terrain cost, elevation and low walls per cell, with dirty chunks for hosts.
 - `Occupancy`: which body holds which cell. Collision is occupancy: the first caller gets the cell.
 - `Pathfinder`: A* with reused buffers and a `(cost, cell)` tie break.
+- `JumpPathfinder`: an exact jump point search for uniform ground, same cost as `Pathfinder`, about 1.8 times faster on the benchmark map.
 - `Hierarchy` and `HierarchicalPathfinder`: a search over chunk entrances for long paths on large maps, several times faster than `Pathfinder` for paths a few percent dearer.
 - `find_paths`: a batch of paths, on a thread pool with the `parallel` feature, with the same answers
   as the serial batch.
