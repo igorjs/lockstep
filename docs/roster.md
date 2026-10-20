@@ -17,9 +17,18 @@ next project remembers who has left.
   retired for good and departures are counted. `configuration_from` hands the retired names to the
   next project. In between, the chronicle goes through `seal` and `open`, as a save would.
 
+A hire refused for a template error is reported as that error: over budget, above a maximum, or
+`TemplateFailed` for anything else (decision 0068).
+
 The fixture hash in `fixtures/roster.hash` covers two projects of 120 steps with random hires and
-departures, the chronicle between them and the chronicle at the end. It is checked by
-`lockstep-headless verify roster` and by a WebAssembly test.
+departures, the second starting from the chronicle the first left. It is the hash of the two
+projects' final states. It is checked by `lockstep-headless verify roster` and by a WebAssembly
+test. The session reaches every refusal: a retired name, a name in use, over budget and above a
+maximum.
+
+`lockstep-headless record roster` writes the two projects as a recording set, labelled `first` and
+`second`. The second project's recorded configuration holds the retired names, so a replay rebuilds
+both projects without the chronicle (decision 0067).
 
 The milestone gate is `a_retired_name_stays_retired_in_the_next_project`: a name that left in the
 first project is refused in the second after the chronicle was saved and opened. Other tests: the

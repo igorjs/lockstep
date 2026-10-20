@@ -6,19 +6,14 @@ use lockstep_headless::{fixtures, format_hash, run};
 use std::path::PathBuf;
 
 /// Fixtures with no single session a recording could capture, each for the reason named.
-const NOT_RECORDABLE: [(&str, &str); 2] = [
-    (
-        "ledger-bills",
-        "it runs the ledger simulation, which is recorded as ledger",
-    ),
-    (
-        "roster",
-        "the second of its two projects starts from a chronicle folded from the first's events",
-    ),
-];
+const NOT_RECORDABLE: [(&str, &str); 1] = [(
+    "ledger-bills",
+    "it runs the ledger simulation, which is recorded as ledger",
+)];
 
-/// Fixtures that record as a set of sessions, with the sessions in one fixture.
-const SETS: [(&str, u64); 1] = [("mars-rovers", 21)];
+/// Fixtures that record as a set of sessions: the number of sessions, and the steps each runs
+/// beyond the 1000 asked for (the rovers land and program first).
+const SETS: [(&str, u64, u64); 2] = [("mars-rovers", 21, 2), ("roster", 2, 0)];
 
 fn arguments(words: &[&str]) -> Vec<String> {
     words.iter().map(|word| word.to_string()).collect()
@@ -59,11 +54,11 @@ fn every_recording_replays_to_its_fixture_hash() {
         let expected = run(&arguments(&["fixture", id, "--steps", "1000"])).unwrap();
         let replayed =
             run(&arguments(&["replay", &path])).unwrap_or_else(|error| panic!("{id}: {error}"));
-        if let Some((_, sessions)) = SETS.iter().find(|(name, _)| *name == id) {
-            // Each session lands, programs, then runs the 1000 steps.
+        if let Some((_, sessions, extra)) = SETS.iter().find(|(name, _, _)| *name == id) {
+            let session_steps = 1000 + extra;
             assert_eq!(
                 replayed,
-                format!("identical {id} after {sessions} sessions of 1002 steps, hash {expected}"),
+                format!("identical {id} after {sessions} sessions of {session_steps} steps, hash {expected}"),
                 "{id}"
             );
             let bisected = run(&arguments(&["bisect", &path])).unwrap();
@@ -71,7 +66,7 @@ fn every_recording_replays_to_its_fixture_hash() {
                 bisected,
                 format!(
                     "no divergence in {} steps of {sessions} sessions of {id}",
-                    sessions * 1002
+                    sessions * session_steps
                 )
             );
             let stats = run(&arguments(&["stats", &path])).unwrap();

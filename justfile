@@ -50,6 +50,8 @@ determinism:
     cargo run -p lockstep-headless -- verify bakery --expect examples/bakery/fixtures/bakery.hash
     cargo run -p lockstep-headless -- verify estate --expect examples/estate/fixtures/estate.hash
     cargo run -p lockstep-headless -- verify roster --expect examples/roster/fixtures/roster.hash
+    cargo run -p lockstep-headless -- record roster --out "${CARGO_TARGET_DIR:-target}/roster.recording" --steps 120
+    cargo run -p lockstep-headless -- replay "${CARGO_TARGET_DIR:-target}/roster.recording"
     cargo run -p lockstep-headless -- verify checkout --expect examples/checkout/fixtures/checkout.hash
     cargo run -p lockstep-headless -- verify orchard --expect examples/orchard/fixtures/orchard.hash
     cargo run -p lockstep-headless -- record orchard --out "${CARGO_TARGET_DIR:-target}/orchard.recording" --steps 8000

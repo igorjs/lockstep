@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
+use lockstep_core::{replay, ReplayOutcome};
+use lockstep_meta::TemplateError;
 use lockstep_meta::{open, seal, Chronicle, ControlEvent, EnvelopeError};
 use roster::{
-    configuration_from, fixture_hash, fold, run_project, runner, Configuration, Event, Intent,
-    Reason, Role, DEFAULT_SEED, DEFAULT_STEPS,
+    configuration_from, fixture_hash, fold, record_fixture, refusal_for, run_project, runner,
+    Configuration, Event, Intent, Reason, Role, Roster, DEFAULT_SEED, DEFAULT_STEPS,
 };
 
 #[cfg(target_arch = "wasm32")]
@@ -183,4 +185,73 @@ fn the_session_hires_refuses_and_hands_over_the_lead_in_both_projects() {
         reason: Reason::NameRetired
     }));
     assert!(chronicle.lost().len() > 2);
+}
+
+/// Decision 0068: each template error is reported as itself, and an error that is neither a
+/// budget nor a maximum is not passed off as one.
+#[test]
+fn each_template_error_is_reported_as_itself() {
+    assert_eq!(
+        refusal_for(&TemplateError::OverBudget { cost: 6, budget: 5 }),
+        Reason::OverBudget
+    );
+    assert_eq!(
+        refusal_for(&TemplateError::AboveMaximum("craft".to_string())),
+        Reason::AboveMaximum
+    );
+    assert_eq!(
+        refusal_for(&TemplateError::UnknownArchetype("lead".to_string())),
+        Reason::TemplateFailed
+    );
+    assert_eq!(
+        refusal_for(&TemplateError::UnknownAttribute("speed".to_string())),
+        Reason::TemplateFailed
+    );
+}
+
+/// The session reaches every refusal a hire can meet, so the fixture hash covers them.
+#[test]
+fn the_session_reaches_every_hiring_refusal() {
+    let (_, first) = run_project(empty(), DEFAULT_SEED, DEFAULT_STEPS);
+    let mut chronicle = Chronicle::new();
+    fold(&mut chronicle, 1, &first);
+    let (_, second) = run_project(
+        configuration_from(&chronicle),
+        DEFAULT_SEED ^ 1,
+        DEFAULT_STEPS,
+    );
+    for reason in [
+        Reason::NameRetired,
+        Reason::NameInUse,
+        Reason::OverBudget,
+        Reason::AboveMaximum,
+    ] {
+        assert!(
+            first
+                .iter()
+                .chain(&second)
+                .any(|event| event == &Event::Refused { reason }),
+            "{reason:?} is never reached"
+        );
+    }
+}
+
+/// Decision 0067: the second project's recorded configuration carries what the chronicle
+/// remembered, so a replay of the set rebuilds both projects and reaches the fixture hash.
+#[test]
+fn the_recorded_set_replays_both_projects_to_the_fixture_hash() {
+    let set = record_fixture(DEFAULT_SEED, DEFAULT_STEPS, 20, true);
+    assert_eq!(set.sessions.len(), 2);
+    let second: Configuration = lockstep_core::decode(&set.sessions[1].1.configuration).unwrap();
+    assert!(!second.retired.is_empty());
+    let mut hashes = Vec::new();
+    for (_, recording) in &set.sessions {
+        let (replayed, outcome) = replay::<Roster>(recording).unwrap();
+        assert_eq!(outcome, ReplayOutcome::Identical);
+        hashes.push(replayed.hash());
+    }
+    assert_eq!(
+        lockstep_core::hash_of(&hashes),
+        fixture_hash(DEFAULT_SEED, DEFAULT_STEPS)
+    );
 }
