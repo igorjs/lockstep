@@ -91,7 +91,8 @@ just bench         # the spatial benchmark against benches/baseline.txt
 ```
 
 Continuous integration runs `just ci` on Linux for pull requests and on Linux, macOS and Windows for
-`main`.
+`main`. A separate `zizmor` workflow lints the workflows themselves (`just zizmor`, see
+[`docs/ci.md`](docs/ci.md)).
 
 ## Documentation
 
