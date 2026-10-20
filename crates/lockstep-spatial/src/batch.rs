@@ -9,10 +9,11 @@
 //! `scripts/lint-determinism.sh` names this file as the only exception.
 
 use crate::cell::Cell;
+use crate::jump::JumpPathfinder;
 use crate::map::GridMap;
 use crate::occupancy::Occupancy;
 use crate::pathfinder::{PathOptions, PathResult, Pathfinder};
-use crate::topology::Topology;
+use crate::topology::{Square8, Topology};
 
 /// One search: from a cell to a cell.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -78,5 +79,54 @@ pub fn find_paths<T: Topology + Sync>(
     #[cfg(not(all(feature = "parallel", not(target_arch = "wasm32"))))]
     {
         find_paths_serially(map, occupancy, requests, options)
+    }
+}
+
+fn solve_jump(
+    pathfinder: &mut JumpPathfinder,
+    map: &GridMap<Square8>,
+    occupancy: &Occupancy,
+    requests: &[PathRequest],
+    options: PathOptions,
+) -> Vec<PathAnswer> {
+    requests
+        .iter()
+        .map(|request| {
+            let mut path = Vec::new();
+            let result =
+                pathfinder.find(map, occupancy, request.from, request.to, options, &mut path);
+            (result, path)
+        })
+        .collect()
+}
+
+/// `find_paths` with the jump search (decision 0077): the same results and costs as the plain
+/// batch, in request order, on a thread pool with the `parallel` feature and serially without it.
+/// The cells of equal-cost paths may differ from the plain batch (decision 0075). Returns `None`
+/// when the ground is not uniform; use `find_paths` then.
+pub fn find_jump_paths(
+    map: &GridMap<Square8>,
+    occupancy: &Occupancy,
+    requests: &[PathRequest],
+    options: PathOptions,
+) -> Option<Vec<PathAnswer>> {
+    let base = JumpPathfinder::new(map)?;
+    #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
+    {
+        use rayon::prelude::*;
+        let chunk = requests
+            .len()
+            .div_ceil(rayon::current_num_threads() * 4)
+            .max(1);
+        let chunks: Vec<Vec<PathAnswer>> = requests
+            .par_chunks(chunk)
+            .map(|part| solve_jump(&mut base.fork(), map, occupancy, part, options))
+            .collect();
+        Some(chunks.into_iter().flatten().collect())
+    }
+    #[cfg(not(all(feature = "parallel", not(target_arch = "wasm32"))))]
+    {
+        let mut base = base;
+        Some(solve_jump(&mut base, map, occupancy, requests, options))
     }
 }
