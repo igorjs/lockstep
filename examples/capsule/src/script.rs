@@ -5,7 +5,7 @@
 //! seed 20260925
 //! steps 10000
 //! 10 move actor 15 15 walk
-//! 200 wound actor
+//! 200 injure actor
 //! 800 multiplier 20
 //! ```
 //!
@@ -21,9 +21,9 @@ use std::collections::BTreeMap;
 pub enum Command {
     Move { cell: Cell, run: bool },
     Stop,
-    Wound,
-    Bandage,
-    Pray,
+    Injure,
+    Treat,
+    Restore,
     Multiplier(f32),
 }
 
@@ -122,17 +122,17 @@ pub fn parse(text: &str) -> Result<Script, ParseError> {
                         expect_actor(words.next(), line)?;
                         Command::Stop
                     }
-                    Some("wound") => {
+                    Some("injure") => {
                         expect_actor(words.next(), line)?;
-                        Command::Wound
+                        Command::Injure
                     }
-                    Some("bandage") => {
+                    Some("treat") => {
                         expect_actor(words.next(), line)?;
-                        Command::Bandage
+                        Command::Treat
                     }
-                    Some("pray") => {
+                    Some("restore") => {
                         expect_actor(words.next(), line)?;
-                        Command::Pray
+                        Command::Restore
                     }
                     Some("multiplier") => {
                         Command::Multiplier(number(words.next(), line, "a multiplier")?)
@@ -206,9 +206,9 @@ pub fn drive(session: &mut impl Session<Capsule>, script: &Script, steps: Option
                     run: *run,
                 }),
                 Command::Stop => intents.push(Intent::Stop { entity: actor }),
-                Command::Wound => intents.push(Intent::Wound { entity: actor }),
-                Command::Bandage => intents.push(Intent::Bandage { entity: actor }),
-                Command::Pray => intents.push(Intent::Pray { entity: actor }),
+                Command::Injure => intents.push(Intent::Injure { entity: actor }),
+                Command::Treat => intents.push(Intent::Treat { entity: actor }),
+                Command::Restore => intents.push(Intent::Restore { entity: actor }),
             }
         }
         session.step_once(&intents);

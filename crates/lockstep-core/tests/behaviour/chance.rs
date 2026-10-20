@@ -40,7 +40,7 @@ fn never_never_succeeds_and_always_always_does() {
 fn a_plain_roll_lands_on_its_nominal_rate() {
     let mut streams = Streams::new(3);
     let successes = (0..200_000)
-        .filter(|_| streams.roll("loot", Chance::percent(25)))
+        .filter(|_| streams.roll("draws", Chance::percent(25)))
         .count();
     assert!((rate(successes as u32, 200_000) - 0.25).abs() < 0.005);
 }
@@ -49,13 +49,13 @@ fn a_plain_roll_lands_on_its_nominal_rate() {
 fn luck_three_at_twenty_five_percent_lands_between_sixty_six_and_seventy_percent() {
     let mut streams = Streams::new(4);
     let lucky = (0..200_000)
-        .filter(|_| streams.roll_with_luck("loot", Chance::percent(25), 3))
+        .filter(|_| streams.roll_with_luck("draws", Chance::percent(25), 3))
         .count();
     let lucky = rate(lucky as u32, 200_000);
     assert!((0.66..=0.70).contains(&lucky), "lucky rate {lucky}");
     // Four draws keeping the worst succeed only when all four do: 0.25^4 is about 0.4 percent.
     let unlucky = (0..200_000)
-        .filter(|_| streams.roll_with_luck("loot", Chance::percent(25), -3))
+        .filter(|_| streams.roll_with_luck("draws", Chance::percent(25), -3))
         .count();
     let unlucky = rate(unlucky as u32, 200_000);
     assert!((0.002..=0.006).contains(&unlucky), "unlucky rate {unlucky}");
@@ -67,8 +67,8 @@ fn luck_zero_is_a_plain_roll() {
     let mut lucky = Streams::new(5);
     for _ in 0..10_000 {
         assert_eq!(
-            plain.roll("loot", Chance(3_333)),
-            lucky.roll_with_luck("loot", Chance(3_333), 0)
+            plain.roll("draws", Chance(3_333)),
+            lucky.roll_with_luck("draws", Chance(3_333), 0)
         );
     }
 }

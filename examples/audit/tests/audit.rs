@@ -89,7 +89,7 @@ fn nothing_fires_twice_across_a_save() {
         let mut events = Vec::new();
         let mut context = lockstep_core::Context {
             clock: &clock,
-            elapsed_game_minutes: minutes,
+            elapsed_simulated_minutes: minutes,
             elapsed_minutes: exact,
             randomness: &mut randomness,
             events: &mut events,

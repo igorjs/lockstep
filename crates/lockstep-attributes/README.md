@@ -29,7 +29,7 @@ let registry = Registry::from_json(r#"{
   "attributes": [
     { "name": "health", "minimum": 0, "maximum": 100, "starting": 50,
       "on_maximum_change": "scale_current",
-      "thresholds": [ { "at": 20, "name": "wounded" } ] },
+      "thresholds": [ { "at": 20, "name": "damaged" } ] },
     { "name": "luck", "minimum": 0, "maximum": 20, "starting": 3 },
     { "name": "critical_chance", "minimum": 0, "maximum": 100, "starting": 0,
       "derived": { "inputs": ["luck"], "curve": { "linear": { "per_point": "1.5", "offset": 5 } } } }
@@ -49,7 +49,7 @@ let mut events = Vec::new();
 attributes.add_modifier(who, health, Modifier::Multiply(Fixed32::from_ratio(3, 2)), &registry, &mut events);
 assert_eq!(attributes.get(health).current(), Fixed32::from_int(75));
 
-// Falling below 20 fires "wounded" once.
+// Falling below 20 fires "damaged" once.
 attributes.apply(who, health, Fixed32::from_int(-60), &registry, &mut events);
 assert!(matches!(&events[..], [AttributeEvent::Crossed { upward: false, .. }]));
 

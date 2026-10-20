@@ -3,16 +3,16 @@
 # which must match the committed value on every platform.
 #
 # Lines: seed <number> | steps <number> | <step> move actor <x> <y> walk|run
-#        <step> stop|wound|bandage|pray actor | <step> multiplier <number>
+#        <step> stop|injure|treat|restore actor | <step> multiplier <number>
 seed 20260925
 steps 10000
 10 move actor 15 15 walk
-200 wound actor
-260 wound actor
-330 wound actor
+200 injure actor
+260 injure actor
+330 injure actor
 400 move actor 0 3 run
-600 bandage actor
+600 treat actor
 700 move actor 99 99 run
 800 multiplier 20
-1000 pray actor
-1100 pray actor
+1000 restore actor
+1100 restore actor
