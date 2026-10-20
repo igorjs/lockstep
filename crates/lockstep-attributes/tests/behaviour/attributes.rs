@@ -51,7 +51,7 @@ fn a_change_clamps_and_reports_emptied_and_filled_once() {
             AttributeEvent::Crossed {
                 who,
                 attribute: health,
-                threshold: "wounded".into(),
+                threshold: "damaged".into(),
                 upward: false
             },
             AttributeEvent::Emptied {

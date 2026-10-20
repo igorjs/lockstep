@@ -20,7 +20,7 @@ increasing.
   "attributes": [
     { "name": "health", "minimum": 0, "maximum": 100, "starting": 100,
       "on_maximum_change": "scale_current",
-      "thresholds": [ { "at": 20, "name": "wounded" } ] },
+      "thresholds": [ { "at": 20, "name": "damaged" } ] },
     { "name": "luck", "minimum": 0, "maximum": 20, "starting": 3, "on_maximum_change": "scale_current" },
     { "name": "critical_chance", "minimum": 0, "maximum": 100, "starting": 0,
       "derived": { "inputs": ["luck"], "curve": { "linear": { "per_point": "1", "offset": "5" } } } }
@@ -83,7 +83,7 @@ and catches up on the next change (`tests/spikes`). Declare inputs first.
 
 ## Effects
 
-An `Effect` is something an entity has for a while: bleeding, a blessing, a fever, a prayer. It
+An `Effect` is something an entity has for a while: bleeding, a boost, a fever, a restoration. It
 names one attribute and may hold a `Modifier` on it while active, drain or restore it `per_minute`,
 and last `remaining_minutes` (or until removed). `Effects` holds every active effect of every
 entity, in the order they were applied.
@@ -91,7 +91,7 @@ entity, in the order they were applied.
 - `add(who, effect, context)` applies it, following its `Stacking` rule, and emits `Applied`.
 - `tick(elapsed_minutes, day, context)` advances every effect by simulated minutes, in the order they
   were applied: drains change their attribute and finished effects emit `Expired`.
-- `remove(handle, context)` and `remove_by_tag(who, tag, context)` emit `Removed`; a bandage removes
+- `remove(handle, context)` and `remove_by_tag(who, tag, context)` emit `Removed`; a treatment removes
   every Bleeding. `remove_entity(who)` forgets a dead entity without events.
 - `on(who)` lists an entity's effects with the minutes each has left; `has(who, tag)` asks for one.
 

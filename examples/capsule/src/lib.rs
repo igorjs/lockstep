@@ -5,8 +5,8 @@
 //! actor walks there along the cheapest path around the wall, one cell every few steps.
 //!
 //! Health, hunger, thirst and sanity are attributes read from `data/attributes.json`. Their decay is
-//! three effects that drain per simulated minute, with no system code. A wound may bleed (a roll), a
-//! bandage removes every bleed, and a prayer restores sanity up to a daily budget. When hunger or
+//! three effects that drain per simulated minute, with no system code. A injury may bleed (a roll), a
+//! treatment removes every bleed, and a restoration restores sanity up to a daily budget. When hunger or
 //! thirst runs out, starvation drains health, and at zero the actor dies. Everything the
 //! actor is lives in columns keyed by a handle.
 
@@ -38,7 +38,7 @@ pub const WALL_LAST_ROW: i32 = 12;
 /// The attributes, as data. A save holds the values; this file says what they are.
 pub const ATTRIBUTES_JSON: &str = include_str!("../data/attributes.json");
 
-/// The chance that a wound bleeds.
+/// The chance that a injury bleeds.
 pub const BLEED_CHANCE: Chance = Chance(6_000);
 
 pub fn registry() -> Registry {
@@ -100,7 +100,7 @@ pub fn starvation(ids: Ids) -> Effect {
     }
 }
 
-/// One bleeding wound: a point of health a minute for half an hour. Wounds stack.
+/// One bleeding injury: a point of health a minute for half an hour. Injuries stack.
 pub fn bleeding(ids: Ids) -> Effect {
     Effect {
         remaining_minutes: Some(Fixed32::from_int(30)),
@@ -108,14 +108,14 @@ pub fn bleeding(ids: Ids) -> Effect {
     }
 }
 
-/// A prayer restores a point of sanity a minute for twenty minutes, but no more than ten a day.
-pub fn prayer(ids: Ids) -> Effect {
+/// A restoration restores a point of sanity a minute for twenty minutes, but no more than ten a day.
+pub fn restoration(ids: Ids) -> Effect {
     Effect {
         remaining_minutes: Some(Fixed32::from_int(20)),
         stacking: Stacking::DailyBudget {
             cap_per_day: Fixed32::from_int(10),
         },
-        ..drain(ids.sanity, "prayer", 1, 1)
+        ..drain(ids.sanity, "restoration", 1, 1)
     }
 }
 
@@ -151,15 +151,15 @@ pub enum Intent {
     Stop {
         entity: Handle,
     },
-    /// A wound, which bleeds or not by a roll.
-    Wound {
+    /// A injury, which bleeds or not by a roll.
+    Injure {
         entity: Handle,
     },
-    /// Removes every bleeding wound.
-    Bandage {
+    /// Removes every bleeding injury.
+    Treat {
         entity: Handle,
     },
-    Pray {
+    Restore {
         entity: Handle,
     },
 }
@@ -184,19 +184,19 @@ pub enum Event {
     Rejected {
         entity: Handle,
     },
-    /// A wound that bleeds.
+    /// A injury that bleeds.
     Bleeding {
         entity: Handle,
     },
-    /// A wound that does not.
+    /// A injury that does not.
     Grazed {
         entity: Handle,
     },
-    Bandaged {
+    Treated {
         entity: Handle,
-        wounds: usize,
+        treated: usize,
     },
-    Prayed {
+    Restored {
         entity: Handle,
     },
 }
@@ -435,7 +435,7 @@ fn apply_intents(
             Intent::Stop { entity } => {
                 world.walks.unset(*entity);
             }
-            Intent::Wound { entity } | Intent::Bandage { entity } | Intent::Pray { entity } => {
+            Intent::Injure { entity } | Intent::Treat { entity } | Intent::Restore { entity } => {
                 if !world.entities.contains(*entity) {
                     context.events.push(Event::Rejected { entity: *entity });
                     continue;
@@ -447,8 +447,8 @@ fn apply_intents(
                     effect_events: &mut Vec::new(),
                 };
                 let event = match intent {
-                    Intent::Wound { .. } => {
-                        if context.randomness.roll("wounds", BLEED_CHANCE) {
+                    Intent::Injure { .. } => {
+                        if context.randomness.roll("injuries", BLEED_CHANCE) {
                             world
                                 .effects
                                 .add(*entity, bleeding(*ids), &mut effect_context);
@@ -457,9 +457,9 @@ fn apply_intents(
                             Event::Grazed { entity: *entity }
                         }
                     }
-                    Intent::Bandage { .. } => Event::Bandaged {
+                    Intent::Treat { .. } => Event::Treated {
                         entity: *entity,
-                        wounds: world.effects.remove_by_tag(
+                        treated: world.effects.remove_by_tag(
                             *entity,
                             &EffectTag::new("bleeding"),
                             &mut effect_context,
@@ -468,8 +468,8 @@ fn apply_intents(
                     _ => {
                         world
                             .effects
-                            .add(*entity, prayer(*ids), &mut effect_context);
-                        Event::Prayed { entity: *entity }
+                            .add(*entity, restoration(*ids), &mut effect_context);
+                        Event::Restored { entity: *entity }
                     }
                 };
                 context.events.push(event);
@@ -585,7 +585,7 @@ pub fn clock_configuration() -> ClockConfiguration {
 
 fn configuration() -> Configuration {
     Configuration {
-        actor_name: "Mara".to_string(),
+        actor_name: "Operator".to_string(),
     }
 }
 

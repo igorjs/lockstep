@@ -5,7 +5,7 @@ use lockstep_core::math::Fixed32;
 use lockstep_core::{Column, Handle};
 use serde::{Deserialize, Serialize};
 
-/// What an effect is, for stacking, removal and display: Bleeding, Blessed, Fever.
+/// What an effect is, for stacking, removal and display: Bleeding, Boosted, Fever.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct EffectTag(pub String);
 
@@ -25,7 +25,7 @@ pub enum Stacking {
     /// A new application removes the old one first.
     Replace,
     /// Each application is its own effect, but the tag's total change on the entity is capped per
-    /// simulated day: prayer's hope. Past the cap it gives nothing until the next day.
+    /// simulated day: restoration's hope. Past the cap it gives nothing until the next day.
     DailyBudget { cap_per_day: Fixed32 },
 }
 
@@ -175,7 +175,7 @@ impl Effects {
         self.remove_matching(|active| active.handle == handle, context) > 0
     }
 
-    /// Removes every effect with this tag from `who`, as a bandage removes all Bleeding. Returns how
+    /// Removes every effect with this tag from `who`, as a treatment removes all Bleeding. Returns how
     /// many it removed.
     pub fn remove_by_tag(
         &mut self,
@@ -224,7 +224,7 @@ impl Effects {
                 active.applied = total;
                 let (who, attribute) = (active.who, active.effect.attribute);
                 // A budget is spent by what actually lands, after the attribute clamps, so a
-                // prayer at full hope spends nothing.
+                // restoration at full hope spends nothing.
                 let budget = match active.effect.stacking {
                     Stacking::DailyBudget { cap_per_day } => {
                         let index = Self::budget(&mut self.budgets, who, &active.effect.tag, day);

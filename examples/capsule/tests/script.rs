@@ -24,10 +24,10 @@ fn the_committed_script_parses_and_is_the_source_of_the_defaults() {
             }
         )
     );
-    assert_eq!(script.commands[1], (200, Command::Wound));
-    assert_eq!(script.commands[5], (600, Command::Bandage));
+    assert_eq!(script.commands[1], (200, Command::Injure));
+    assert_eq!(script.commands[5], (600, Command::Treat));
     assert_eq!(script.commands[7], (800, Command::Multiplier(20.0)));
-    assert_eq!(script.commands[8], (1000, Command::Pray));
+    assert_eq!(script.commands[8], (1000, Command::Restore));
 }
 
 #[test]
@@ -124,17 +124,18 @@ fn a_stop_command_cancels_a_walk() {
 }
 
 #[test]
-fn wound_bandage_and_pray_name_the_actor_and_nothing_else() {
-    let script = parse("seed 1\nsteps 2\n0 wound actor\n1 bandage actor\n1 pray actor\n").unwrap();
+fn injure_treat_and_restore_name_the_actor_and_nothing_else() {
+    let script =
+        parse("seed 1\nsteps 2\n0 injure actor\n1 treat actor\n1 restore actor\n").unwrap();
     assert_eq!(
         script.commands,
         [
-            (0, Command::Wound),
-            (1, Command::Bandage),
-            (1, Command::Pray)
+            (0, Command::Injure),
+            (1, Command::Treat),
+            (1, Command::Restore)
         ]
     );
-    for bad in ["0 wound", "0 pray rover", "0 bandage actor twice"] {
+    for bad in ["0 injure", "0 restore rover", "0 treat actor twice"] {
         let text = format!("seed 1\nsteps 2\n{bad}\n");
         assert_eq!(parse(&text).unwrap_err().line, 3, "{bad}");
     }

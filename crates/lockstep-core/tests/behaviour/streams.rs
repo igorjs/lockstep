@@ -8,7 +8,7 @@ use wasm_bindgen_test::wasm_bindgen_test as test;
 fn adding_a_new_named_stream_does_not_change_any_existing_streams_sequence() {
     let mut alone = Streams::new(99);
     let alone_draws: Vec<i32> = (0..1000)
-        .map(|_| alone.range("loot", 0, 1_000_000))
+        .map(|_| alone.range("draws", 0, 1_000_000))
         .collect();
 
     let mut crowded = Streams::new(99);
@@ -17,7 +17,7 @@ fn adding_a_new_named_stream_does_not_change_any_existing_streams_sequence() {
         if index % 3 == 0 {
             crowded.range("weather", 0, 10);
         }
-        crowded_draws.push(crowded.range("loot", 0, 1_000_000));
+        crowded_draws.push(crowded.range("draws", 0, 1_000_000));
         if index % 5 == 0 {
             crowded.unit("encounters");
         }
@@ -30,12 +30,12 @@ fn different_seeds_and_different_names_give_different_sequences() {
     let mut first = Streams::new(1);
     let mut second = Streams::new(2);
     assert_ne!(
-        first.range("loot", 0, i32::MAX),
-        second.range("loot", 0, i32::MAX)
+        first.range("draws", 0, i32::MAX),
+        second.range("draws", 0, i32::MAX)
     );
     let mut third = Streams::new(1);
     assert_ne!(
-        third.range("loot", 0, i32::MAX),
+        third.range("draws", 0, i32::MAX),
         third.range("combat", 0, i32::MAX)
     );
 }
@@ -57,7 +57,7 @@ fn ranges_and_units_stay_inside_their_bounds() {
 fn a_restored_stream_set_continues_the_same_sequences() {
     let mut original = Streams::new(11);
     for _ in 0..100 {
-        original.range("loot", 0, 100);
+        original.range("draws", 0, 100);
         original.unit("weather");
     }
     let bytes = bincode::serialize(&original).unwrap();
@@ -65,8 +65,8 @@ fn a_restored_stream_set_continues_the_same_sequences() {
     assert_eq!(hash_of(&restored), hash_of(&original));
     for _ in 0..100 {
         assert_eq!(
-            restored.range("loot", 0, 100),
-            original.range("loot", 0, 100)
+            restored.range("draws", 0, 100),
+            original.range("draws", 0, 100)
         );
         assert_eq!(restored.unit("weather"), original.unit("weather"));
     }
@@ -83,7 +83,7 @@ fn million_rolls_hash() -> u64 {
     let mut rolls: Vec<u16> = Vec::with_capacity(1_000_000);
     let mut units: Vec<u32> = Vec::new();
     for index in 0..1_000_000u32 {
-        rolls.push(streams.range("loot", 0, 1000) as u16);
+        rolls.push(streams.range("draws", 0, 1000) as u16);
         if index % 1000 == 0 {
             units.push(streams.unit("weather").to_bits());
         }
