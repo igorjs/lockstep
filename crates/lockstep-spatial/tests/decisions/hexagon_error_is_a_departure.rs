@@ -6,7 +6,7 @@
 //! is not a scale: the ratio of steps to true distance runs from 1 along an axis to 2 / sqrt(3)
 //! halfway between two axes, so even the best constant factor leaves 7.2 percent either way.
 //! Would change if: the worst error over every pair of points on the circle of radius 50 leaves
-//! 15.40 to 15.55 percent (the number to beat), or the best constant factor reaches under 7
+//! 15.40 to 15.55 percent, or the best constant factor reaches under 7
 //! percent. Either means the distance or the geometry changed.
 
 #![cfg(feature = "hex")]

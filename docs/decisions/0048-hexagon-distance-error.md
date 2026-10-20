@@ -25,7 +25,12 @@ Hexagons keep the cube distance and the figure of 15.47 percent. The reference's
 
 If either leaves its range, the distance or the geometry changed, and that is a design question.
 
-## Alternatives
+## Alternatives rejected
 
 - Revise the reference's figure to 16 percent and keep the gap open: the finding is final, so a gap that can never close is a departure.
 - A Euclidean hexagon distance: rejected above. It would also make costs differ per direction, which `step_cost` equal to `distance` for adjacent cells (decision 0005) rules out.
+
+## Would change if
+
+The worst error over the circle leaves 15.40 to 15.55 percent, or the best constant factor reaches
+under 7 percent. Either means the distance or the geometry changed, which is a design question.
