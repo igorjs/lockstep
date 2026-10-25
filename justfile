@@ -19,6 +19,7 @@ check:
     cargo clippy -p lockstep-combat --all-targets --features hex -- -D warnings
     ./scripts/lint-determinism.sh
     ./scripts/check-spdx.sh
+    ./scripts/check-publish.sh
 
 # Lints the workflows with a pinned zizmor, run through uvx so nothing is installed. It needs
 # network access to fetch the tool, so it is not part of check; CI runs it (docs/ci.md).

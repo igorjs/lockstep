@@ -32,3 +32,10 @@ Rules the workflows follow:
 Run it locally with `just zizmor`. It runs a pinned zizmor through `uvx` in offline mode, which skips
 the audits that query GitHub, so CI is the full check. It needs network access to fetch the tool,
 so it is not part of `just check`.
+
+## publish metadata
+
+`scripts/check-publish.sh`, run by `just check`, reads `cargo metadata` and fails when a library
+crate lacks keywords, categories or a rust-version, when a path dependency has no `version`, or
+when `lockstep-headless`, `lockstep-fuzz` or an example does not set `publish = false`. Nothing is
+published or tagged by it.

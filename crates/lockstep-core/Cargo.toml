@@ -7,9 +7,12 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+rust-version.workspace = true
 
 [dependencies]
-lockstep-macros = { path = "../lockstep-macros" }
+lockstep-macros = { path = "../lockstep-macros", version = "0.1.0" }
 serde = { workspace = true }
 bincode = { workspace = true }
 rand = { workspace = true }

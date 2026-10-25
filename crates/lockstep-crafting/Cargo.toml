@@ -7,15 +7,18 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+rust-version.workspace = true
 
 [dependencies]
-lockstep-core = { path = "../lockstep-core" }
-lockstep-inventory = { path = "../lockstep-inventory" }
+lockstep-core = { path = "../lockstep-core", version = "0.1.0" }
+lockstep-inventory = { path = "../lockstep-inventory", version = "0.1.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
-lockstep-attributes = { path = "../lockstep-attributes" }
+lockstep-attributes = { path = "../lockstep-attributes", version = "0.1.0" }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = { workspace = true }

@@ -7,10 +7,13 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+rust-version.workspace = true
 
 [dependencies]
-lockstep-attributes = { path = "../lockstep-attributes" }
-lockstep-core = { path = "../lockstep-core" }
+lockstep-attributes = { path = "../lockstep-attributes", version = "0.1.0" }
+lockstep-core = { path = "../lockstep-core", version = "0.1.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
