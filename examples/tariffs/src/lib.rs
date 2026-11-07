@@ -7,8 +7,9 @@
 //! its behaviour (a fee of nothing).
 
 use lockstep_core::{
-    ClockConfiguration, Column, Context, Handle, Message, Migrations, Recorder, Recording, Runner,
-    Save, Simulation, StableVector, StepConfiguration, Streams,
+    recorded_versions, ClockConfiguration, Column, Context, Handle, Message, Migrations,
+    RecordedStep, Recorder, Recording, ReplayError, Runner, Save, Simulation, StableVector,
+    StepConfiguration, Streams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,11 +23,22 @@ pub const FEE_BASIS_POINTS: u32 = 25;
 /// The step the committed old save was taken at.
 pub const LEGACY_SAVE_STEP: u64 = 1_500;
 
+/// The first shape of the configuration, when every account opened with the same balance. Recordings carry it, so
+/// it is frozen: never edit it, only convert it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
 #[message(version = 1)]
-pub struct Configuration {
+pub struct ConfigurationV1 {
     pub account_names: Vec<String>,
     pub opening_balance_minor: i64,
+    pub fee_basis_points: u32,
+}
+
+/// The current shape: each account opens with its own balance, in the order of the names.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 2)]
+pub struct Configuration {
+    pub account_names: Vec<String>,
+    pub opening_balances_minor: Vec<i64>,
     pub fee_basis_points: u32,
 }
 
@@ -39,8 +51,25 @@ pub enum Reason {
     Overflow,
 }
 
+/// The first shape of an intent, before a transfer could waive its fee. Recordings carry it, so
+/// it is frozen: never edit it, only convert it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
 #[message(version = 1)]
+pub enum IntentV1 {
+    Deposit {
+        account: Handle,
+        amount_minor: i64,
+    },
+    Transfer {
+        from: Handle,
+        to: Handle,
+        amount_minor: i64,
+    },
+}
+
+/// The current shape: a transfer can waive its fee.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+#[message(version = 2)]
 pub enum Intent {
     Deposit {
         account: Handle,
@@ -50,6 +79,7 @@ pub enum Intent {
         from: Handle,
         to: Handle,
         amount_minor: i64,
+        waive_fee: bool,
     },
 }
 
@@ -118,6 +148,54 @@ pub fn migrations() -> Migrations {
     })
 }
 
+/// Old recorded intents charged every fee, so a converted transfer waives none.
+pub fn intent_migrations() -> Migrations {
+    Migrations::new().step(|old: IntentV1| match old {
+        IntentV1::Deposit {
+            account,
+            amount_minor,
+        } => Intent::Deposit {
+            account,
+            amount_minor,
+        },
+        IntentV1::Transfer {
+            from,
+            to,
+            amount_minor,
+        } => Intent::Transfer {
+            from,
+            to,
+            amount_minor,
+            waive_fee: false,
+        },
+    })
+}
+
+/// Old recorded configurations gave every account the same opening balance, so a converted one
+/// repeats it for each name.
+pub fn configuration_migrations() -> Migrations {
+    Migrations::new().step(|old: ConfigurationV1| Configuration {
+        opening_balances_minor: vec![old.opening_balance_minor; old.account_names.len()],
+        account_names: old.account_names,
+        fee_basis_points: old.fee_basis_points,
+    })
+}
+
+/// Reads a recording of any version this example has shipped as the current shapes. A recording
+/// made with the first intent or configuration shape is converted, which drops its checkpoints
+/// (decision 0085); one made with the current shapes, or a legacy one, is read as it is.
+pub fn read_recording(bytes: &[u8]) -> Result<Recording<Intent>, ReplayError> {
+    let versions = recorded_versions(bytes)?;
+    if versions.intent == <IntentV1 as Message>::VERSION {
+        return Recording::<IntentV1>::from_bytes(bytes)?.convert::<Tariffs>(
+            versions,
+            &intent_migrations(),
+            &configuration_migrations(),
+        );
+    }
+    Recording::<Intent>::from_bytes_for::<Tariffs>(bytes)
+}
+
 pub struct Tariffs {
     books: Books,
 }
@@ -148,11 +226,13 @@ impl Simulation for Tariffs {
             fee_basis_points: configuration.fee_basis_points,
             fees_collected_minor: 0,
         };
-        for name in configuration.account_names {
+        for (name, opening) in configuration
+            .account_names
+            .into_iter()
+            .zip(configuration.opening_balances_minor)
+        {
             let account = books.accounts.insert(name);
-            books
-                .balances
-                .set(account, configuration.opening_balance_minor);
+            books.balances.set(account, opening);
         }
         Tariffs { books }
     }
@@ -173,8 +253,9 @@ impl Simulation for Tariffs {
                     from,
                     to,
                     amount_minor,
+                    waive_fee,
                 } => self
-                    .transfer(*from, *to, *amount_minor)
+                    .transfer(*from, *to, *amount_minor, *waive_fee)
                     .map(|fee_minor| Event::Transferred {
                         from: *from,
                         to: *to,
@@ -219,7 +300,13 @@ impl Tariffs {
     }
 
     /// Moves the amount and returns the fee the sender paid on top.
-    fn transfer(&mut self, from: Handle, to: Handle, amount_minor: i64) -> Result<i64, Reason> {
+    fn transfer(
+        &mut self,
+        from: Handle,
+        to: Handle,
+        amount_minor: i64,
+        waive_fee: bool,
+    ) -> Result<i64, Reason> {
         if amount_minor <= 0 {
             return Err(Reason::NotPositive);
         }
@@ -232,7 +319,11 @@ impl Tariffs {
             .get(from)
             .ok_or(Reason::UnknownAccount)?;
         let target = *self.books.balances.get(to).ok_or(Reason::UnknownAccount)?;
-        let fee = fee_minor(amount_minor, self.books.fee_basis_points);
+        let fee = if waive_fee {
+            0
+        } else {
+            fee_minor(amount_minor, self.books.fee_basis_points)
+        };
         let charged = amount_minor.checked_add(fee).ok_or(Reason::Overflow)?;
         if source < charged {
             return Err(Reason::InsufficientFunds);
@@ -257,7 +348,7 @@ fn settings(fee_basis_points: u32) -> (Configuration, StepConfiguration, ClockCo
     (
         Configuration {
             account_names: names,
-            opening_balance_minor: OPENING_BALANCE_MINOR,
+            opening_balances_minor: vec![OPENING_BALANCE_MINOR; ACCOUNT_COUNT],
             fee_basis_points,
         },
         StepConfiguration::default(),
@@ -301,6 +392,7 @@ fn script_intent(script: &mut Streams, accounts: &[Handle]) -> Intent {
             from,
             to,
             amount_minor,
+            waive_fee: false,
         }
     }
 }
@@ -382,4 +474,58 @@ pub fn legacy_save(seed: u64) -> Save {
     save.snapshot_version = <BooksV1 as Message>::VERSION;
     save.snapshot = lockstep_core::encode(&old);
     save
+}
+
+/// The steps of the committed old recording.
+pub const LEGACY_RECORDING_STEPS: u64 = 2_000;
+
+/// What the first shapes would have recorded: the scripted session with its intents and
+/// configuration written as version 1. Used once to write the committed fixture
+/// (`examples/generate_legacy_save.rs`); tests read the committed bytes, never this.
+pub fn legacy_recording(seed: u64, steps: u64) -> Recording<IntentV1> {
+    let current = record_fixture(seed, steps, 100, false);
+    let old = settings(FEE_BASIS_POINTS).0;
+    Recording {
+        simulation_id: current.simulation_id,
+        configuration: lockstep_core::encode(&ConfigurationV1 {
+            account_names: old.account_names,
+            opening_balance_minor: OPENING_BALANCE_MINOR,
+            fee_basis_points: old.fee_basis_points,
+        }),
+        seed: current.seed,
+        step_configuration: current.step_configuration,
+        clock_configuration: current.clock_configuration,
+        steps: current
+            .steps
+            .into_iter()
+            .map(|step| RecordedStep {
+                intents: step
+                    .intents
+                    .into_iter()
+                    .map(|intent| match intent {
+                        Intent::Deposit {
+                            account,
+                            amount_minor,
+                        } => IntentV1::Deposit {
+                            account,
+                            amount_minor,
+                        },
+                        Intent::Transfer {
+                            from,
+                            to,
+                            amount_minor,
+                            ..
+                        } => IntentV1::Transfer {
+                            from,
+                            to,
+                            amount_minor,
+                        },
+                    })
+                    .collect(),
+                clock_multiplier: step.clock_multiplier,
+            })
+            .collect(),
+        checkpoints: current.checkpoints,
+        snapshots: Vec::new(),
+    }
 }

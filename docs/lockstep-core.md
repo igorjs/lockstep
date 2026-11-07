@@ -82,6 +82,14 @@ runner sets on the clock before every step, so a replay needs nothing recorded f
   anything over `DECODE_LIMIT` (256 MiB), and reading refuses trailing bytes. A checkpoint out of
   order or past the last step is an error, not a pass. `encode` and `decode` are the
   same functions for any value.
+- `Recording::to_versioned_bytes(versions)` writes the same bytes behind a 16 byte header: the magic
+  `LKRC`, then the versions of the intent, event and configuration shapes as little-endian 32-bit
+  numbers (`RecordingVersions::of::<S>()` gives the current ones). The decode limit applies to the
+  total. `to_bytes` is unchanged, so every recording committed before the header still reads.
+  `from_bytes` and `recorded_simulation_id` read both forms, and `recorded_versions` returns the
+  header's versions, or `RecordingVersions::LEGACY` (all 0) for a recording without one.
+  `from_bytes_for::<S>` also refuses a header that names another version than `S` has, with an
+  error that names both versions. `RecordingSet` is not versioned (decision 0085).
 
 See decision 0011. For saving mid-session see the next section.
 
@@ -106,7 +114,15 @@ The shapes that shipped stay in the code, frozen. A missing link, a newer save, 
 read as their version are errors (`SaveError`), never guesses (decision 0035). `replay_from(&recording,
 &save, &migrations)` continues a recording from a save and compares every checkpoint from the save's
 step on; a save converted from an older shape is `NotComparable` with the recording's hashes.
-Intents, events and configurations are not converted yet; see the roadmap.
+
+A recording made with an older intent or configuration shape converts the same way
+(decision 0085). Read it as the frozen old intent type, then
+`recording.convert::<S>(versions, &intent_migrations, &configuration_migrations)` carries each
+intent and the configuration up their chains. The recorded checkpoints and snapshots cover the old
+shapes, so conversion drops them: the converted recording replays, and a consumer checks the final
+hash against a committed one. Events are not stored in a recording, so an older event version needs
+no conversion; a newer one is refused. The `tariffs` example converts a committed version 1
+recording natively and under WebAssembly.
 
 ## Timeline
 

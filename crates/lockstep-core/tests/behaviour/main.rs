@@ -10,6 +10,7 @@ mod derive;
 mod math;
 mod money;
 mod queue;
+mod recording_versions;
 mod replay;
 mod runner;
 mod save;

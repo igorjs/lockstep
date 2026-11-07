@@ -30,8 +30,9 @@ pub mod __private {
 }
 pub use message::{Indexable, Message};
 pub use replay::{
-    bisect, record_session, recorded_simulation_id, replay, replay_from, Bisection, RecordedStep,
-    Recorder, Recording, RecordingSet, ReplayError, ReplayOutcome, Session,
+    bisect, record_session, recorded_simulation_id, recorded_versions, replay, replay_from,
+    Bisection, RecordedStep, Recorder, Recording, RecordingSet, RecordingVersions, ReplayError,
+    ReplayOutcome, Session, RECORDING_HEADER_LENGTH, RECORDING_MAGIC,
 };
 pub use runner::{Advanced, Runner, StepConfiguration};
 pub use save::{saved_simulation_id, Migrations, Save, SaveError, SAVE_FORMAT};

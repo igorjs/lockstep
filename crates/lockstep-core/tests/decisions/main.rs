@@ -10,6 +10,7 @@ mod common;
 mod a_changed_shape_needs_a_new_version;
 mod a_day_has_at_most_four_billion_steps;
 mod a_fixture_of_many_sessions_records_as_a_set;
+mod a_recording_says_which_shapes_it_holds;
 mod a_save_continues_a_recording;
 mod bisect_finds_a_planted_divergence;
 mod chance_in_basis_points;

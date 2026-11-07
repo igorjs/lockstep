@@ -36,8 +36,83 @@ pub struct Recording<I: Message> {
     pub snapshots: Vec<(u64, Vec<u8>)>,
 }
 
+/// The first four bytes of a versioned recording. Read as a little-endian length they exceed
+/// `DECODE_LIMIT`, so they can never be the length prefix of a legacy recording's first field.
+pub const RECORDING_MAGIC: [u8; 4] = *b"LKRC";
+
+/// The versioned header: the magic and three little-endian u32 versions (intent, event,
+/// configuration). The legacy bytes follow it unchanged.
+pub const RECORDING_HEADER_LENGTH: usize = 16;
+
+/// The versions of the three message shapes a recording was made with. A legacy recording names
+/// none, and reads as version 0 in each.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RecordingVersions {
+    pub intent: u32,
+    pub event: u32,
+    pub configuration: u32,
+}
+
+impl RecordingVersions {
+    /// What a recording without a header reads as.
+    pub const LEGACY: RecordingVersions = RecordingVersions {
+        intent: 0,
+        event: 0,
+        configuration: 0,
+    };
+
+    /// The versions of the shapes `S` uses now.
+    pub fn of<S: Simulation>() -> Self {
+        RecordingVersions {
+            intent: <S::Intent as Message>::VERSION,
+            event: <S::Event as Message>::VERSION,
+            configuration: <S::Configuration as Message>::VERSION,
+        }
+    }
+}
+
+/// The versions in a recording's bytes: those of its header, or `LEGACY` when it has none.
+pub fn recorded_versions(bytes: &[u8]) -> Result<RecordingVersions, ReplayError> {
+    Ok(split_header(bytes)?.0)
+}
+
+/// Splits off the versioned header when the bytes start with the magic.
+fn split_header(bytes: &[u8]) -> Result<(RecordingVersions, &[u8]), ReplayError> {
+    if !bytes.starts_with(&RECORDING_MAGIC) {
+        return Ok((RecordingVersions::LEGACY, bytes));
+    }
+    let header = bytes.get(..RECORDING_HEADER_LENGTH).ok_or_else(|| {
+        ReplayError::NotARecording("the versioned header is cut short".to_string())
+    })?;
+    if bytes.len() as u64 > DECODE_LIMIT {
+        return Err(ReplayError::TooLarge(bytes.len() as u64));
+    }
+    let version =
+        |at: usize| u32::from_le_bytes(header[at..at + 4].try_into().expect("four bytes"));
+    let versions = RecordingVersions {
+        intent: version(4),
+        event: version(8),
+        configuration: version(12),
+    };
+    Ok((versions, &bytes[RECORDING_HEADER_LENGTH..]))
+}
+
+/// Refuses a shape newer than the code, naming both versions. A legacy recording (version 0)
+/// is taken as the current shape, since it never said otherwise.
+fn check_not_newer(kind: &'static str, found: u32, current: u32) -> Result<(), ReplayError> {
+    if found > current {
+        return Err(ReplayError::Version {
+            kind,
+            found,
+            current,
+        });
+    }
+    Ok(())
+}
+
 impl<I: Message> Recording<I> {
-    /// The recording's bytes. Refuses a recording too large for `from_bytes` to read back.
+    /// The recording's legacy bytes, with no header. Every recording committed before versions
+    /// existed is these bytes. Refuses a recording too large for `from_bytes` to read back.
     pub fn to_bytes(&self) -> Result<Vec<u8>, ReplayError> {
         let bytes = encode(self);
         if bytes.len() as u64 > DECODE_LIMIT {
@@ -46,17 +121,111 @@ impl<I: Message> Recording<I> {
         Ok(bytes)
     }
 
+    /// The legacy bytes behind a 16 byte header that names the versions the recording was made
+    /// with (`RecordingVersions::of::<S>()` for a recording of `S`). The limit applies to the
+    /// total, header included.
+    pub fn to_versioned_bytes(&self, versions: RecordingVersions) -> Result<Vec<u8>, ReplayError> {
+        let body = encode(self);
+        let total = (RECORDING_HEADER_LENGTH + body.len()) as u64;
+        if total > DECODE_LIMIT {
+            return Err(ReplayError::TooLarge(total));
+        }
+        let mut bytes = Vec::with_capacity(total as usize);
+        bytes.extend_from_slice(&RECORDING_MAGIC);
+        for version in [versions.intent, versions.event, versions.configuration] {
+            bytes.extend_from_slice(&version.to_le_bytes());
+        }
+        bytes.extend_from_slice(&body);
+        Ok(bytes)
+    }
+
+    /// Reads either form, ignoring the versions a header names. `from_bytes_for` checks them.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ReplayError> {
-        decode(bytes).map_err(ReplayError::NotARecording)
+        let (_, body) = split_header(bytes)?;
+        decode(body).map_err(ReplayError::NotARecording)
+    }
+
+    /// Reads either form for simulation `S` and refuses a recording whose header names a shape
+    /// newer than `S` has, naming both versions. A header naming an older shape also refuses,
+    /// since its bytes may not decode as the current one; `convert` carries it forward. Legacy
+    /// bytes name nothing and read as the current shape.
+    pub fn from_bytes_for<S: Simulation<Intent = I>>(bytes: &[u8]) -> Result<Self, ReplayError> {
+        let (versions, body) = split_header(bytes)?;
+        let current = RecordingVersions::of::<S>();
+        for (kind, found, now) in [
+            ("intent", versions.intent, current.intent),
+            ("event", versions.event, current.event),
+            (
+                "configuration",
+                versions.configuration,
+                current.configuration,
+            ),
+        ] {
+            check_not_newer(kind, found, now)?;
+            // An older event shape leaves nothing to convert: a recording holds no events.
+            if found != 0 && found < now && kind != "event" {
+                return Err(ReplayError::Version {
+                    kind,
+                    found,
+                    current: now,
+                });
+            }
+        }
+        decode(body).map_err(ReplayError::NotARecording)
+    }
+
+    /// Carries a recording made with older intent and configuration shapes to the shapes of `S`.
+    /// `self` must be read as the frozen old intent type, named by `versions.intent`; each
+    /// intent goes up the `intents` chain and the configuration bytes up the `configuration`
+    /// chain. The recorded checkpoints and snapshots cover the old shapes, so they are dropped:
+    /// the converted recording replays, but nothing in it can be compared (decision 0085).
+    pub fn convert<S: Simulation>(
+        &self,
+        versions: RecordingVersions,
+        intents: &Migrations,
+        configuration: &Migrations,
+    ) -> Result<Recording<S::Intent>, ReplayError> {
+        let current = RecordingVersions::of::<S>();
+        check_not_newer("event", versions.event, current.event)?;
+        let convert_error = |error: SaveError| ReplayError::Conversion(error.to_string());
+        let mut steps = Vec::with_capacity(self.steps.len());
+        for step in &self.steps {
+            let mut converted = Vec::with_capacity(step.intents.len());
+            for intent in &step.intents {
+                converted.push(
+                    intents
+                        .migrate::<S::Intent>(I::VERSION, &encode(intent))
+                        .map_err(convert_error)?,
+                );
+            }
+            steps.push(RecordedStep {
+                intents: converted,
+                clock_multiplier: step.clock_multiplier,
+            });
+        }
+        let configuration: S::Configuration = configuration
+            .migrate(versions.configuration, &self.configuration)
+            .map_err(convert_error)?;
+        Ok(Recording {
+            simulation_id: self.simulation_id.clone(),
+            configuration: encode(&configuration),
+            seed: self.seed,
+            step_configuration: self.step_configuration,
+            clock_configuration: self.clock_configuration,
+            steps,
+            checkpoints: Vec::new(),
+            snapshots: Vec::new(),
+        })
     }
 }
 
 /// The simulation id of a recording's bytes, read without knowing the simulation, so a tool can
-/// pick which simulation decodes the rest. It relies on `simulation_id` being the first field of
-/// `Recording`, written as a little-endian 64-bit length and that many bytes of text; a test pins
-/// the layout.
+/// pick which simulation decodes the rest. It skips the versioned header when there is one, then
+/// relies on `simulation_id` being the first field of `Recording`, written as a little-endian
+/// 64-bit length and that many bytes of text; a test pins the layout.
 pub fn recorded_simulation_id(bytes: &[u8]) -> Result<String, ReplayError> {
     let refuse = |reason: &str| ReplayError::NotARecording(reason.to_string());
+    let (_, bytes) = split_header(bytes)?;
     let length = bytes
         .get(..8)
         .map(|prefix| u64::from_le_bytes(prefix.try_into().expect("eight bytes")))
@@ -114,6 +283,15 @@ pub enum ReplayError {
     NotComparable {
         from_version: u32,
     },
+    /// The recording's header names a shape (`intent`, `event` or `configuration`) at a version
+    /// the code does not read directly.
+    Version {
+        kind: &'static str,
+        found: u32,
+        current: u32,
+    },
+    /// A conversion of the recording's intents or configuration failed.
+    Conversion(String),
 }
 
 impl std::fmt::Display for ReplayError {
@@ -136,6 +314,17 @@ impl std::fmt::Display for ReplayError {
                 formatter,
                 "the save was converted from snapshot version {from_version}, so the recorded hashes no longer apply"
             ),
+            ReplayError::Version {
+                kind,
+                found,
+                current,
+            } => write!(
+                formatter,
+                "the recording holds {kind} version {found}, the code reads version {current}"
+            ),
+            ReplayError::Conversion(reason) => {
+                write!(formatter, "the recording cannot be converted: {reason}")
+            }
             ReplayError::TooLarge(bytes) => write!(
                 formatter,
                 "the recording is {bytes} bytes, over the {DECODE_LIMIT} bytes it could be read back with"
