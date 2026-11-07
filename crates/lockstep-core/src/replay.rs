@@ -153,6 +153,8 @@ pub struct Recorder<S: Simulation> {
     recording: Recording<S::Intent>,
     checkpoint_every: u64,
     keep_snapshots: bool,
+    /// Snapshot spacing; 0 keeps one at every checkpoint.
+    snapshot_every: u64,
     clock_multiplier: f32,
 }
 
@@ -183,6 +185,7 @@ impl<S: Simulation> Recorder<S> {
             recording,
             checkpoint_every: checkpoint_every.max(1),
             keep_snapshots: false,
+            snapshot_every: 0,
             clock_multiplier: 1.0,
         };
         recorder.checkpoint();
@@ -214,18 +217,28 @@ impl<S: Simulation> Recorder<S> {
             recording,
             checkpoint_every: checkpoint_every.max(1),
             keep_snapshots: false,
+            snapshot_every: 0,
             clock_multiplier: 1.0,
         };
         recorder.checkpoint();
         recorder
     }
 
-    /// Also keeps the snapshot at every checkpoint, so `bisect` can show what differs. Costs a
+    /// Also keeps the snapshot at every checkpoint (or at the spacing `snapshot_every` sets), so `bisect` can show what differs. Costs a
     /// snapshot per checkpoint in the recording. Call it before the first step.
     pub fn keep_snapshots(mut self) -> Self {
         self.keep_snapshots = true;
         self.recording.snapshots.clear();
         self.checkpoint_snapshot();
+        self
+    }
+
+    /// Keeps a snapshot only at checkpoints that fall on a multiple of `snapshot_every`, so a
+    /// recording can hash every step and still stay small (decision 0079). Needs `keep_snapshots`
+    /// and a call before the first step. 0 means every checkpoint; a spacing that is not a multiple
+    /// of `checkpoint_every` keeps snapshots only where the two meet.
+    pub fn snapshot_every(mut self, snapshot_every: u64) -> Self {
+        self.snapshot_every = snapshot_every;
         self
     }
 
@@ -239,10 +252,11 @@ impl<S: Simulation> Recorder<S> {
     }
 
     pub fn advance(&mut self, real_seconds: f32) -> Advanced<S> {
-        let (every, keep, multiplier) = (
+        let (every, keep, multiplier, snapshot_every) = (
             self.checkpoint_every,
             self.keep_snapshots,
             self.clock_multiplier,
+            self.snapshot_every,
         );
         let recording = &mut self.recording;
         // One call can run several steps; the observer sees the runner after each, which is
@@ -256,7 +270,7 @@ impl<S: Simulation> Recorder<S> {
                 let step = runner.step_number();
                 if step.is_multiple_of(every) {
                     recording.checkpoints.push((step, runner.hash()));
-                    if keep {
+                    if keep && (snapshot_every == 0 || step.is_multiple_of(snapshot_every)) {
                         recording.snapshots.push((step, encode(&runner.snapshot())));
                     }
                 }
@@ -306,8 +320,10 @@ impl<S: Simulation> Recorder<S> {
     }
 
     fn checkpoint_snapshot(&mut self) {
-        if self.keep_snapshots {
-            let step = self.runner.step_number();
+        let step = self.runner.step_number();
+        if self.keep_snapshots
+            && (self.snapshot_every == 0 || step.is_multiple_of(self.snapshot_every))
+        {
             self.recording
                 .snapshots
                 .push((step, encode(&self.runner.snapshot())));
@@ -316,7 +332,7 @@ impl<S: Simulation> Recorder<S> {
 }
 
 /// Runs `drive` against a recorder around `runner`, which must not have stepped, and returns the
-/// recording. `keep_snapshots` also keeps the snapshot at every checkpoint.
+/// recording. `keep_snapshots` also keeps the snapshot at every checkpoint, at the default spacing.
 pub fn record_session<S: Simulation>(
     simulation_id: &str,
     configuration: &S::Configuration,
@@ -553,10 +569,23 @@ pub struct Bisection {
     /// Whether the recording kept a snapshot at `first_bad_step` to compare. Kept snapshots with no
     /// differences mean the worlds look the same and only the hashes differ.
     pub compared_snapshots: bool,
+    /// The index of the step whose execution first changed the state (`first_bad_step - 1`), set
+    /// only when the recording checkpoints every step. `None` for a change in `create` and for a
+    /// recording with wider checkpoints, where `checkpoint_interval` says how wide.
+    pub exact_step: Option<u64>,
+}
+
+impl Bisection {
+    /// How many steps lie between the last good and the first bad checkpoint, when both exist.
+    /// Above 1 the exact step is not known: re-record with `checkpoint_every` 1.
+    pub fn checkpoint_interval(&self) -> Option<u64> {
+        self.last_good_step.map(|good| self.first_bad_step - good)
+    }
 }
 
 /// Replays a recording and names the checkpoints around the first divergence. `None` when the
-/// replay matches. Record with `checkpoint_every` 1 to narrow it to the exact step.
+/// replay matches. Record with `checkpoint_every` 1 to get `exact_step`; snapshots may stay coarse
+/// (`Recorder::snapshot_every`), in which case `differences` is empty at most steps.
 pub fn bisect<S: Simulation>(
     recording: &Recording<S::Intent>,
 ) -> Result<Option<Bisection>, ReplayError> {
@@ -585,6 +614,10 @@ pub fn bisect<S: Simulation>(
         first_bad_step: at_step,
         differences,
         compared_snapshots: kept.is_some(),
+        exact_step: match last_good_step {
+            Some(good) if at_step == good + 1 => Some(good),
+            _ => None,
+        },
     }))
 }
 

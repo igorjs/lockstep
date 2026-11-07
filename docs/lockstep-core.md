@@ -73,7 +73,11 @@ runner sets on the clock before every step, so a replay needs nothing recorded f
 - `bisect::<S>(&recording)` names the last checkpoint that matched (`None` when even step 0
   differs) and the first that differs, and, when the recording kept snapshots, lists the lines of
   the two snapshots that differ, with their indentation. The change is
-  in the steps between the two checkpoints; record with `checkpoint_every` 1 to name the exact step.
+  in the steps between the two checkpoints. `exact_step` names the step whose execution first
+  changed the state when the recording checkpoints every step (`None` for a change in `create` and
+  for wider checkpoints; `checkpoint_interval()` then says how wide). `Recorder::snapshot_every(n)`
+  keeps snapshots only every `n` steps, so a recording can hash every step and stay small; where no
+  snapshot was kept, `differences` is empty (decision 0079).
 - `Recording::to_bytes` and `from_bytes` use the fixed-endian bytes `hash_of` hashes. Both refuse
   anything over `DECODE_LIMIT` (256 MiB), and reading refuses trailing bytes. A checkpoint out of
   order or past the last step is an error, not a pass. `encode` and `decode` are the
