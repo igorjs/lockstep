@@ -11,12 +11,12 @@ import json
 import sys
 
 metadata = json.load(sys.stdin)
-root = metadata["workspace_root"] + "/"
+root = metadata["workspace_root"].replace("\\", "/") + "/"
 unpublished_crates = {"lockstep-headless", "lockstep-fuzz"}
 problems = []
 for package in metadata["packages"]:
     name = package["name"]
-    directory = package["manifest_path"][len(root):].rsplit("/", 1)[0]
+    directory = package["manifest_path"].replace("\\", "/")[len(root):].rsplit("/", 1)[0]
     # An empty `publish` list is `publish = false`.
     unpublished = package["publish"] == []
     if directory.startswith("examples/") or name in unpublished_crates:
