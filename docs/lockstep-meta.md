@@ -21,7 +21,13 @@ events into it when the run ends.
 checksum of the payload, and the payload (the fixed-endian encoding the hash covers). `open` reads
 them back and refuses with an `EnvelopeError`: `NotAnEnvelope`, `EnvelopeVersion`,
 `MessageVersion { found, expected }`, `Corrupt` or `Decode`. It works for any `Message`. Converting
-an older version is not done here (deferral D7).
+an older version is `open`'s refusal; `open_with(bytes, &migrations)` converts it instead.
+
+The chronicle is message version 2 (it gained notes: `set_note`, `note`). `ChronicleV1` is the frozen
+version 1 shape and `chronicle_migrations()` converts it. `open_with` checks the checksum, then
+carries an older chronicle up the chain; a newer version, or an older one with no conversion, is
+`MessageVersion { found, expected }`, naming both. Retired names, runs and tallies survive. See
+decision 0084 and the legacy fixture in the [roster](roster.md).
 
 ## Control
 

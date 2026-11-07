@@ -37,4 +37,9 @@ point-buy budget and maximum, a damaged save, each template error reported as it
 reaching every refusal, and the recorded set replaying to the fixture hash.
 
 This example stands in for the reference's lineage consumer (departure P26 in the roadmap).
-See decision 0031.
+A chronicle saved while version 1 shipped is committed as `fixtures/legacy-chronicle-v1.bin`. It
+opens through `open_with` and `chronicle_migrations()`, keeps its three retired names, and the
+project that follows reaches the hash in `fixtures/legacy-chronicle-v1.hash`, natively and under
+WebAssembly (decision 0084). `examples/generate_legacy_chronicle.rs` made the fixture once.
+
+See decisions 0031 and 0084.

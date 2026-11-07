@@ -7,6 +7,7 @@
 #[path = "../common/mod.rs"]
 mod common;
 
+mod an_old_chronicle_converts_and_a_newer_one_is_refused;
 mod control_never_falls_to_the_lost;
 mod retired_names_stay_retired;
 mod the_budget_is_spent_at_stated_costs;
