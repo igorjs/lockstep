@@ -4,7 +4,7 @@
 //! Timing is measured only in the benchmark, never here.
 //! Alternatives rejected: a bucket open set (measured slower, 366 against 326 milliseconds with a
 //! heap per bucket and 550 with a scan, the estimates are too flat), a check on every push (it
-//! costs a distance per push and saves almost nothing), and an approximate stop.
+//! costs a distance per push and saved no further expansion), and an approximate stop.
 //! Would change if: any query below returns another result or cost than the plain search, or the
 //! expansions total rises above the committed number.
 
@@ -20,11 +20,8 @@ const SEED: u64 = 81;
 const MAPS: u32 = 120;
 const QUERIES_PER_MAP: u32 = 25;
 
-/// Total jump expansions over the maps above.
+/// Total jump expansions over the maps above; without the early stop it is 173,847.
 const JUMP_EXPANSIONS: u64 = 173_667;
-
-/// The same total before the early stop (the heap search): the stop must beat it.
-const BEFORE_THE_STOP: u64 = 173_847;
 
 fn walled(streams: &mut Streams, width: u32, height: u32, density: i32) -> GridMap<Square8> {
     let mut map: GridMap<Square8> = GridMap::new(width, height);
@@ -74,8 +71,4 @@ fn the_expansions_are_deterministic_and_stay_under_the_committed_number() {
     assert_eq!(run(), (jump, plain), "the same seed must expand the same");
     assert!(jump < plain, "{jump} against {plain}");
     assert!(jump <= JUMP_EXPANSIONS, "{jump} above {JUMP_EXPANSIONS}");
-    assert!(
-        jump < BEFORE_THE_STOP,
-        "{jump} is not below {BEFORE_THE_STOP}"
-    );
 }

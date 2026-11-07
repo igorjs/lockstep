@@ -2,7 +2,7 @@
 
 # 0077 The jump search runs as a batch on the thread pool (decided)
 
-Status: decided and implemented (`find_jump_paths`). It closes gap G2 for exact paths on uniform ground with a thread pool.
+Status: decided and implemented (`find_jump_paths`). It met the target once on ten threads (46 milliseconds); decision 0081 re-measured 72, so gap G2 is open again.
 
 ## Decision
 

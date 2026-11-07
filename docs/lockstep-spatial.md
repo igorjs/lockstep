@@ -70,7 +70,7 @@ stays the default. Bodies counted as walls and a start inside a wall are answere
 `maximum_expansions` counts jump points. It panics on a map changed since it was made (rebuild it).
 The search stops once the goal's cost is not above the next open jump point's estimate (decision 0081).
 On the benchmark map it takes about 344 milliseconds for 500 paths against 694 for the plain
-search (the baseline was measured again on one machine): gap G2 is open for a single thread only (the batch below meets the target). Consumer scenario: `examples/crowd/tests/long_routes.rs`.
+search (the baseline was measured again on one machine): gap G2 is open for a single thread only (the batch below measures 72 milliseconds against 50 on the committed baseline). Consumer scenario: `examples/crowd/tests/long_routes.rs`.
 
 `find_jump_paths(map, occupancy, requests, options)` is the batch form (decision 0077): it returns
 `None` on non-uniform ground and otherwise the answers in request order, one forked search per chunk
@@ -83,7 +83,7 @@ serially.
 the cost and route between every two entrances of a chunk. `HierarchicalPathfinder::find(map,
 occupancy, hierarchy, from, to, options, out)` has the same shape as `Pathfinder::find` and searches
 the entrances instead of the cells: 500 paths on the benchmark map take about 23 milliseconds against
-611 for the exact search, with paths 6.4 percent dearer in total. The reported cost is the cost of the
+694 for the exact search, with paths 6.4 percent dearer in total. The reported cost is the cost of the
 path returned. `set_greed(tenths)` trades speed for cost (10 is the plain estimate, the default 12).
 Build the hierarchy again after the map changes; a search given a stale hierarchy, bodies counted
 as walls, or an expansion limit is the exact search. Targets and starts walled into their chunk come
