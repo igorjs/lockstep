@@ -39,3 +39,12 @@ so it is not part of `just check`.
 crate lacks keywords, categories or a rust-version, when a path dependency has no `version`, or
 when `lockstep-headless`, `lockstep-fuzz` or an example does not set `publish = false`. Nothing is
 published or tagged by it.
+
+## guided fuzz
+
+`guided-fuzz.yml` runs `just fuzz-guided` for every target of `lockstep-fuzz` for two minutes each,
+with the nightly compiler and a pinned `cargo-fuzz`, weekly and on demand. It is advisory
+(`continue-on-error`) and never runs on pull requests, so it cannot block a merge; a crash uploads
+`fuzz/artifacts`. `scripts/check-fuzz-targets.sh`, run by `just check`, keeps the wrapper crate in
+`fuzz/` in step with the target list. It becomes blocking when it finds a bug the deterministic
+harness missed (decision 0080).
