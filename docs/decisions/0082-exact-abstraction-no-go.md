@@ -14,10 +14,10 @@ The prototype was a contraction hierarchy on the 209,482 passable cells: nodes c
 
 Release build, one thread, on the machine of `benches/baseline.txt`, not quiet (load average 3 to 6 from other agents). Three runs:
 
-| Measure | Run 1 | Run 2 | Run 3 | Limit |
+| Measure (seconds for the build, milliseconds for the paths) | Run 1 | Run 2 | Run 3 | Limit |
 |---|---|---|---|---|
-| Build | 18.8 s | 19.2 s | 22.3 s | 5 s |
-| 500 paths, best of five | 163 ms | 193 ms | 214 ms (worst runs 590 ms under load) | 50 ms |
+| Build, seconds | 18.8 | 19.2 | 22.3 | 5 |
+| 500 paths, best of five, milliseconds | 163 | 193 | 214 (worst single runs 590 under load) | 50 |
 
 The hierarchy held 521,839 shortcuts and 1,054,530 upward edges (about 5 per cell). The costs equalled `Pathfinder` on all 500 pairs (zero mismatches). The query time is for the cost only, so unpacking a path to cells would add to it. Both limits are missed: the build by about four times, the query by about three times.
 
@@ -27,7 +27,7 @@ A grid with random walls has no hierarchy of important roads. Contraction goes f
 
 ## Alternatives
 
-- Tune the witness limit, the priority weights or stop contracting at a core: each trades build for query time, and a core search is not faster than the hierarchy's measured 163 milliseconds by a factor of three. Not pursued.
+- Tune the witness limit, the priority weights or stop contracting at a core: each trades build time for query time, and a threefold query gain with no build loss is not plausible. This is an estimate, not a measurement. Not pursued.
 - A GO would have rebuilt on `GridMap::revision()` change and reached Segment S6. No S6 is needed.
 
 ## Tests

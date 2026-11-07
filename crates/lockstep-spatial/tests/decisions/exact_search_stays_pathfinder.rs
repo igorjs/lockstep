@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Decision 0082: `Pathfinder` stays the default exact search, and the only one for ground with
-//! terrain cost. A contraction hierarchy, the exact abstraction measured in the spike, took about
-//! 19 seconds to build and 163 milliseconds for 500 paths on one thread, against limits of 5
+//! terrain cost. A contraction hierarchy, the exact abstraction measured in the spike, took 19 to
+//! 22 seconds to build and 163 to 214 milliseconds for 500 paths on one thread, against limits of 5
 //! seconds and 50 milliseconds, so none is shipped.
 //! Alternative rejected: a precomputed exact abstraction, which returns the same cost.
 //! Would change if: a build under 5 seconds and 500 paths under 50 milliseconds on one thread are

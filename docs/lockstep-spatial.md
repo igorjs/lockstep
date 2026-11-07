@@ -70,7 +70,7 @@ stays the default. Bodies counted as walls and a start inside a wall are answere
 `maximum_expansions` counts jump points. It panics on a map changed since it was made (rebuild it).
 The search stops once the goal's cost is not above the next open jump point's estimate (decision 0081).
 On the benchmark map it takes about 344 milliseconds for 500 paths against 694 for the plain
-search (the baseline was measured again on one machine): gap G2 is open for a single thread only (the batch below measures 72 milliseconds against 50 on the committed baseline). Consumer scenario: `examples/crowd/tests/long_routes.rs`.
+search (the baseline was measured again on one machine): gap G2 is closed without a faster exact search for one thread (decision 0082; the batch below measures 72 milliseconds against 50 on the committed baseline). Consumer scenario: `examples/crowd/tests/long_routes.rs`.
 
 `find_jump_paths(map, occupancy, requests, options)` is the batch form (decision 0077): it returns
 `None` on non-uniform ground and otherwise the answers in request order, one forked search per chunk
@@ -78,7 +78,7 @@ on the thread pool. 500 paths on the benchmark map take about 72 milliseconds on
 serially.
 
 A precomputed exact abstraction was measured and rejected (decision 0082): a contraction hierarchy
-built in about 19 seconds and answered 500 paths in about 163 milliseconds on one thread. For terrain
+built in about 19 seconds and answered 500 paths in 163 to 214 milliseconds on one thread. For terrain
 cost, elevation and bodies as walls, `Pathfinder` stays the default exact search.
 
 ## Hierarchical search
