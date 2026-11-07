@@ -82,6 +82,16 @@ fn a_version_one_chronicle_opens_as_version_two() {
 }
 
 #[test]
+fn a_note_is_kept_replaced_and_survives_a_save() {
+    let mut chronicle = chronicle();
+    chronicle.set_note("lesson", "first");
+    chronicle.set_note("lesson", "second");
+    assert_eq!(chronicle.note("lesson"), Some("second"));
+    let opened: Chronicle = open(&seal(&chronicle)).unwrap();
+    assert_eq!(opened.note("lesson"), Some("second"));
+}
+
+#[test]
 fn a_current_chronicle_opens_through_the_chain_unchanged() {
     let bytes = seal(&chronicle());
     assert_eq!(
