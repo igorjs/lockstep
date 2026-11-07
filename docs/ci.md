@@ -48,3 +48,10 @@ with the nightly compiler and a pinned `cargo-fuzz`, weekly and on demand. It is
 `fuzz/artifacts`. `scripts/check-fuzz-targets.sh`, run by `just check`, keeps the wrapper crate in
 `fuzz/` in step with the target list. It becomes blocking when it finds a bug the deterministic
 harness missed (decision 0080).
+
+## changelog and release dry run
+
+`scripts/check-changelog.sh`, run by `just check`, fails when `CHANGELOG.md` lacks the SPDX first
+line, holds an em or en dash, lacks an entry for a milestone, or has an entry without a decision
+number that exists. `just release-check` is the manual dry run described in `docs/release.md`; it
+never publishes or tags.

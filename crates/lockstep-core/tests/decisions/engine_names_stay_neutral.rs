@@ -69,7 +69,14 @@ fn no_game_flavoured_word_is_left_in_code_data_or_prose() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let banned = banned();
     let mut found = Vec::new();
-    for part in ["crates", "examples", "scripts", "README.md", "docs"] {
+    for part in [
+        "crates",
+        "examples",
+        "scripts",
+        "README.md",
+        "docs",
+        "CHANGELOG.md",
+    ] {
         let path = root.join(part);
         if path.exists() {
             scan(&path, &banned, &mut found);

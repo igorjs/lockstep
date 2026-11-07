@@ -21,6 +21,7 @@ check:
     ./scripts/check-spdx.sh
     ./scripts/check-publish.sh
     ./scripts/check-fuzz-targets.sh
+    ./scripts/check-changelog.sh
 
 # Lints the workflows with a pinned zizmor, run through uvx so nothing is installed. It needs
 # network access to fetch the tool, so it is not part of check; CI runs it (docs/ci.md).
@@ -126,5 +127,10 @@ fuzz-guided target="decode_recording" seconds="60":
 miri:
     MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test -p lockstep-fuzz --test smoke
     cargo +nightly miri test -p lockstep-core --test behaviour -- money store math
+
+# Package lists for every publishable crate and a publish dry run for the leaf crates. It
+# never publishes or tags (docs/release.md).
+release-check:
+    ./scripts/release-check.sh
 
 ci: check test determinism
