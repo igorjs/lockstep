@@ -117,6 +117,7 @@ fn a_tampered_checkpoint_is_reported_and_bisected() {
         [
             "last good checkpoint: step 600",
             "first bad checkpoint: step 700",
+            "the exact step is within 100 steps of the last good checkpoint, re-record with --every 1 to name it",
             "the kept snapshot matches, so only the recorded hash differs",
         ]
     );
@@ -177,4 +178,35 @@ fn a_write_that_fails_is_reported_as_unwritable() {
     ]))
     .unwrap_err();
     assert!(matches!(error, CommandError::Unwritable(_)), "{error}");
+}
+
+#[test]
+fn a_default_recording_hashes_every_step_and_bisect_names_the_step() {
+    let file = Scratch::new("default-every");
+    run(&arguments(&[
+        "record",
+        "ledger",
+        "--out",
+        &file.path(),
+        "--steps",
+        "1000",
+    ]))
+    .unwrap();
+    let bytes = std::fs::read(&file.0).unwrap();
+    let mut recording = Recording::<ledger::Intent>::from_bytes(&bytes).unwrap();
+    assert_eq!(recording.checkpoints.len(), 1_001);
+    // Snapshots stay at every 100 steps, so the recording stays small (decision 0079).
+    assert_eq!(recording.snapshots.len(), 11);
+    recording
+        .checkpoints
+        .iter_mut()
+        .find(|(step, _)| *step == 437)
+        .unwrap()
+        .1 ^= 1;
+    std::fs::write(&file.0, recording.to_bytes().unwrap()).unwrap();
+    let error = run(&arguments(&["bisect", &file.path()])).unwrap_err();
+    let CommandError::Diverged(report) = error else {
+        panic!("bisect reports a divergence as an error: {error}");
+    };
+    assert!(report.contains("exact step: 436"), "{report}");
 }

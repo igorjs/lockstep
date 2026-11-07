@@ -205,8 +205,9 @@ const USAGE: &str = "usage: lockstep-headless fixture <name> [--seed <number>] [
        lockstep-headless stats <recording>
        lockstep-headless schema <name> [--out <directory>]";
 
-/// Checkpoint spacing for `record` when `--every` is not given.
-const DEFAULT_CHECKPOINT_EVERY: u64 = 100;
+/// Checkpoint spacing for `record` when `--every` is not given: a hash at every step, so `bisect`
+/// names the exact step. Snapshots stay coarse (decision 0079).
+const DEFAULT_CHECKPOINT_EVERY: u64 = 1;
 
 struct Options {
     seed: Option<u64>,

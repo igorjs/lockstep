@@ -5,7 +5,7 @@
 //! Alternative rejected: recording every step's state, which turns a ten hour session from
 //! megabytes into gigabytes; and recording events, which a rule change would also change.
 //! Would change if: a planted rule change is not reported at the first checkpoint after it, or
-//! checkpoints every step do not name the exact step.
+//! checkpoints every step do not name the exact step (`exact_step`, decision 0079).
 
 use crate::common::tally::{clock_configuration, step_configuration, Add, Honest, Start, Tally};
 use lockstep_core::{bisect, replay, Recorder, Recording, ReplayOutcome};
@@ -89,4 +89,77 @@ fn a_change_in_create_is_found_at_step_zero_with_nothing_good_before_it() {
     recording.configuration = lockstep_core::encode(&Start { total: 1 });
     let found = bisect::<Honest>(&recording).unwrap().expect("a divergence");
     assert_eq!((found.last_good_step, found.first_bad_step), (None, 0));
+}
+
+/// Records with a hash every step, snapshots every 100, and checks the exact step of a planted
+/// change at each listed step.
+macro_rules! exact_step_table {
+    ($($planted:literal),*) => {{
+        let recording = record_with(1, 100);
+        $(
+            let found = bisect::<Tally<$planted>>(&recording)
+                .unwrap()
+                .expect("a divergence");
+            assert_eq!(found.exact_step, Some($planted), "planted at {}", $planted);
+            assert_eq!(found.checkpoint_interval(), Some(1));
+        )*
+    }};
+}
+
+fn record_with(every: u64, snapshot_every: u64) -> Recording<Add> {
+    let mut recorder = Recorder::<Honest>::new(
+        "tally",
+        Start { total: 0 },
+        7,
+        step_configuration(),
+        clock_configuration(),
+        every,
+    )
+    .keep_snapshots()
+    .snapshot_every(snapshot_every);
+    for step in 0..3_000 {
+        recorder.step_once(&[Add(step % 5)]);
+    }
+    recorder.into_recording()
+}
+
+#[test]
+fn an_exact_step_is_named_for_each_planted_change() {
+    exact_step_table!(1, 2, 100, 101, 1_200, 1_234);
+}
+
+#[test]
+fn a_change_in_create_has_no_exact_step() {
+    let mut recording = record_with(1, 100);
+    recording.configuration = lockstep_core::encode(&Start { total: 1 });
+    let found = bisect::<Honest>(&recording).unwrap().expect("a divergence");
+    assert_eq!((found.first_bad_step, found.exact_step), (0, None));
+}
+
+#[test]
+fn wider_checkpoints_give_the_interval_and_no_exact_step() {
+    for every in [10, 100] {
+        let found = bisect::<Planted>(&record_with(every, every))
+            .unwrap()
+            .expect("a divergence");
+        assert_eq!(found.exact_step, None, "every {every}");
+        assert_eq!(found.checkpoint_interval(), Some(every), "every {every}");
+    }
+    let found = bisect::<Planted>(&record_with(1, 100))
+        .unwrap()
+        .expect("a divergence");
+    assert_eq!(found.exact_step, Some(PLANTED));
+}
+
+#[test]
+fn snapshots_stay_coarse_while_hashes_cover_every_step() {
+    let recording = record_with(1, 100);
+    assert_eq!(recording.checkpoints.len(), 3_001);
+    assert_eq!(recording.snapshots.len(), 31);
+    // Between kept snapshots bisect has no snapshot to compare, and says so.
+    let found = bisect::<Planted>(&recording)
+        .unwrap()
+        .expect("a divergence");
+    assert!(!found.compared_snapshots);
+    assert!(found.differences.is_empty());
 }
