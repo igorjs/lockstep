@@ -8,6 +8,7 @@ mod common;
 mod atomic_footprints;
 mod early_stop_for_the_jump_search;
 mod elevation_as_a_cell_property;
+mod exact_search_stays_pathfinder;
 mod flow_fields_for_hordes;
 mod heap_key_cell_tie_break;
 mod hexagon_error_is_a_departure;
