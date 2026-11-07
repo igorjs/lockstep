@@ -85,8 +85,8 @@ fn split_snapshots<I: Message>(
 }
 
 /// One table entry for a crate that exports `SIMULATION_ID` and `record_fixture`. The ledger's
-/// snapshots are small and so are the others', so every recording keeps one per checkpoint for
-/// bisect.
+/// snapshots are small and so are the others', so every recording keeps them at a coarse spacing
+/// (decision 0079) for bisect.
 macro_rules! replayable {
     ($krate:ident, $simulation:ty) => {
         replayable!($krate, $simulation, Migrations::new)

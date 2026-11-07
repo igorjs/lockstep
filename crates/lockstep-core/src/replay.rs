@@ -224,7 +224,7 @@ impl<S: Simulation> Recorder<S> {
         recorder
     }
 
-    /// Also keeps the snapshot at every checkpoint, so `bisect` can show what differs. Costs a
+    /// Also keeps the snapshot at every checkpoint (or at the spacing `snapshot_every` sets), so `bisect` can show what differs. Costs a
     /// snapshot per checkpoint in the recording. Call it before the first step.
     pub fn keep_snapshots(mut self) -> Self {
         self.keep_snapshots = true;
@@ -234,7 +234,9 @@ impl<S: Simulation> Recorder<S> {
     }
 
     /// Keeps a snapshot only at checkpoints that fall on a multiple of `snapshot_every`, so a
-    /// recording can hash every step and still stay small (decision 0079). Needs `keep_snapshots`.
+    /// recording can hash every step and still stay small (decision 0079). Needs `keep_snapshots`
+    /// and a call before the first step. 0 means every checkpoint; a spacing that is not a multiple
+    /// of `checkpoint_every` keeps snapshots only where the two meet.
     pub fn snapshot_every(mut self, snapshot_every: u64) -> Self {
         self.snapshot_every = snapshot_every;
         self
@@ -330,7 +332,7 @@ impl<S: Simulation> Recorder<S> {
 }
 
 /// Runs `drive` against a recorder around `runner`, which must not have stepped, and returns the
-/// recording. `keep_snapshots` also keeps the snapshot at every checkpoint.
+/// recording. `keep_snapshots` also keeps the snapshot at every checkpoint, at the default spacing.
 pub fn record_session<S: Simulation>(
     simulation_id: &str,
     configuration: &S::Configuration,

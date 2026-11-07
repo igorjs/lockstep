@@ -15,6 +15,10 @@ Status: decided and implemented. It narrows gap G3.
 
 A checkpoint is one 16 byte pair, so a hash at every step is cheap; a snapshot per step is not and could reach the decode limit (decision 0011 rejects per-step state). Measured at the default step counts, the largest recording is 2.9 MB (crater-survey), orchard at 8,000 steps is 1.2 MB, and the limit is 256 MiB.
 
+## Departure
+
+`Recorder::snapshot_every` has no example consumer: the headless layer records twice to keep every `record_fixture` signature unchanged. Passing the option through the example crates is a later change if the double recording cost matters.
+
 ## Costs
 
 Where no snapshot was kept at the bad step, `bisect` shows no differing lines. That loss of detail is accepted and tested.

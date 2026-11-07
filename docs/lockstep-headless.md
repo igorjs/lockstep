@@ -40,7 +40,7 @@ lockstep-headless stats  <file>
   `--until 1200 --save session.save` saves the session at step 1,200. It writes nothing when the replay diverges.
 - `bisect` prints the last checkpoint that matched and the first that differs, then `exact step: <n>`
   when the recording hashes every step, or a hint to re-record with `--every 1` when it does not. It then prints the lines of the
-  two snapshots that differ, or says the snapshots match and only the recorded hash differs. A
+  two snapshots that differ, says the snapshots match and only the recorded hash differs, or says the recording kept no snapshot there (snapshots are every 100 steps). A
   divergence exits with status 1, as with `replay`.
 - `resume` reads the save, converts an older snapshot shape through the simulation's migrations, and
   runs the recording from the save's step on, comparing every checkpoint from there. It prints
