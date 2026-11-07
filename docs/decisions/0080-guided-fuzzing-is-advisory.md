@@ -24,7 +24,7 @@ The deterministic harness (decision 0039) is the blocking check because its fail
 
 ## Would change if
 
-`tests/decisions/guided_fuzzing_is_advisory_and_outside_the_workspace.rs` fails: the root manifest stops excluding `fuzz`, or the job loses `continue-on-error` without a recorded finding that justifies it.
+`crates/lockstep-fuzz/tests/decisions/guided_fuzzing_is_advisory_and_outside_the_workspace.rs` fails: the root manifest stops excluding `fuzz`, or the job loses `continue-on-error` without a recorded finding that justifies it.
 
 ## Tests
 

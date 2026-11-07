@@ -28,9 +28,11 @@ jobs:
           tool: cargo-fuzz@0.13.1
       - name: Fuzz every target for two minutes
         run: |
-          for target in $(grep -oE '^ +name: "[a-z_]+"' crates/lockstep-fuzz/src/targets.rs | cut -d'"' -f2); do
-            just fuzz-guided "$target" 120
+          failed=0
+          for target in $(grep -oE '^ +name: "[a-z0-9_]+"' crates/lockstep-fuzz/src/targets.rs | cut -d'"' -f2); do
+            just fuzz-guided "$target" 120 || failed=1
           done
+          exit "$failed"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
