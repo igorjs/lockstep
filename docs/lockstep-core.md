@@ -88,8 +88,8 @@ runner sets on the clock before every step, so a replay needs nothing recorded f
   total. `to_bytes` is unchanged, so every recording committed before the header still reads.
   `from_bytes` and `recorded_simulation_id` read both forms, and `recorded_versions` returns the
   header's versions, or `RecordingVersions::LEGACY` (all 0) for a recording without one.
-  `from_bytes_for::<S>` also refuses a header that names another version than `S` has, with an
-  error that names both versions. `RecordingSet` is not versioned (decision 0085).
+  `from_bytes_for::<S>` also refuses a header that names a newer version than `S` has, or an older intent or
+  configuration version, with an error that names both versions. `RecordingSet` is not versioned (decision 0085).
 
 See decision 0011. For saving mid-session see the next section.
 

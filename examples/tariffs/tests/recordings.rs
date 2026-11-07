@@ -16,8 +16,8 @@ use tariffs::{
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::wasm_bindgen_test as test;
 
-/// A recording written when intents and configurations were version 1, committed as bytes. It is
-/// what shipped; no test writes it again.
+/// A recording of the first shapes in the versioned form, committed as bytes; no test writes it
+/// again. Its legacy bytes are what `record` wrote before versions existed.
 const LEGACY_RECORDING: &[u8] = include_bytes!("../fixtures/legacy-recording-v1.bin");
 
 #[test]
@@ -146,4 +146,10 @@ fn a_recording_made_today_replays_without_conversion() {
     assert_eq!(read, recording);
     let (_, outcome) = replay::<Tariffs>(&read).unwrap();
     assert_eq!(outcome, ReplayOutcome::Identical);
+}
+
+#[test]
+fn a_recording_without_the_header_is_read_as_the_first_shapes() {
+    let converted = read_recording(&LEGACY_RECORDING[16..]).unwrap();
+    assert_eq!(converted, read_recording(LEGACY_RECORDING).unwrap());
 }

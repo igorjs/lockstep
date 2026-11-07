@@ -148,7 +148,7 @@ impl<I: Message> Recording<I> {
     /// Reads either form for simulation `S` and refuses a recording whose header names a shape
     /// newer than `S` has, naming both versions. A header naming an older shape also refuses,
     /// since its bytes may not decode as the current one; `convert` carries it forward. Legacy
-    /// bytes name nothing and read as the current shape.
+    /// bytes name nothing and read as the current shape, and so does a header that names version 0.
     pub fn from_bytes_for<S: Simulation<Intent = I>>(bytes: &[u8]) -> Result<Self, ReplayError> {
         let (versions, body) = split_header(bytes)?;
         let current = RecordingVersions::of::<S>();
@@ -187,6 +187,13 @@ impl<I: Message> Recording<I> {
     ) -> Result<Recording<S::Intent>, ReplayError> {
         let current = RecordingVersions::of::<S>();
         check_not_newer("event", versions.event, current.event)?;
+        if versions.intent != I::VERSION {
+            return Err(ReplayError::Version {
+                kind: "intent",
+                found: versions.intent,
+                current: I::VERSION,
+            });
+        }
         let convert_error = |error: SaveError| ReplayError::Conversion(error.to_string());
         let mut steps = Vec::with_capacity(self.steps.len());
         for step in &self.steps {

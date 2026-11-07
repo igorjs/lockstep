@@ -138,7 +138,7 @@ fn the_decode_limit_applies_to_the_total_with_the_header() {
     // One byte past limit minus header: `to_bytes` alone still accepts it, the total does not.
     let fits = (DECODE_LIMIT - RECORDING_HEADER_LENGTH as u64 - base) as usize;
     recording.snapshots[0].1 = vec![0; fits + 1];
-    assert!(base + fits as u64 + 1 <= DECODE_LIMIT);
+    assert!(base + (fits as u64) < DECODE_LIMIT);
     assert_eq!(
         recording.to_versioned_bytes(versions),
         Err(ReplayError::TooLarge(DECODE_LIMIT + 1))

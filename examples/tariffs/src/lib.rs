@@ -8,8 +8,8 @@
 
 use lockstep_core::{
     recorded_versions, ClockConfiguration, Column, Context, Handle, Message, Migrations,
-    RecordedStep, Recorder, Recording, ReplayError, Runner, Save, Simulation, StableVector,
-    StepConfiguration, Streams,
+    RecordedStep, Recorder, Recording, RecordingVersions, ReplayError, Runner, Save, Simulation,
+    StableVector, StepConfiguration, Streams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -185,7 +185,16 @@ pub fn configuration_migrations() -> Migrations {
 /// made with the first intent or configuration shape is converted, which drops its checkpoints
 /// (decision 0085); one made with the current shapes, or a legacy one, is read as it is.
 pub fn read_recording(bytes: &[u8]) -> Result<Recording<Intent>, ReplayError> {
-    let versions = recorded_versions(bytes)?;
+    let mut versions = recorded_versions(bytes)?;
+    // Recordings written before versions existed hold the first shapes, since tariffs was at
+    // version 1 of both then.
+    if versions == RecordingVersions::LEGACY {
+        versions = RecordingVersions {
+            intent: 1,
+            event: 1,
+            configuration: 1,
+        };
+    }
     if versions.intent == <IntentV1 as Message>::VERSION {
         return Recording::<IntentV1>::from_bytes(bytes)?.convert::<Tariffs>(
             versions,
