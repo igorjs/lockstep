@@ -11,6 +11,8 @@ archetypes bought with points.
   it and carries it into the next run.
 - `seal` and `open`: save any `Message` in a versioned envelope (magic, envelope version, message
   version, checksum) and read it back, refusing anything damaged or from another version.
+  `open_with` with `chronicle_migrations()` instead converts an older chronicle forward and
+  refuses a newer one, naming both versions.
 - `Control`: who is in control now, and the fall-back order when they are lost.
 - `Templates`: archetypes and a point-buy budget, read from JSON and checked.
 

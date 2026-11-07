@@ -6,7 +6,7 @@ mod control;
 mod envelope;
 mod templates;
 
-pub use chronicle::{Chronicle, LineRecord};
+pub use chronicle::{chronicle_migrations, Chronicle, ChronicleV1, LineRecord};
 pub use control::{Control, ControlEvent};
-pub use envelope::{open, seal, EnvelopeError, ENVELOPE_VERSION, MAGIC};
+pub use envelope::{open, open_with, seal, EnvelopeError, ENVELOPE_VERSION, MAGIC};
 pub use templates::{Archetype, AttributeRule, TemplateError, Templates};

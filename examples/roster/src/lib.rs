@@ -381,6 +381,33 @@ fn record_projects(
     (sessions, hashes)
 }
 
+/// The chronicle a host saved while version 1 of the chronicle shipped: two projects, three
+/// departures. The committed fixture `fixtures/legacy-chronicle-v1.bin` holds its sealed bytes.
+pub fn legacy_chronicle() -> lockstep_meta::ChronicleV1 {
+    let mut old = lockstep_meta::ChronicleV1 {
+        runs: 2,
+        ..Default::default()
+    };
+    for (name, run) in [("Ada", 1), ("Faye", 1), ("Orla", 2)] {
+        old.lost.push(lockstep_meta::LineRecord {
+            name: name.to_string(),
+            run,
+            members: 1,
+        });
+    }
+    old.tallies.insert("departures".to_string(), 3);
+    old
+}
+
+/// The hash a converted legacy chronicle reaches, after one more project is begun and folded in.
+pub fn converted_chronicle_hash(chronicle: &Chronicle) -> u64 {
+    let mut chronicle = chronicle.clone();
+    let run = chronicle.begin_run();
+    let (_, events) = run_project(configuration_from(&chronicle), DEFAULT_SEED, DEFAULT_STEPS);
+    fold(&mut chronicle, run, &events);
+    hash_of(&chronicle)
+}
+
 /// The same two projects, recorded as a set.
 pub fn record_fixture(
     seed: u64,

@@ -44,7 +44,7 @@ items in a milestone are out of scope here.
 | D2 | The crash bundle (a recording, the last good save and the host's log) | M5 | A host, which writes it | Decision 0011 |
 | D3 | `replay --save` and saving mid-recording | M5 | Closed in M16: `replay --until --save`, `resume`, `Recorder::save` | Decision 0036, `docs/lockstep-headless.md` |
 | D4 | Conversions between message versions | M16 | Closed in M16 for snapshots (decision 0035); see D8 for the rest | Decisions 0010, 0035 |
-| D7 | Conversions between versions of a saved chronicle: the envelope refuses another message version and does not convert it | M15 | Saves and migrations (M16), as D4 | Decision 0031, `docs/lockstep-meta.md` |
+| D7 | Conversions between versions of a saved chronicle | M15 | Closed: `open_with` and `chronicle_migrations()` carry a version 1 chronicle to version 2; a newer or unknown version is refused naming both; `roster` converts a committed legacy chronicle (`7c50a954ef05c21b`) natively and under WebAssembly | Decisions 0031, 0084, `docs/lockstep-meta.md` |
 | D8 | Conversions for intents, events and configurations, so recordings made by an older shape still replay | M16 | A consumer that keeps old recordings | Decision 0035 |
 
 ## Departures: where the work differs from the reference on purpose

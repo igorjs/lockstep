@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-use lockstep_core::{decode, encode, hash_of, Message};
+use lockstep_core::{decode, encode, hash_of, Message, Migrations, SaveError};
 
 /// The first four bytes of every envelope.
 pub const MAGIC: [u8; 4] = *b"LKMT";
@@ -58,12 +58,42 @@ pub fn open<T: Message>(bytes: &[u8]) -> Result<T, EnvelopeError> {
             expected: T::VERSION,
         });
     }
+    decode(checked_payload(bytes)?).map_err(EnvelopeError::Decode)
+}
+
+/// Like `open`, but a message sealed at an older version is carried up the chain of conversions
+/// to `T`. A newer version, and an older one no conversion starts at, are refused with
+/// `MessageVersion` naming both versions. The checksum is checked before any conversion runs.
+pub fn open_with<T: Message>(bytes: &[u8], migrations: &Migrations) -> Result<T, EnvelopeError> {
+    if bytes.len() < HEADER || bytes[..4] != MAGIC {
+        return Err(EnvelopeError::NotAnEnvelope);
+    }
+    let word = |at: usize| u32::from_le_bytes(bytes[at..at + 4].try_into().expect("four bytes"));
+    if word(4) != ENVELOPE_VERSION {
+        return Err(EnvelopeError::EnvelopeVersion(word(4)));
+    }
+    let found = word(8);
+    let payload = checked_payload(bytes)?;
+    migrations
+        .migrate::<T>(found, payload)
+        .map_err(|error| match error {
+            SaveError::Newer { .. } | SaveError::MissingMigration { .. } => {
+                EnvelopeError::MessageVersion {
+                    found,
+                    expected: T::VERSION,
+                }
+            }
+            other => EnvelopeError::Decode(other.to_string()),
+        })
+}
+
+fn checked_payload(bytes: &[u8]) -> Result<&[u8], EnvelopeError> {
     let expected = u64::from_le_bytes(bytes[12..20].try_into().expect("eight bytes"));
     let payload = &bytes[HEADER..];
     if checksum(payload) != expected {
         return Err(EnvelopeError::Corrupt);
     }
-    decode(payload).map_err(EnvelopeError::Decode)
+    Ok(payload)
 }
 
 fn checksum(payload: &[u8]) -> u64 {
