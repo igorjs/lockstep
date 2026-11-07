@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 # CHANGELOG.md rules: the first line is the SPDX line, no em or en dash appears, and every
-# third level entry ends with a "Decisions" line naming only decision numbers that exist.
+# third level entry contains a "Decisions" line naming only decision numbers that exist.
 cd "$(dirname "$0")/.."
 python3 -I - <<'PYTHON'
 import glob

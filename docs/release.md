@@ -51,7 +51,7 @@ Crate name availability on crates.io has not been checked.
 
 ## Known gaps in the release setup
 
-- No CI job builds with the declared `rust-version` of 1.97. The jobs use the stable compiler, so
+- No continuous integration job builds with the declared `rust-version` of 1.97. The jobs use the stable compiler, so
   a use of a newer feature would not be caught. A job pinned to 1.97 would close this.
 - The internal version `0.1.0` is typed on each internal dependency line (about 30 lines across
   the library crates), because workspace inheritance of path dependencies was not adopted. A

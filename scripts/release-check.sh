@@ -3,8 +3,7 @@
 set -euo pipefail
 # A release dry run (docs/release.md). It never publishes and never tags: every publish command
 # carries --dry-run. A crate whose dependencies are not on the registry yet cannot be dry run
-# (cargo looks them up), so only leaf crates are, with --no-verify where the build is already
-# covered by `just test`.
+# (cargo looks them up), so only leaf crates are, and each is also verified by a build.
 cd "$(dirname "$0")/.."
 # Dependency order: each crate comes after the crates it depends on.
 order=(
