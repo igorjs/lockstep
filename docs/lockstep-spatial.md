@@ -68,12 +68,13 @@ a forced neighbour appears, instead of expanding every cell. Among paths of equa
 other cells than `Pathfinder`, so a fixture made with one is not valid for the other; `Pathfinder`
 stays the default. Bodies counted as walls and a start inside a wall are answered by the plain search.
 `maximum_expansions` counts jump points. It panics on a map changed since it was made (rebuild it).
-On the benchmark map it takes about 317 milliseconds for 500 paths against 610 to 690 for the plain
-search: gap G2 is open for a single thread only (the batch below meets the target). Consumer scenario: `examples/crowd/tests/long_routes.rs`.
+The search stops once the goal's cost is not above the next open jump point's estimate (decision 0081).
+On the benchmark map it takes about 344 milliseconds for 500 paths against 694 for the plain
+search (the baseline was measured again on one machine): gap G2 is open for a single thread only (the batch below meets the target). Consumer scenario: `examples/crowd/tests/long_routes.rs`.
 
 `find_jump_paths(map, occupancy, requests, options)` is the batch form (decision 0077): it returns
 `None` on non-uniform ground and otherwise the answers in request order, one forked search per chunk
-on the thread pool. 500 paths on the benchmark map take about 46 milliseconds on ten threads, 317
+on the thread pool. 500 paths on the benchmark map take about 72 milliseconds on ten threads on the machine of the current baseline (46 on the earlier one), 344
 serially.
 
 ## Hierarchical search

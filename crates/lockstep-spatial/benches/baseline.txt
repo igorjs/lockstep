@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
-paths_500 610943
-paths_500_batch 87952
-within_1000_agents 2186
-flow_field 11940
-hierarchy_build 232260
-paths_500_hierarchical 21804
-paths_500_jump 317192
-paths_500_jump_batch 45695
+paths_500 694226
+paths_500_batch 133607
+within_1000_agents 1395
+flow_field 14302
+hierarchy_build 246684
+paths_500_hierarchical 23068
+paths_500_jump 343654
+paths_500_jump_batch 72138

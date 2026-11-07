@@ -289,7 +289,10 @@ impl JumpPathfinder {
         while let Some(Reverse(key)) = self.heap.pop() {
             let current = key as u32;
             let at = current as i64;
-            if at == goal {
+            // Once the goal is reached, a jump point whose estimate is not below the goal's cost
+            // cannot lead to a cheaper path, so the goal is the answer (decision 0081).
+            let goal_known = self.stamp[goal as usize] == generation;
+            if at == goal || (goal_known && (key >> 32) as u32 >= self.cost[goal as usize]) {
                 self.reconstruct(map, start, goal, out);
                 return PathResult::Found {
                     cost: self.cost[goal as usize],
