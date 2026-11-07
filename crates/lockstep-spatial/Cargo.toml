@@ -7,6 +7,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+rust-version.workspace = true
 
 [features]
 # Hexagonal cells: odd-row offset storage, cube distance, integer-rounded lines.
@@ -16,7 +19,7 @@ hex = []
 parallel = ["dep:rayon"]
 
 [dependencies]
-lockstep-core = { path = "../lockstep-core" }
+lockstep-core = { path = "../lockstep-core", version = "0.1.0" }
 serde = { workspace = true }
 rayon = { workspace = true, optional = true }
 

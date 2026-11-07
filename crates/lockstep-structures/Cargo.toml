@@ -7,10 +7,13 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+rust-version.workspace = true
 
 [dependencies]
-lockstep-core = { path = "../lockstep-core" }
-lockstep-spatial = { path = "../lockstep-spatial" }
+lockstep-core = { path = "../lockstep-core", version = "0.1.0" }
+lockstep-spatial = { path = "../lockstep-spatial", version = "0.1.0" }
 serde = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]

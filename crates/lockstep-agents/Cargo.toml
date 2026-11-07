@@ -7,15 +7,18 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+rust-version.workspace = true
 
 [features]
 # Hexagonal maps, passed through to lockstep-spatial.
 hex = ["lockstep-spatial/hex", "lockstep-combat/hex"]
 
 [dependencies]
-lockstep-combat = { path = "../lockstep-combat" }
-lockstep-core = { path = "../lockstep-core" }
-lockstep-spatial = { path = "../lockstep-spatial" }
+lockstep-combat = { path = "../lockstep-combat", version = "0.1.0" }
+lockstep-core = { path = "../lockstep-core", version = "0.1.0" }
+lockstep-spatial = { path = "../lockstep-spatial", version = "0.1.0" }
 serde = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
