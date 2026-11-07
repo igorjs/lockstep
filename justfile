@@ -20,6 +20,7 @@ check:
     ./scripts/lint-determinism.sh
     ./scripts/check-spdx.sh
     ./scripts/check-publish.sh
+    ./scripts/check-fuzz-targets.sh
 
 # Lints the workflows with a pinned zizmor, run through uvx so nothing is installed. It needs
 # network access to fetch the tool, so it is not part of check; CI runs it (docs/ci.md).
@@ -112,6 +113,14 @@ bench-baseline:
 # count and a seed. The bounded run every pull request makes is in `just test`.
 fuzz iterations="1000000" seed="20261019":
     cargo run --profile fuzz -p lockstep-fuzz -- --iterations {{iterations}} --seed {{seed}}
+
+# Coverage-guided libFuzzer run of one target, seeded from the committed corpus. It needs the
+# nightly compiler and cargo-fuzz, so it is not part of check or test (decision 0080).
+# `just fuzz-guided decode_recording 120` takes a target and a number of seconds.
+fuzz-guided target="decode_recording" seconds="60":
+    mkdir -p fuzz/corpus/{{target}}
+    find crates/lockstep-fuzz/corpus/{{target}} -type f ! -name '*.license' -exec cp -n {} fuzz/corpus/{{target}}/ \;
+    cd fuzz && cargo +nightly fuzz run {{target}} -- -max_total_time={{seconds}}
 
 # The integer-heavy core and the fuzz smoke under Miri, which needs the nightly compiler.
 miri:

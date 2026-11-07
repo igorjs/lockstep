@@ -2,6 +2,8 @@
 [workspace]
 resolver = "2"
 members = ["crates/*", "examples/*"]
+# The libFuzzer wrappers need the nightly compiler and have their own workspace (decision 0080).
+exclude = ["fuzz"]
 
 [workspace.package]
 version = "0.1.0"

@@ -8,7 +8,7 @@ git rev-parse --git-dir >/dev/null
 missing=0
 while IFS= read -r -d '' file; do
   case "$file" in
-    LICENSE|Cargo.lock|*.bin|*.hash) continue ;;
+    LICENSE|Cargo.lock|*/Cargo.lock|*.bin|*.hash) continue ;;
     *.json)
       # JSON has no comments, so the line lives in a sidecar file (the REUSE convention).
       # The sidecar's own line is checked when the loop reaches it.

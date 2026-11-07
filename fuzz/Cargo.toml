@@ -1,0 +1,128 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "lockstep-fuzz-guided"
+description = "Coverage-guided libFuzzer wrappers over the lockstep-fuzz targets"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+lockstep-fuzz = { path = "../crates/lockstep-fuzz" }
+
+# Outside the main workspace on purpose: it needs the nightly compiler (decision 0080).
+[workspace]
+
+[profile.release]
+debug = 1
+panic = "unwind"
+overflow-checks = true
+
+[[bin]]
+name = "decode_recording"
+path = "fuzz_targets/decode_recording.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_core_save"
+path = "fuzz_targets/decode_core_save.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_save"
+path = "fuzz_targets/decode_save.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_message"
+path = "fuzz_targets/decode_message.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_registry"
+path = "fuzz_targets/json_registry.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_inventory_catalogue"
+path = "fuzz_targets/json_inventory_catalogue.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_recipes"
+path = "fuzz_targets/json_recipes.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_relations"
+path = "fuzz_targets/json_relations.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_templates"
+path = "fuzz_targets/json_templates.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_knowledge"
+path = "fuzz_targets/json_knowledge.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_progression"
+path = "fuzz_targets/json_progression.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_regions"
+path = "fuzz_targets/json_regions.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "json_calendar"
+path = "fuzz_targets/json_calendar.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "arithmetic_fixed"
+path = "fuzz_targets/arithmetic_fixed.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "arithmetic_money"
+path = "fuzz_targets/arithmetic_money.rs"
+test = false
+doc = false
+bench = false
