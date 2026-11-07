@@ -77,6 +77,10 @@ search (the baseline was measured again on one machine): gap G2 is open for a si
 on the thread pool. 500 paths on the benchmark map take about 72 milliseconds on ten threads on the machine of the current baseline (46 on the earlier one), 344
 serially.
 
+A precomputed exact abstraction was measured and rejected (decision 0082): a contraction hierarchy
+built in about 19 seconds and answered 500 paths in about 163 milliseconds on one thread. For terrain
+cost, elevation and bodies as walls, `Pathfinder` stays the default exact search.
+
 ## Hierarchical search
 
 `Hierarchy::build(map, side)` finds the entrances between chunks of `side` cells (16 works well) and
