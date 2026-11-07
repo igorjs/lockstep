@@ -30,7 +30,7 @@ lockstep-headless bisect <file>
 lockstep-headless stats  <file>
 ```
 
-- `record` writes the fixture session as a recording, with a hash at every step unless
+- `record` writes the fixture session as a recording in the versioned form, which starts with `LKRC` (decision 0085; a set stays unversioned), with a hash at every step unless
   `--every` says otherwise, and a snapshot every 100 steps (a multiple of `--every`, decision 0079).
   Recordings stay small: at the default step counts the largest is under 3 MB, against the 256 MiB limit
   a recording can be read back with (ledger 590 KB, orchard 1.2 MB, cargo-bay 2.8 MB). Every example can be recorded except `ledger-bills`, which is the ledger; see decision 0043. `mars-rovers` records as a set of 21 sessions (decision 0061) and `roster` as a set of its two projects (decision 0067): `replay` and `bisect` name the session that diverged, and `replay --save` and `resume` are refused. `orchard` records because its simulation sets its own daylight (decision 0060).

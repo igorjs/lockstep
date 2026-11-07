@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The recording commands, end to end through files.
 
-use lockstep_core::Recording;
+use lockstep_core::{recorded_versions, Message, Recording, RecordingVersions, RECORDING_MAGIC};
 use lockstep_headless::{run, CommandError};
 use std::path::PathBuf;
 
@@ -209,4 +209,72 @@ fn a_default_recording_hashes_every_step_and_bisect_names_the_step() {
         panic!("bisect reports a divergence as an error: {error}");
     };
     assert!(report.contains("exact step: 436"), "{report}");
+}
+
+#[test]
+fn record_writes_the_versioned_form_naming_the_current_shapes() {
+    let file = record("versioned", 300, 100);
+    let bytes = std::fs::read(&file.0).unwrap();
+    assert!(bytes.starts_with(b"LKRC"));
+    assert_eq!(
+        recorded_versions(&bytes).unwrap(),
+        RecordingVersions {
+            intent: <ledger::Intent as Message>::VERSION,
+            event: <ledger::Event as Message>::VERSION,
+            configuration: <ledger::Configuration as Message>::VERSION,
+        }
+    );
+    let out = run(&arguments(&["replay", &file.path()])).unwrap();
+    assert!(out.starts_with("identical ledger after 300 steps"), "{out}");
+}
+
+#[test]
+fn a_legacy_recording_without_the_header_still_replays() {
+    let file = record("legacy-form", 300, 100);
+    let bytes = std::fs::read(&file.0).unwrap();
+    let legacy = Recording::<ledger::Intent>::from_bytes(&bytes)
+        .unwrap()
+        .to_bytes()
+        .unwrap();
+    assert!(!legacy.starts_with(&RECORDING_MAGIC));
+    std::fs::write(&file.0, legacy).unwrap();
+    let out = run(&arguments(&["replay", &file.path()])).unwrap();
+    assert!(out.starts_with("identical ledger after 300 steps"), "{out}");
+    let stats = run(&arguments(&["stats", &file.path()])).unwrap();
+    assert!(stats.starts_with("simulation ledger"), "{stats}");
+}
+
+#[test]
+fn a_recording_of_a_newer_shape_is_refused_naming_both_versions() {
+    let file = record("newer", 300, 100);
+    let bytes = std::fs::read(&file.0).unwrap();
+    let mut changed = bytes.clone();
+    changed[4..8].copy_from_slice(&99u32.to_le_bytes());
+    std::fs::write(&file.0, changed).unwrap();
+    let error = run(&arguments(&["replay", &file.path()])).unwrap_err();
+    let text = error.to_string();
+    assert!(
+        text.contains("version 99") && text.contains("version 1"),
+        "{text}"
+    );
+}
+
+#[test]
+fn a_recording_set_stays_unversioned() {
+    let file = Scratch::new("set");
+    run(&arguments(&[
+        "record",
+        "roster",
+        "--out",
+        &file.path(),
+        "--steps",
+        "30",
+    ]))
+    .unwrap();
+    let bytes = std::fs::read(&file.0).unwrap();
+    assert!(!bytes.starts_with(&RECORDING_MAGIC));
+    assert_eq!(
+        recorded_versions(&bytes).unwrap(),
+        RecordingVersions::LEGACY
+    );
 }

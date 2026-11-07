@@ -4,7 +4,7 @@
 
 use lockstep_core::{
     bisect, hash_of, recorded_simulation_id, replay, replay_from, saved_simulation_id, Message,
-    Migrations, Recording, RecordingSet, ReplayOutcome, Save, Simulation,
+    Migrations, Recording, RecordingSet, RecordingVersions, ReplayOutcome, Save, Simulation,
 };
 use mars_rovers::{Hex, MarsRovers, Square4, Square8};
 
@@ -86,7 +86,7 @@ fn split_snapshots<I: Message>(
 
 /// One table entry for a crate that exports `SIMULATION_ID` and `record_fixture`. The ledger's
 /// snapshots are small and so are the others', so every recording keeps them at a coarse spacing
-/// (decision 0079) for bisect.
+/// (decision 0079) for bisect. The bytes are the versioned form (decision 0085).
 macro_rules! replayable {
     ($krate:ident, $simulation:ty) => {
         replayable!($krate, $simulation, Migrations::new)
@@ -98,7 +98,7 @@ macro_rules! replayable {
                 split_snapshots(every, |every, keep| {
                     $krate::record_fixture(seed, steps, every, keep)
                 })
-                .to_bytes()
+                .to_versioned_bytes(RecordingVersions::of::<$simulation>())
                 .map_err(|error| error.to_string())
             },
             replay: replay_report::<$simulation>,
@@ -188,7 +188,7 @@ pub fn simulation_id(bytes: &[u8]) -> Result<String, String> {
 }
 
 fn read<S: Simulation>(bytes: &[u8]) -> Result<Recording<S::Intent>, String> {
-    Recording::from_bytes(bytes).map_err(|error| error.to_string())
+    Recording::from_bytes_for::<S>(bytes).map_err(|error| error.to_string())
 }
 
 /// Keeps the first `until` steps and the checkpoints within them.

@@ -29,6 +29,7 @@ fn a_fee_is_charged_on_top_and_rounded_down() {
             from: accounts[0],
             to: accounts[1],
             amount_minor: 40_000,
+            waive_fee: false,
         }])
         .events;
     assert_eq!(
@@ -59,6 +60,7 @@ fn a_sender_who_cannot_cover_the_fee_is_rejected_and_nothing_moves() {
             from: accounts[0],
             to: accounts[1],
             amount_minor: OPENING_BALANCE_MINOR,
+            waive_fee: false,
         }])
         .events;
     assert_eq!(
@@ -103,7 +105,7 @@ fn the_message_schemas_match_the_saved_ones_natively_and_under_webassembly() {
             "Intent",
             <Intent as Message>::VERSION,
             <Intent as Message>::SCHEMA,
-            include_str!("../fixtures/schema/Intent.v1.json"),
+            include_str!("../fixtures/schema/Intent.v2.json"),
         ),
         (
             "Event",
@@ -121,7 +123,7 @@ fn the_message_schemas_match_the_saved_ones_natively_and_under_webassembly() {
             "Configuration",
             <Configuration as Message>::VERSION,
             <Configuration as Message>::SCHEMA,
-            include_str!("../fixtures/schema/Configuration.v1.json"),
+            include_str!("../fixtures/schema/Configuration.v2.json"),
         ),
     ] {
         assert!(
@@ -133,5 +135,28 @@ fn the_message_schemas_match_the_saved_ones_natively_and_under_webassembly() {
             saved,
             "{name} changed shape: bump its version"
         );
+    }
+}
+
+/// The frozen first shapes are what the saved version 1 files describe: the same text but for the
+/// type name.
+#[test]
+fn the_frozen_first_shapes_match_their_saved_version_one_schemas() {
+    use lockstep_core::Message;
+    use tariffs::{ConfigurationV1, IntentV1};
+    for (name, schema, saved) in [
+        (
+            "Intent",
+            <IntentV1 as Message>::SCHEMA,
+            include_str!("../fixtures/schema/Intent.v1.json"),
+        ),
+        (
+            "Configuration",
+            <ConfigurationV1 as Message>::SCHEMA,
+            include_str!("../fixtures/schema/Configuration.v1.json"),
+        ),
+    ] {
+        let renamed = schema.replace(&format!("\"{name}V1\""), &format!("\"{name}\""));
+        assert_eq!(format!("{renamed}\n"), saved, "{name} version 1 drifted");
     }
 }

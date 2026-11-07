@@ -92,3 +92,19 @@ fn a_recording_cannot_be_checked_against_a_save_of_an_older_shape() {
         Some(ReplayError::NotComparable { from_version: 1 })
     );
 }
+
+#[test]
+fn a_converted_save_is_not_comparable() {
+    // The old save loads and reaches the committed hash on the current code ...
+    let mut loaded = Runner::<Tariffs>::from_save(&legacy(), &migrations()).unwrap();
+    continue_fixture(&mut loaded, DEFAULT_SEED, DEFAULT_STEPS);
+    let committed = include_str!("../fixtures/legacy-v1.hash").trim();
+    assert_eq!(format!("{:016x}", loaded.hash()), committed);
+    // ... but a recording's hashes cover the shape it was made with, so the converted save cannot
+    // continue one.
+    let recording = record_fixture(DEFAULT_SEED, DEFAULT_STEPS, 100, false);
+    assert_eq!(
+        replay_from::<Tariffs>(&recording, &legacy(), &migrations()).err(),
+        Some(ReplayError::NotComparable { from_version: 1 })
+    );
+}
