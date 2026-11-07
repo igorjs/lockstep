@@ -197,3 +197,21 @@ fn a_damaged_roster_set_names_the_project_that_diverged() {
         replayed.report
     );
 }
+
+/// The largest fixture, recorded the way `just determinism` records it: a hash at every step must
+/// stay far under the limit a recording can be read back with (decision 0079).
+#[test]
+fn an_orchard_recording_with_a_hash_every_step_stays_under_the_decode_limit() {
+    let replayable = replayables()
+        .into_iter()
+        .find(|replayable| replayable.id == "orchard")
+        .unwrap();
+    let bytes = (replayable.record)(orchard::DEFAULT_SEED, 8_000, 1).unwrap();
+    assert!(
+        (bytes.len() as u64) < lockstep_core::DECODE_LIMIT / 64,
+        "{}",
+        bytes.len()
+    );
+    let replayed = (replayable.replay)(&bytes, None, false).unwrap();
+    assert!(replayed.identical, "{}", replayed.report);
+}

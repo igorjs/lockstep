@@ -30,13 +30,16 @@ lockstep-headless bisect <file>
 lockstep-headless stats  <file>
 ```
 
-- `record` writes the fixture session as a recording, with a checkpoint every 100 steps unless
-  `--every` says otherwise, keeping the snapshot at each checkpoint. Every example can be recorded except `ledger-bills`, which is the ledger; see decision 0043. `mars-rovers` records as a set of 21 sessions (decision 0061) and `roster` as a set of its two projects (decision 0067): `replay` and `bisect` name the session that diverged, and `replay --save` and `resume` are refused. `orchard` records because its simulation sets its own daylight (decision 0060).
+- `record` writes the fixture session as a recording, with a hash at every step unless
+  `--every` says otherwise, and a snapshot every 100 steps (a multiple of `--every`, decision 0079).
+  Recordings stay small: at the default step counts the largest is under 3 MB, against the 256 MiB limit
+  a recording can be read back with (ledger 590 KB, orchard 1.2 MB, cargo-bay 2.8 MB). Every example can be recorded except `ledger-bills`, which is the ledger; see decision 0043. `mars-rovers` records as a set of 21 sessions (decision 0061) and `roster` as a set of its two projects (decision 0067): `replay` and `bisect` name the session that diverged, and `replay --save` and `resume` are refused. `orchard` records because its simulation sets its own daylight (decision 0060).
 - `replay` reads the simulation id at the front of the file, runs the recording again and prints
   `identical <id> after <steps> steps, hash <hash>`. A divergence prints the step and both hashes to
   standard error and exits with status 1. `--until` stops after that many steps. `--save` writes a save where the replay stopped, so
   `--until 1200 --save session.save` saves the session at step 1,200. It writes nothing when the replay diverges.
-- `bisect` prints the last checkpoint that matched and the first that differs, then the lines of the
+- `bisect` prints the last checkpoint that matched and the first that differs, then `exact step: <n>`
+  when the recording hashes every step, or a hint to re-record with `--every 1` when it does not. It then prints the lines of the
   two snapshots that differ, or says the snapshots match and only the recorded hash differs. A
   divergence exits with status 1, as with `replay`.
 - `resume` reads the save, converts an older snapshot shape through the simulation's migrations, and

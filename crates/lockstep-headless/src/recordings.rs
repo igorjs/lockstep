@@ -61,6 +61,29 @@ pub struct Replayed {
     pub save: Option<Vec<u8>>,
 }
 
+/// Spacing of kept snapshots when hashes are taken every `every` steps: at least 100, and a
+/// multiple of `every` so each lands on a checkpoint (decision 0079).
+const SNAPSHOT_EVERY: u64 = 100;
+
+fn snapshot_every(every: u64) -> u64 {
+    SNAPSHOT_EVERY.div_ceil(every) * every
+}
+
+/// Records the session with a hash every `every` steps and snapshots at a coarser spacing. The
+/// session is deterministic, so a second recording supplies the snapshots.
+fn split_snapshots<I: Message>(
+    every: u64,
+    record: impl Fn(u64, bool) -> Recording<I>,
+) -> Recording<I> {
+    let coarse = snapshot_every(every);
+    if coarse == every {
+        return record(every, true);
+    }
+    let mut recording = record(every, false);
+    recording.snapshots = record(coarse, true).snapshots;
+    recording
+}
+
 /// One table entry for a crate that exports `SIMULATION_ID` and `record_fixture`. The ledger's
 /// snapshots are small and so are the others', so every recording keeps one per checkpoint for
 /// bisect.
@@ -72,9 +95,11 @@ macro_rules! replayable {
         Replayable {
             id: $krate::SIMULATION_ID,
             record: |seed, steps, every| {
-                $krate::record_fixture(seed, steps, every, true)
-                    .to_bytes()
-                    .map_err(|error| error.to_string())
+                split_snapshots(every, |every, keep| {
+                    $krate::record_fixture(seed, steps, every, keep)
+                })
+                .to_bytes()
+                .map_err(|error| error.to_string())
             },
             replay: replay_report::<$simulation>,
             resume: resume_report::<$simulation>,
@@ -110,9 +135,12 @@ pub fn replayables() -> Vec<Replayable> {
         Replayable {
             id: mars_rovers::SIMULATION_ID,
             record: |seed, steps, every| {
-                mars_rovers::record_fixture(seed, steps, every, true)
-                    .to_bytes()
-                    .map_err(|error| error.to_string())
+                let mut set = mars_rovers::record_fixture(seed, steps, every, false);
+                let coarse = mars_rovers::record_fixture(seed, steps, snapshot_every(every), true);
+                for (session, kept) in set.sessions.iter_mut().zip(coarse.sessions) {
+                    session.1.snapshots = kept.1.snapshots;
+                }
+                set.to_bytes().map_err(|error| error.to_string())
             },
             replay: replay_set_report,
             resume: |_, _| Err(NO_SET_SAVE.to_string()),
@@ -124,9 +152,12 @@ pub fn replayables() -> Vec<Replayable> {
         Replayable {
             id: roster::SIMULATION_ID,
             record: |seed, steps, every| {
-                roster::record_fixture(seed, steps, every, true)
-                    .to_bytes()
-                    .map_err(|error| error.to_string())
+                let mut set = roster::record_fixture(seed, steps, every, false);
+                let coarse = roster::record_fixture(seed, steps, snapshot_every(every), true);
+                for (session, kept) in set.sessions.iter_mut().zip(coarse.sessions) {
+                    session.1.snapshots = kept.1.snapshots;
+                }
+                set.to_bytes().map_err(|error| error.to_string())
             },
             replay: |bytes, until, save| {
                 replay_set::<roster::Intent>(bytes, until, save, &|_, recording| {
@@ -277,6 +308,13 @@ fn bisect_recording<S: Simulation>(recording: &Recording<S::Intent>) -> Result<R
         },
         format!("first bad checkpoint: step {}", found.first_bad_step),
     ];
+    if let Some(step) = found.exact_step {
+        lines.push(format!("exact step: {step}"));
+    } else if let Some(interval) = found.checkpoint_interval().filter(|interval| *interval > 1) {
+        lines.push(format!(
+            "the exact step is within {interval} steps of the last good checkpoint, re-record with --every 1 to name it"
+        ));
+    }
     if !found.compared_snapshots {
         lines.push("the recording kept no snapshot here, so no difference to show".to_string());
     } else if found.differences.is_empty() {
