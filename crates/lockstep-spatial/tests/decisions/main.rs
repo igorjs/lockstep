@@ -6,6 +6,7 @@
 mod common;
 
 mod atomic_footprints;
+mod early_stop_for_the_jump_search;
 mod elevation_as_a_cell_property;
 mod flow_fields_for_hordes;
 mod heap_key_cell_tie_break;

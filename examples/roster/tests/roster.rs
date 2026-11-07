@@ -154,6 +154,43 @@ fn hires_spend_the_point_buy_budget_and_no_more() {
     );
 }
 
+const LEGACY_CHRONICLE: &[u8] = include_bytes!("../fixtures/legacy-chronicle-v1.bin");
+
+/// Decision 0084: a chronicle committed when version 1 shipped opens in code that holds version
+/// 2, keeps its retired names, and the project that follows reaches a committed hash.
+#[test]
+fn a_legacy_chronicle_converts_and_reaches_the_committed_hash() {
+    assert!(matches!(
+        open::<Chronicle>(LEGACY_CHRONICLE),
+        Err(EnvelopeError::MessageVersion {
+            found: 1,
+            expected: 2
+        })
+    ));
+    let converted: Chronicle =
+        lockstep_meta::open_with(LEGACY_CHRONICLE, &lockstep_meta::chronicle_migrations()).unwrap();
+    assert_eq!(converted.retired_names(), ["Ada", "Faye", "Orla"]);
+    assert_eq!(converted.tally("departures"), 3);
+    let committed = include_str!("../fixtures/legacy-chronicle-v1.hash").trim();
+    assert_eq!(
+        format!("{:016x}", roster::converted_chronicle_hash(&converted)),
+        committed
+    );
+}
+
+#[test]
+fn a_newer_legacy_chronicle_is_refused_naming_both_versions() {
+    let mut bytes = LEGACY_CHRONICLE.to_vec();
+    bytes[8..12].copy_from_slice(&3u32.to_le_bytes());
+    assert_eq!(
+        lockstep_meta::open_with::<Chronicle>(&bytes, &lockstep_meta::chronicle_migrations()),
+        Err(EnvelopeError::MessageVersion {
+            found: 3,
+            expected: 2
+        })
+    );
+}
+
 #[test]
 fn a_damaged_save_is_refused() {
     let mut bytes = seal(&Chronicle::new());

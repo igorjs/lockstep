@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-use lockstep_core::Message;
+use lockstep_core::{Message, Migrations};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -16,11 +16,32 @@ pub struct LineRecord {
 /// starts, the host folds the run's events into it when the run ends, and the next run starts
 /// from it. Save it with `seal`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Message)]
-#[message(version = 1)]
+#[message(version = 2)]
 pub struct Chronicle {
     runs: u32,
     lost: Vec<LineRecord>,
     tallies: BTreeMap<String, i64>,
+    notes: BTreeMap<String, String>,
+}
+
+/// The chronicle as version 1 saved it, before notes. Frozen: it stays so a saved version 1 can
+/// still be read and converted (decision 0084).
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Message)]
+#[message(version = 1)]
+pub struct ChronicleV1 {
+    pub runs: u32,
+    pub lost: Vec<LineRecord>,
+    pub tallies: BTreeMap<String, i64>,
+}
+
+/// The conversions that carry a saved chronicle forward to the current version.
+pub fn chronicle_migrations() -> Migrations {
+    Migrations::new().step(|old: ChronicleV1| Chronicle {
+        runs: old.runs,
+        lost: old.lost,
+        tallies: old.tallies,
+        notes: BTreeMap::new(),
+    })
 }
 
 impl Chronicle {
@@ -74,5 +95,14 @@ impl Chronicle {
 
     pub fn tally(&self, key: &str) -> i64 {
         self.tallies.get(key).copied().unwrap_or(0)
+    }
+
+    /// Keeps a named note, replacing any earlier one under the same key.
+    pub fn set_note(&mut self, key: &str, text: &str) {
+        self.notes.insert(key.to_string(), text.to_string());
+    }
+
+    pub fn note(&self, key: &str) -> Option<&str> {
+        self.notes.get(key).map(String::as_str)
     }
 }
