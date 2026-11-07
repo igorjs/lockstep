@@ -31,6 +31,9 @@ equal the input.
 - `cargo run --profile fuzz -p lockstep-fuzz -- --target decode_recording --iterations 100000`
   runs one target.
 - `just miri` runs the smoke under Miri (decision 0041).
+- `just fuzz-guided decode_recording 120` runs one target under libFuzzer through the wrappers in
+  `fuzz/`, seeded from the corpus. It needs the nightly compiler and `cargo-fuzz` and is advisory
+  (decision 0080).
 
 A failure prints the target, seed, iteration and the input as hex. Turn it into a regression test
 in `crates/lockstep-fuzz/tests/regressions.rs`, add the input as a seed (a function in
